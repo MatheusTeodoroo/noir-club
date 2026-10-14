@@ -1,0 +1,5 @@
+node_modules
+apps/web/public
+apps/web/dist
+**/build
+package-lock.json

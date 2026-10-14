@@ -1,0 +1,8 @@
+{
+  "name": "@mp/game-sdk",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": { "@mp/protocol": "*" }
+}

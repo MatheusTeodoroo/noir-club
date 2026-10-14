@@ -1,0 +1,9 @@
+node_modules/
+build/
+dist/
+.wrangler/
+test-results/
+playwright-report/
+apps/web/public/games/
+apps/web/public/rive/
+.dev.vars

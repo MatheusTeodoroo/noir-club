@@ -1,0 +1,16 @@
+{
+  "name": "@mp/relay",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787 --ip 0.0.0.0",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@mp/protocol": "*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261014.1",
+    "wrangler": "^4.151.0"
+  }
+}

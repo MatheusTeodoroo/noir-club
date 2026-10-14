@@ -1,0 +1,195 @@
+import type { ClientId, Lang, PlayerPlatformView, PublicPlatformView } from '@mp/protocol';
+
+/**
+ * Contract every game implements. A game ships two separately loaded modules:
+ *  - `logic`  (pure, no DOM, runs inside the engine Web Worker)  → `defineGame`
+ *  - `ui`     (React views for display / player / dealer)          → `defineGameUI`
+ *
+ * The engine only ever sends what `publicView` / `playerView` / `dealerView` return,
+ * so secrets stay inside `state` unless a view deliberately exposes them.
+ */
+
+export type I18nText = { 'pt-BR': string; en: string };
+
+export type ConfigField =
+  | { key: string; type: 'number'; label: I18nText; min: number; max: number; step?: number; default: number }
+  | { key: string; type: 'boolean'; label: I18nText; default: boolean }
+  | { key: string; type: 'select'; label: I18nText; options: { value: string; label: I18nText }[]; default: string };
+
+export interface GameManifest {
+  id: string;
+  version: string;
+  name: I18nText;
+  description: I18nText;
+  minPlayers: number;
+  maxPlayers: number;
+  usesDealer: boolean;
+  estimatedMinutes: number;
+  /** Accent colour for lobby cards. */
+  accent: string;
+  config: ConfigField[];
+}
+
+export interface PlayerInfo {
+  id: ClientId;
+  name: string;
+  avatar: string;
+  connected: boolean;
+  remote: boolean;
+}
+
+export interface Rng {
+  /** Float in [0, 1). */
+  next(): number;
+  int(minInclusive: number, maxInclusive: number): number;
+  pick<T>(items: readonly T[]): T;
+  shuffle<T>(items: readonly T[]): T[];
+}
+
+export interface GameResult {
+  /** Points earned this match, added to the room scoreboard. */
+  scores: Record<ClientId, number>;
+}
+
+export interface GameCtx<Cfg = Record<string, unknown>> {
+  /** Room-clock time (ms). Use it instead of Date.now(). */
+  now: number;
+  rng: Rng;
+  players: PlayerInfo[];
+  config: Cfg;
+  /** Player currently verified at the dealer, if any. */
+  atDealer: ClientId | null;
+  setTimer(key: string, ms: number): void;
+  clearTimer(key: string): void;
+  /** Deadline of a running timer (room clock) — useful for countdowns in views. */
+  timerDeadline(key: string): number | null;
+  /** Fire a sound/fx on every display at the same instant. */
+  emit(kind: 'sound' | 'fx', name: string, delayMs?: number): void;
+  /** Finish the match. */
+  end(result: GameResult): void;
+  /** Ask the platform to send this player away from the dealer. */
+  releaseDealer(): void;
+}
+
+export interface GameLogic<S = any, Cfg = any> {
+  manifest: GameManifest;
+  setup(ctx: GameCtx<Cfg>): S;
+  /** Return the next state, or mutate `state` (it is already a private copy) and return nothing. */
+  onAction(state: S, playerId: ClientId, action: unknown, ctx: GameCtx<Cfg>): S | void;
+  onTimer?(state: S, key: string, ctx: GameCtx<Cfg>): S | void;
+  /** Player stayed offline past the grace period: skip, auto-play or eliminate. */
+  onPlayerTimeout?(state: S, playerId: ClientId, ctx: GameCtx<Cfg>): S | void;
+  /** Whether the player may join the dealer queue right now. */
+  canVisitDealer?(state: S, playerId: ClientId, ctx: GameCtx<Cfg>): boolean;
+  onDealerEnter?(state: S, playerId: ClientId, ctx: GameCtx<Cfg>): S | void;
+  onDealerLeave?(state: S, playerId: ClientId, ctx: GameCtx<Cfg>): S | void;
+  publicView(state: S, ctx: GameCtx<Cfg>): unknown;
+  playerView(state: S, playerId: ClientId, ctx: GameCtx<Cfg>): unknown;
+  /** Shown on the dealer device while `playerId` is verified inside. */
+  dealerView?(state: S, playerId: ClientId, ctx: GameCtx<Cfg>): unknown;
+}
+
+export function defineGame<S, Cfg = Record<string, unknown>>(logic: GameLogic<S, Cfg>): GameLogic<S, Cfg> {
+  return logic;
+}
+
+// ---------------------------------------------------------------------------
+// UI side. Games never import platform UI directly: the platform hands its kit in
+// through props, so a game bundle only shares `react` with the shell.
+// ---------------------------------------------------------------------------
+
+export interface UIKit {
+  /** React component types from the platform design system. */
+  Button: any;
+  Avatar: any;
+  Countdown: any;
+  Panel: any;
+  RiveView: any;
+  /** Room-clock now, updated every animation frame where used. */
+  useRoomNow(): number;
+  playSound(name: string): void;
+}
+
+export interface CommonUIProps {
+  kit: UIKit;
+  lang: Lang;
+  t(text: I18nText): string;
+  platform: PublicPlatformView;
+}
+
+export interface DisplayProps<PV = any> extends CommonUIProps {
+  view: PV;
+}
+
+export interface PlayerProps<V = any> extends CommonUIProps {
+  view: V;
+  you: PlayerPlatformView;
+  send(action: unknown): void;
+}
+
+export interface DealerProps<DV = any> extends CommonUIProps {
+  view: DV;
+  playerName: string;
+}
+
+export interface GameUI {
+  Display: (props: DisplayProps) => any;
+  Player: (props: PlayerProps) => any;
+  Dealer?: (props: DealerProps) => any;
+}
+
+export function defineGameUI(ui: GameUI): GameUI {
+  return ui;
+}
+
+// ---------------------------------------------------------------------------
+// Deterministic RNG (mulberry32). State is a single uint32 so snapshots can carry it.
+// ---------------------------------------------------------------------------
+
+export function createRng(getState: () => number, setState: (s: number) => void): Rng {
+  const next = () => {
+    let t = (getState() + 0x6d2b79f5) >>> 0;
+    setState(t);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const int = (min: number, max: number) => min + Math.floor(next() * (max - min + 1));
+  return {
+    next,
+    int,
+    pick: (items) => {
+      if (items.length === 0) throw new Error('pick from empty list');
+      return items[int(0, items.length - 1)]!;
+    },
+    shuffle: (items) => {
+      const out = [...items];
+      for (let i = out.length - 1; i > 0; i--) {
+        const j = int(0, i);
+        [out[i], out[j]] = [out[j]!, out[i]!];
+      }
+      return out;
+    },
+  };
+}
+
+export function configDefaults(manifest: GameManifest): Record<string, unknown> {
+  return Object.fromEntries(manifest.config.map((f) => [f.key, f.default]));
+}
+
+/** Clamp/validate a config patch against the manifest. Unknown keys are dropped. */
+export function sanitizeConfig(manifest: GameManifest, input: Record<string, unknown>): Record<string, unknown> {
+  const out = configDefaults(manifest);
+  for (const field of manifest.config) {
+    const v = input[field.key];
+    if (v === undefined) continue;
+    if (field.type === 'number' && typeof v === 'number' && Number.isFinite(v)) {
+      out[field.key] = Math.min(field.max, Math.max(field.min, v));
+    } else if (field.type === 'boolean' && typeof v === 'boolean') {
+      out[field.key] = v;
+    } else if (field.type === 'select' && field.options.some((o) => o.value === v)) {
+      out[field.key] = v;
+    }
+  }
+  return out;
+}

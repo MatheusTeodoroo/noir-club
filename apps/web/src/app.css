@@ -1,0 +1,270 @@
+/* Screen layouts. Component styling lives in @mp/ui. */
+
+.screen-center {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.phone {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-height: 100dvh;
+}
+
+.phone-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.phone-header .grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.wrap {
+  flex-wrap: wrap;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 10px;
+}
+
+.avatar-pick {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.game-card {
+  position: relative;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  box-shadow: 0 0 0 1px var(--line) inset;
+  transition:
+    box-shadow 200ms,
+    transform 200ms var(--ease-out);
+  color: var(--text);
+  display: grid;
+  gap: 6px;
+}
+
+.game-card[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 2px var(--accent, var(--gold)) inset,
+    0 12px 40px -16px var(--accent, var(--gold));
+  transform: translateY(-2px);
+}
+
+.game-card h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  font-size: 1.1rem;
+}
+
+.game-card p {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+}
+
+.player-row:last-child {
+  border-bottom: 0;
+}
+
+.player-row .name {
+  flex: 1;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 8px;
+}
+
+.sticky-bottom {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0 max(4px, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent, var(--ink-0) 40%);
+  z-index: 5;
+}
+
+/* ---------- TV / Display (designed for 16:9, scales with viewport) ---------- */
+
+.tv {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-size: clamp(12px, 1.25vw, 28px);
+}
+
+.tv-lobby {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 4em;
+  padding: 4em 5em;
+  align-items: center;
+}
+
+.tv-join {
+  display: grid;
+  gap: 1.6em;
+  justify-items: center;
+  text-align: center;
+}
+
+.tv-code {
+  font-family: var(--font-display);
+  font-size: 6em;
+  font-weight: 900;
+  letter-spacing: 0.25em;
+  margin-right: -0.25em;
+  line-height: 1;
+}
+
+.tv-url {
+  font-size: 1.5em;
+  color: var(--text-dim);
+}
+
+.tv-url b {
+  color: var(--gold-hi);
+  font-weight: 600;
+}
+
+.tv-qr {
+  width: 11em;
+  height: 11em;
+  padding: 0.6em;
+  border-radius: 1em;
+  background: #f3e9dc;
+}
+
+.tv-qr svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tv-players {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8em, 1fr));
+  gap: 1.6em 1em;
+  align-content: start;
+}
+
+.tv-player {
+  display: grid;
+  justify-items: center;
+  gap: 0.6em;
+  text-align: center;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.tv-corner {
+  position: fixed;
+  z-index: 10;
+  display: flex;
+  gap: 1em;
+  align-items: center;
+  padding: 0.6em 1.2em;
+  border-radius: 999px;
+  background: rgba(5, 3, 7, 0.65);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  font-size: 1em;
+}
+
+.tv-corner--tl {
+  top: 1.2em;
+  left: 1.2em;
+}
+
+.tv-corner--tr {
+  top: 1.2em;
+  right: 1.2em;
+}
+
+.tv-corner--bl {
+  bottom: 1.2em;
+  left: 1.2em;
+}
+
+.tv-dealer-code {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 14em;
+  line-height: 1;
+  letter-spacing: 0.15em;
+  margin-right: -0.15em;
+}
+
+@media (max-aspect-ratio: 4/3) {
+  .tv-lobby {
+    grid-template-columns: 1fr;
+    gap: 2em;
+    padding: 3em 2em;
+  }
+}
+
+@keyframes mp-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}

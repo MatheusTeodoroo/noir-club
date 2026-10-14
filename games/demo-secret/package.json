@@ -1,0 +1,6 @@
+{
+  "name": "@mp/game-demo-secret",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@mp/game-sdk": "*" }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "demo-secret",
+  "version": "1.0.0",
+  "name": { "pt-BR": "Número Secreto", "en": "Secret Number" },
+  "description": {
+    "pt-BR": "Cada jogador descobre seu número no Dealer. Blefe, discuta e vote em quem guarda o maior.",
+    "en": "Each player learns their number at the Dealer. Bluff, argue and vote for who holds the highest."
+  },
+  "minPlayers": 2,
+  "maxPlayers": 12,
+  "usesDealer": true,
+  "estimatedMinutes": 8,
+  "accent": "#c8102e",
+  "config": [
+    { "key": "rounds", "type": "number", "label": { "pt-BR": "Rodadas", "en": "Rounds" }, "min": 1, "max": 5, "default": 2 },
+    { "key": "visitSeconds", "type": "number", "label": { "pt-BR": "Tempo para visitar o Dealer (s)", "en": "Dealer visit window (s)" }, "min": 60, "max": 600, "step": 30, "default": 180 },
+    { "key": "discussSeconds", "type": "number", "label": { "pt-BR": "Tempo de discussão (s)", "en": "Discussion time (s)" }, "min": 15, "max": 300, "step": 15, "default": 60 },
+    { "key": "voteSeconds", "type": "number", "label": { "pt-BR": "Tempo de votação (s)", "en": "Voting time (s)" }, "min": 10, "max": 120, "step": 5, "default": 30 }
+  ]
+}

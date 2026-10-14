@@ -1,0 +1,135 @@
+<Rive version="1" kind="fragment">
+    <!-- Platform emblem: a gold diamond inside a gold ring, a slow-turning dashed halo with four small diamonds, and a breathing gold aura. -->
+    <Artboard defaultStateMachineId="0:7" styleId="0:5" width="400" height="400" name="Logo" id="0:2">
+        <LayoutComponentStyle name="Artboard Style" id="0:5"/>
+
+        <!-- Front-most first. -->
+        <Shape x="200" y="200" name="Diamond Facet" id="0:26">
+            <Polygon width="64" height="92" points="4" originX="0.5" originY="0.5" name="Path"/>
+            <Stroke thickness="1.5" name="Line">
+                <SolidColor colorValue="99FFF3C4" name="Color"/>
+            </Stroke>
+        </Shape>
+
+        <Shape x="200" y="200" name="Diamond" id="0:20">
+            <Polygon width="112" height="160" points="4" cornerRadius="6" originX="0.5" originY="0.5" name="Path"/>
+            <Stroke thickness="10" name="Glow">
+                <SolidColor colorValue="88F6DC8A" name="Color"/>
+                <Feather strength="12" name="Feather"/>
+            </Stroke>
+            <Fill name="Gold">
+                <LinearGradient startX="-56" startY="-80" endX="56" endY="80" name="Gradient">
+                    <GradientStop colorValue="FFFFF3C4" position="0"/>
+                    <GradientStop colorValue="FFD4AF37" position="0.45"/>
+                    <GradientStop colorValue="FF8A6A18" position="1"/>
+                </LinearGradient>
+            </Fill>
+        </Shape>
+
+        <Shape x="200" y="200" name="Inner Ring" id="0:21">
+            <Ellipse width="230" height="230" originX="0.5" originY="0.5" name="Path"/>
+            <Stroke thickness="8" name="Glow">
+                <SolidColor colorValue="66D4AF37" name="Color"/>
+                <Feather strength="12" name="Feather"/>
+            </Stroke>
+            <Stroke thickness="4" name="Crisp">
+                <LinearGradient startX="0" startY="-115" endX="0" endY="115" name="Gradient">
+                    <GradientStop colorValue="FFF6DC8A" position="0"/>
+                    <GradientStop colorValue="FFB08A22" position="1"/>
+                </LinearGradient>
+            </Stroke>
+        </Shape>
+
+        <Node x="200" y="200" name="Halo" id="0:22">
+            <Shape x="0" y="-150" name="Pip N">
+                <Polygon width="14" height="20" points="4" originX="0.5" originY="0.5" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="FFD4AF37" name="Color"/></Fill>
+            </Shape>
+            <Shape x="150" y="0" name="Pip E">
+                <Polygon width="14" height="20" points="4" originX="0.5" originY="0.5" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="FFD4AF37" name="Color"/></Fill>
+            </Shape>
+            <Shape x="0" y="150" name="Pip S">
+                <Polygon width="14" height="20" points="4" originX="0.5" originY="0.5" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="FFD4AF37" name="Color"/></Fill>
+            </Shape>
+            <Shape x="-150" y="0" name="Pip W">
+                <Polygon width="14" height="20" points="4" originX="0.5" originY="0.5" name="Path"/>
+                <Fill name="Fill"><SolidColor colorValue="FFD4AF37" name="Color"/></Fill>
+            </Shape>
+            <Shape name="Ring">
+                <Ellipse width="300" height="300" originX="0.5" originY="0.5" name="Path"/>
+                <Stroke thickness="2" cap="round" name="Dashes">
+                    <SolidColor colorValue="AAD4AF37" name="Color"/>
+                    <DashPath name="Dash">
+                        <Dash length="3" name="On"/>
+                        <Dash length="12" name="Off"/>
+                    </DashPath>
+                </Stroke>
+            </Shape>
+        </Node>
+
+        <Shape x="200" y="200" name="Aura" id="0:25">
+            <Ellipse width="380" height="380" originX="0.5" originY="0.5" name="Path"/>
+            <Fill name="Glow">
+                <RadialGradient startX="0" startY="0" endX="190" endY="0" name="Gradient">
+                    <GradientStop colorValue="55D4AF37" position="0"/>
+                    <GradientStop colorValue="18D4AF37" position="0.55"/>
+                    <GradientStop colorValue="00D4AF37" position="1"/>
+                </RadialGradient>
+            </Fill>
+        </Shape>
+
+        <StateMachine name="Main" id="0:7">
+            <StateMachineLayer name="Idle" id="0:8">
+                <AnyState x="200" y="-120"/>
+                <ExitState x="400" y="-120"/>
+                <EntryState x="0" y="0">
+                    <StateTransition stateToId="0:12"/>
+                </EntryState>
+                <AnimationState x="200" y="0" animationId="0:6" id="0:12"/>
+            </StateMachineLayer>
+        </StateMachine>
+
+        <!-- 12 s loop at 60 fps: halo turns once, aura and diamond breathe. -->
+        <LinearAnimation loopValue="loop" duration="720" name="Idle" id="0:6">
+            <KeyedObject objectId="0:22">
+                <KeyedProperty propertyKey="15">
+                    <KeyFrameDouble value="0" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="6.2831855" frame="720" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:25">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="0.6" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1" frame="360" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="0.6" frame="720" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty propertyKey="16">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.04" frame="360" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1" frame="720" interpolationType="linear"/>
+                </KeyedProperty>
+                <KeyedProperty propertyKey="17">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.04" frame="360" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1" frame="720" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+    </Artboard>
+</Rive>

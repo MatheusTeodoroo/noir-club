@@ -1,0 +1,8 @@
+{
+  "name": "@mp/net",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": { "@mp/protocol": "*" }
+}

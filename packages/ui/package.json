@@ -1,0 +1,9 @@
+{
+  "name": "@mp/ui",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": { "@mp/protocol": "*", "@mp/game-sdk": "*" },
+  "peerDependencies": { "react": "*", "@rive-app/react-webgl2": "*" }
+}
