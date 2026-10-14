@@ -1,7 +1,7 @@
 import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { GameRef, PublicFrame } from '@mp/protocol';
 import type { GameUI, UIKit } from '@mp/game-sdk';
-import { Avatar, Button, Countdown, Panel, RiveView, useRoomNow } from '@mp/ui';
+import { Avatar, Button, Countdown, Panel, RiveView, TextInput, useRoomNow } from '@mp/ui';
 import { loadGameUI } from '../games/loader.ts';
 import { playSound } from '../audio.ts';
 import { useT } from '../i18n.ts';
@@ -9,7 +9,7 @@ import type { Session, SessionState } from './session.ts';
 
 export const AVATARS = ['🎩', '🃏', '🎲', '🍷', '💎', '👑', '🌙', '🦊', '🦉', '🐺', '🎭', '🗝️', '⚜️', '🕯️', '🌹', '♠️'];
 
-export const kit: UIKit = { Button, Avatar, Countdown, Panel, RiveView, useRoomNow, playSound };
+export const kit: UIKit = { Button, TextInput, Avatar, Countdown, Panel, RiveView, useRoomNow, playSound };
 
 /**
  * Loads the selected game's UI bundle on demand and tells the engine this device is ready.

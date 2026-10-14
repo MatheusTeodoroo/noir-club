@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import type { PublicFrame } from '@mp/protocol';
-import { Avatar, RoomTimeContext, Stage } from '@mp/ui';
+import { Avatar, RiveView, RoomTimeContext, Stage } from '@mp/ui';
 import { LangContext, makeT, useT } from '../i18n.ts';
 import { listGames, type RegistryEntry } from '../games/loader.ts';
 import { GameBoundary, kit, Logo, Scoreboard, StatusOverlay, useGameUI } from '../room/common.tsx';
@@ -52,7 +52,8 @@ export function DisplayScreen({ session, code }: { session: Session; code: strin
                 />
               </GameBoundary>
               <DealerStrip frame={frame} />
-              <div className="tv-corner tv-corner--tr">
+              {/* Platform overlays live in the bottom corners; the top of the screen belongs to the game. */}
+              <div className="tv-corner tv-corner--br">
                 <span className="mp-eyebrow">{code}</span>
               </div>
             </>
@@ -64,6 +65,14 @@ export function DisplayScreen({ session, code }: { session: Session; code: strin
     </LangContext.Provider>
   );
 }
+
+/** Rows x columns that fit the lobby stage at each avatar size (see .tv-players-- in app.css). */
+const DENSITIES = [
+  { name: 'roomy', max: 8 },
+  { name: 'cozy', max: 15 },
+  { name: 'packed', max: 28 },
+  { name: 'crowded', max: 50 },
+] as const;
 
 function Lobby({ frame, code }: { frame: PublicFrame; code: string }) {
   const { tg } = useT();
@@ -77,60 +86,92 @@ function Lobby({ frame, code }: { frame: PublicFrame; code: string }) {
   }, [joinUrl]);
   const game = useMemo(() => games.find((g) => g.manifest.id === frame.platform.game?.id)?.manifest, [games, frame]);
   const players = frame.platform.players;
+  const active = players.filter((p) => p.connected && !p.spectator).length;
+  // Avatars shrink as the room fills; each density is sized so its rows fit the stage exactly.
+  const density = DENSITIES.find((d) => players.length <= d.max) ?? DENSITIES[DENSITIES.length - 1]!;
+  const overflow = players.length > density.max;
+  const visible = overflow ? players.slice(0, density.max - 1) : players;
 
   return (
     <div className="tv-lobby">
-      <div className="tv-join mp-enter">
-        <Logo size={1.15} />
-        <div className="tv-url">
-          {t('lobby.join')} <b>{location.host}</b> {t('lobby.withCode')}
+      <header className="tv-lobby-head mp-enter">
+        <RiveView
+          src="/rive/platform.riv"
+          artboard="Logo"
+          className="tv-lobby-logo"
+          fallback={<img src="/favicon.svg" alt="" className="tv-lobby-logo" />}
+        />
+        <div>
+          <h1 className="mp-title tv-lobby-brand">{t('brand.name')}</h1>
+          <p className="mp-subtitle tv-lobby-tagline">{t('brand.tagline')}</p>
         </div>
-        <div className="tv-code mp-title">{code}</div>
-        <div className="row" style={{ gap: '1.4em' }}>
-          <span className="tv-url">{t('lobby.scan')}</span>
-          <div className="tv-qr" dangerouslySetInnerHTML={{ __html: qr }} />
+        <div className="tv-lobby-stats">
+          <span className="mp-chip">
+            👥 {active} {t('lobby.players').toLowerCase()}
+          </span>
+          {frame.platform.displays > 1 && <span className="mp-chip">📺 {frame.platform.displays}</span>}
+          {frame.platform.dealers > 0 && <span className="mp-chip mp-chip--crimson">🃏 Dealer</span>}
         </div>
-      </div>
+      </header>
 
-      <div className="stack" style={{ gap: '2em', alignContent: 'center' }}>
-        {game && (
-          <div
-            className="mp-panel mp-enter"
-            key={game.id}
-            style={{ boxShadow: `0 0 0 1px ${game.accent}, 0 30px 80px -30px ${game.accent}` }}
-          >
+      <section className="tv-join mp-panel mp-enter">
+        <span className="mp-eyebrow">
+          {t('lobby.join')} <b className="tv-join-host">{location.host}</b>
+        </span>
+        <div className="tv-join-body">
+          <div className="tv-join-code">
+            <span className="tv-join-label">{t('lobby.withCode')}</span>
+            <div className="tv-code mp-title">{code}</div>
+          </div>
+          <div className="tv-join-or">✦</div>
+          <div className="tv-join-qr">
+            <div className="tv-qr" dangerouslySetInnerHTML={{ __html: qr }} />
+            <span className="tv-join-label">{t('lobby.scan')}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="tv-room">
+        {game ? (
+          <div className="tv-game mp-enter" key={game.id} style={{ ['--accent' as string]: game.accent }}>
             <span className="mp-eyebrow">{t('lobby.chosen')}</span>
-            <h2 className="mp-title" style={{ fontSize: '3em', margin: '0.2em 0' }}>
-              {tg(game.name)}
-            </h2>
-            <p className="mp-subtitle" style={{ fontSize: '1.4em' }}>
-              {tg(game.description)}
-            </p>
-            <p style={{ color: 'var(--text-dim)', fontSize: '1.1em' }}>
-              {t('lobby.need', { min: game.minPlayers, max: game.maxPlayers })}
-            </p>
+            <h2 className="mp-title tv-game-name">{tg(game.name)}</h2>
+            <p className="mp-subtitle tv-game-desc">{tg(game.description)}</p>
+            <div className="row wrap tv-game-meta">
+              <span className="mp-chip">
+                👥 {game.minPlayers}–{game.maxPlayers}
+              </span>
+              <span className="mp-chip">⏱ ~{game.estimatedMinutes} min</span>
+              {game.usesDealer && <span className="mp-chip mp-chip--crimson">🃏 Dealer</span>}
+            </div>
+          </div>
+        ) : (
+          <div className="tv-game tv-game--waiting mp-enter">
+            <div className="mp-spinner" />
+            <p className="mp-subtitle tv-game-desc">{t('lobby.waiting')}</p>
           </div>
         )}
-        <div>
-          <h3 className="section-title" style={{ fontSize: '1.1em' }}>
-            {t('lobby.players')} · {players.length}
-          </h3>
-          <div className="tv-players">
-            {players.map((p, i) => (
-              <div className="tv-player mp-enter" key={p.id} style={{ animationDelay: `${i * 60}ms` }}>
-                <Avatar
-                  emoji={p.avatar}
-                  size={96}
-                  offline={!p.connected}
-                  active={p.isAdmin}
-                  badge={p.isAdmin ? '♛' : p.remote ? '🌐' : undefined}
-                />
-                <span>{p.name}</span>
-              </div>
-            ))}
-          </div>
+
+        <div className={`tv-players tv-players--${density.name}`}>
+          {visible.map((p, i) => (
+            <div className="tv-player mp-enter" key={p.id} style={{ animationDelay: `${i * 60}ms` }}>
+              <Avatar
+                emoji={p.avatar}
+                size="var(--tv-avatar)"
+                offline={!p.connected}
+                active={p.isAdmin}
+                badge={p.isAdmin ? '♛' : p.remote ? '🌐' : undefined}
+              />
+              <span className="tv-player-name">{p.name}</span>
+            </div>
+          ))}
+          {overflow && (
+            <div className="tv-player">
+              <div className="tv-player-more">+{players.length - visible.length}</div>
+            </div>
+          )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

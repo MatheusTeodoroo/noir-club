@@ -99,7 +99,8 @@ export function Avatar({
   title,
 }: {
   emoji: string;
-  size?: number;
+  /** Pixels, or any CSS length (e.g. "6em" to scale with a TV screen). */
+  size?: number | string;
   active?: boolean;
   crimson?: boolean;
   offline?: boolean;
@@ -115,14 +116,20 @@ export function Avatar({
     .filter(Boolean)
     .join(' ');
   return (
-    <div className={cls} style={{ '--size': `${size}px` } as CSSProperties} title={title}>
-      <span aria-hidden>{emoji}</span>
+    <div
+      className={cls}
+      style={{ '--size': typeof size === 'number' ? `${size}px` : size } as CSSProperties}
+      title={title}
+    >
+      <span className="mp-avatar-emoji" aria-hidden>
+        {emoji}
+      </span>
       {badge !== undefined && <span className="mp-avatar-badge">{badge}</span>}
     </div>
   );
 }
 
-/** Ring countdown to a room-clock deadline. Freezes while `paused`. */
+/** Ring countdown to a room-clock deadline. Freezes while `paused`. `size`: px, or a CSS length such as "7em". */
 export function Countdown({
   deadline,
   total,
@@ -131,7 +138,7 @@ export function Countdown({
 }: {
   deadline: number | null;
   total: number;
-  size?: number;
+  size?: number | string;
   paused?: boolean;
 }) {
   const now = useRoomNow(paused ? 0.5 : 8);
@@ -141,19 +148,21 @@ export function Countdown({
   const effectiveNow = frozen.current ?? now;
   const left = deadline === null ? 0 : Math.max(0, deadline - effectiveNow);
   const secs = Math.ceil(left / 1000);
-  const r = size / 2 - 6;
+  // Drawn in a 100x100 viewBox so the ring scales with any CSS size.
+  const r = 46;
   const c = 2 * Math.PI * r;
   const frac = total > 0 ? Math.min(1, left / total) : 0;
+  const css = typeof size === 'number' ? `${size}px` : size;
   return (
     <div
       className={`mp-countdown ${secs <= 5 && deadline ? 'mp-countdown--urgent' : ''}`}
-      style={{ width: size, height: size }}
+      style={{ width: css, height: css }}
     >
-      <svg width={size} height={size}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(212,175,55,0.15)" strokeWidth="4" />
+      <svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(212,175,55,0.15)" strokeWidth="4" />
         <circle
-          cx={size / 2}
-          cy={size / 2}
+          cx="50"
+          cy="50"
           r={r}
           fill="none"
           stroke={secs <= 5 ? 'var(--crimson-hi)' : 'var(--gold)'}
@@ -164,10 +173,70 @@ export function Countdown({
           style={{ transition: 'stroke-dashoffset 250ms linear' }}
         />
       </svg>
-      <span className="mp-countdown-value" style={{ fontSize: size * 0.32 }}>
+      <span className="mp-countdown-value" style={{ fontSize: `calc(${css} * 0.32)` }}>
         {secs}
       </span>
     </div>
+  );
+}
+
+/**
+ * Phone text entry with a submit button: Enter submits, the field clears after a submit,
+ * autocorrect/capitalisation are off, and `oneWord` strips spaces as the player types.
+ */
+export function TextInput({
+  onSubmit,
+  placeholder,
+  maxLength = 40,
+  oneWord,
+  submitLabel = 'OK',
+  disabled,
+  autoFocus,
+  clearOnSubmit = true,
+}: {
+  onSubmit(text: string): void;
+  placeholder?: string;
+  maxLength?: number;
+  oneWord?: boolean;
+  submitLabel?: ReactNode;
+  disabled?: boolean;
+  autoFocus?: boolean;
+  clearOnSubmit?: boolean;
+}) {
+  const [text, setText] = useState('');
+  const clean = text.trim();
+  const submit = () => {
+    if (!clean || disabled) return;
+    onSubmit(clean);
+    if (clearOnSubmit) setText('');
+  };
+  return (
+    <form
+      className="mp-textinput"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
+      <input
+        className="mp-input"
+        value={text}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        disabled={disabled}
+        autoFocus={autoFocus}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        enterKeyHint="send"
+        aria-label={placeholder}
+        onChange={(e) => setText(oneWord ? e.target.value.replace(/\s+/g, '') : e.target.value)}
+      />
+      <Button type="submit" small disabled={disabled || !clean}>
+        {submitLabel}
+      </Button>
+    </form>
   );
 }
 

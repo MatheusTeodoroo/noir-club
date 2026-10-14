@@ -41,6 +41,8 @@ interface Timer {
   key: string;
   scope: 'game' | 'platform';
   at: number;
+  /** Duration it was set with (game timers), for countdown rings. */
+  ms?: number;
 }
 
 interface DealerCurrent {
@@ -593,12 +595,13 @@ export class Engine {
       atDealer: s.dealer.current?.verified ? s.dealer.current.playerId : null,
       setTimer: (key, ms) => {
         s.timers = s.timers.filter((t) => !(t.scope === 'game' && t.key === key));
-        s.timers.push({ key, scope: 'game', at: now + Math.max(0, ms) });
+        s.timers.push({ key, scope: 'game', at: now + Math.max(0, ms), ms: Math.max(0, ms) });
       },
       clearTimer: (key) => {
         s.timers = s.timers.filter((t) => !(t.scope === 'game' && t.key === key));
       },
       timerDeadline: (key) => (s.timers ?? timers).find((t) => t.scope === 'game' && t.key === key)?.at ?? null,
+      timerTotal: (key) => (s.timers ?? timers).find((t) => t.scope === 'game' && t.key === key)?.ms ?? null,
       emit: (kind, name, delayMs = 0) => this.emit(kind, name, delayMs, now),
       end: onEnd,
       releaseDealer: onRelease,

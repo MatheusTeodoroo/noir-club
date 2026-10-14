@@ -377,7 +377,6 @@ select {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: calc(var(--size) * 0.5);
   background: radial-gradient(circle at 35% 30%, #3a2230, var(--ink-1) 70%);
   box-shadow:
     0 0 0 2px var(--gold-lo),
@@ -409,18 +408,24 @@ select {
   filter: grayscale(1) brightness(0.5);
 }
 
+/* Sized from --size on a child, so em-based sizes resolve against the inherited font size. */
+.mp-avatar-emoji {
+  font-size: calc(var(--size) * 0.5);
+  line-height: 1;
+}
+
 .mp-avatar-badge {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
-  width: 22px;
-  height: 22px;
+  right: -4%;
+  bottom: -4%;
+  width: max(20px, 34%);
+  height: max(20px, 34%);
   border-radius: 50%;
   background: var(--ink-0);
   box-shadow: 0 0 0 1px var(--line-strong);
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: max(11px, calc(var(--size) * 0.2));
 }
 
 /* ---------- Countdown ring ---------- */
@@ -448,6 +453,17 @@ select {
 }
 
 /* ---------- Misc ---------- */
+
+.mp-textinput {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mp-textinput .mp-input {
+  flex: 1;
+  min-width: 0;
+}
 
 .mp-chip {
   display: inline-flex;

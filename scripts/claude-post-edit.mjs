@@ -6,11 +6,13 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 
-const input = JSON.parse(await new Promise((r) => {
-  let s = '';
-  process.stdin.on('data', (c) => (s += c));
-  process.stdin.on('end', () => r(s || '{}'));
-}));
+const input = JSON.parse(
+  await new Promise((r) => {
+    let s = '';
+    process.stdin.on('data', (c) => (s += c));
+    process.stdin.on('end', () => r(s || '{}'));
+  }),
+);
 const file = input?.tool_input?.file_path;
 if (!file) process.exit(0);
 const root = process.cwd();
@@ -31,6 +33,8 @@ if (file.endsWith('.rml')) {
   if (existsSync(join(dir, 'rive.yaml'))) run('rive', ['.', '--verify'], dir);
 } else if (/\.(ts|tsx)$/.test(file)) {
   const rel = relative(root, file).split('\\').join('/');
-  if (rel.startsWith('apps/relay/') || rel.startsWith('packages/protocol/')) run(process.execPath, [TSC, '--noEmit', '-p', 'apps/relay']);
-  if (!rel.startsWith('apps/relay/') && !rel.startsWith('e2e/')) run(process.execPath, [TSC, '--noEmit', '-p', 'apps/web']);
+  if (rel.startsWith('apps/relay/') || rel.startsWith('packages/protocol/'))
+    run(process.execPath, [TSC, '--noEmit', '-p', 'apps/relay']);
+  if (!rel.startsWith('apps/relay/') && !rel.startsWith('e2e/'))
+    run(process.execPath, [TSC, '--noEmit', '-p', 'apps/web']);
 }

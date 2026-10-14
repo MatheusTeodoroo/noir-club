@@ -4,5 +4,12 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "dependencies": { "@mp/protocol": "*", "@mp/game-sdk": "*" }
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "dependencies": {
+    "@mp/protocol": "*",
+    "@mp/game-sdk": "*"
+  }
 }

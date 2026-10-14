@@ -31,6 +31,10 @@ components arrive through the `kit` prop.
 - `npm run dev:relay` and `npm run dev:web` — local relay (8787) and site
   (5173, proxies `/api` and `/ws`)
 - `npm run build` — Rive files, game bundles, then the site
+- `npm run skill:install` — rebuild the `noir-club-game` Claude Code skill
+  (`tools/skills/noir-club-game` + a snapshot of protocol/game-sdk/engine/ui) and install it in
+  `~/.claude/skills`. Rerun after changing any of those packages, so games built outside the repo
+  use the current platform code.
 
 ## Rive
 

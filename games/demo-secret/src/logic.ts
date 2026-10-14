@@ -33,6 +33,8 @@ export interface PublicView {
   rounds: number;
   phase: Phase;
   deadline: number | null;
+  /** Full length of the running phase timer, for the countdown ring. */
+  total: number | null;
   visited: string[];
   voted: string[];
   atDealer: string | null;
@@ -43,6 +45,8 @@ export interface PublicView {
 export interface PlayerView {
   phase: Phase;
   deadline: number | null;
+  /** Full length of the running phase timer, for the countdown ring. */
+  total: number | null;
   visited: boolean;
   myVote: string | null;
   candidates: { id: string; name: string; avatar: string }[];
@@ -188,6 +192,7 @@ export default defineGame<State, Config>({
       rounds: ctx.config.rounds,
       phase: state.phase,
       deadline: ctx.timerDeadline('phase'),
+      total: ctx.timerTotal('phase'),
       visited: state.visited,
       voted: Object.keys(state.votes),
       atDealer: ctx.atDealer,
@@ -200,6 +205,7 @@ export default defineGame<State, Config>({
     return {
       phase: state.phase,
       deadline: ctx.timerDeadline('phase'),
+      total: ctx.timerTotal('phase'),
       visited: state.visited.includes(playerId),
       myVote: state.votes[playerId] ?? null,
       candidates: ctx.players.filter((p) => p.id !== playerId).map(({ id, name, avatar }) => ({ id, name, avatar })),

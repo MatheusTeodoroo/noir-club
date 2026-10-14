@@ -35,7 +35,7 @@ const L = {
 const CSS = `
 .ds-wrap{position:relative;height:100vh;display:grid;grid-template-rows:auto 1fr;padding:3em 4em;gap:2em}
 .ds-head{display:flex;align-items:flex-end;justify-content:space-between;gap:2em}
-.ds-h1{font-family:var(--font-display);font-weight:900;font-size:5em;letter-spacing:.06em;text-transform:uppercase;margin:0;line-height:1;
+.ds-h1{font-family:var(--font-display);font-weight:900;font-size:5em;letter-spacing:.06em;text-transform:uppercase;margin:0;line-height:1.15;padding-top:.05em;
   background:linear-gradient(180deg,var(--gold-hi),var(--gold) 50%,var(--gold-lo));-webkit-background-clip:text;background-clip:text;color:transparent}
 .ds-sub{font-family:var(--font-serif);font-style:italic;font-size:2em;color:var(--text-dim);margin:.3em 0 0}
 .ds-grid{display:flex;flex-wrap:wrap;gap:2.4em;justify-content:center;align-content:center}
@@ -55,7 +55,9 @@ const CSS = `
 .ds-gain{font-family:var(--font-display);font-weight:700;color:#7a0a1c}
 .ds-crown{position:absolute;top:-.9em;left:50%;transform:translateX(-50%) rotateY(180deg);font-size:2.4em;filter:drop-shadow(0 0 12px #f6dc8a)}
 @keyframes ds-flip{from{transform:rotateY(0)}to{transform:rotateY(180deg)}}
-.ds-big{font-family:var(--font-display);font-weight:900;font-size:18em;line-height:1;margin:0;
+.ds-dealer{display:grid;place-items:center;text-align:center;container-type:inline-size;padding:1em}
+.tv .ds-dealer{min-height:100vh}
+.ds-big{font-family:var(--font-display);font-weight:900;font-size:min(18em,45cqw);line-height:1;margin:0;
   background:linear-gradient(180deg,#fff3c4,var(--gold) 55%,var(--gold-lo));-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 40px rgba(212,175,55,.45));animation:ds-rise 900ms cubic-bezier(.16,1,.3,1) both}
 @keyframes ds-rise{from{opacity:0;transform:scale(.6) translateY(.2em);filter:blur(12px)}}
@@ -68,20 +70,6 @@ const CSS = `
 
 function Styles() {
   return <style>{CSS}</style>;
-}
-
-function phaseTotalMs(view: { phase: PublicView['phase'] }, config: Record<string, unknown>) {
-  const s = (k: string, d: number) => (Number(config[k]) || d) * 1000;
-  switch (view.phase) {
-    case 'visit':
-      return s('visitSeconds', 180);
-    case 'discuss':
-      return s('discussSeconds', 60);
-    case 'vote':
-      return s('voteSeconds', 30);
-    default:
-      return 12_000;
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -112,12 +100,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
           <p className="ds-sub">{t(sub)}</p>
         </div>
         {view.phase !== 'reveal' && (
-          <Countdown
-            deadline={view.deadline}
-            total={phaseTotalMs(view, platform.gameConfig)}
-            size={180}
-            paused={paused}
-          />
+          <Countdown deadline={view.deadline} total={view.total ?? 0} size="7.5em" paused={paused} />
         )}
       </header>
 
@@ -216,12 +199,7 @@ function Player({ view, kit, t, send, platform }: PlayerProps<PlayerView>) {
       <Styles />
       <Panel className="stack" style={{ justifyItems: 'center', gap: 12, textAlign: 'center' }}>
         {view.phase !== 'reveal' && (
-          <Countdown
-            deadline={view.deadline}
-            total={phaseTotalMs(view, platform.gameConfig)}
-            size={84}
-            paused={!!platform.paused}
-          />
+          <Countdown deadline={view.deadline} total={view.total ?? 0} size={84} paused={!!platform.paused} />
         )}
         {view.phase === 'visit' && <p className="ds-note">{t(view.visited ? L.known : L.goDealer)}</p>}
         {view.phase === 'discuss' && <p className="ds-note">{t(view.visited ? L.talk : L.missed)}</p>}
@@ -242,6 +220,7 @@ function Player({ view, kit, t, send, platform }: PlayerProps<PlayerView>) {
             key={c.id}
             type="button"
             className="ds-cand"
+            aria-label={c.name}
             aria-pressed={myVote === c.id}
             onClick={() => {
               setOptimistic(c.id);
@@ -263,7 +242,9 @@ function Player({ view, kit, t, send, platform }: PlayerProps<PlayerView>) {
 
 function Dealer({ view, t, playerName }: DealerProps<DealerView>) {
   return (
-    <div className="screen-center" style={{ textAlign: 'center' }}>
+    // Also rendered inside a phone panel for remote players: the wrapper is a size container so
+    // the number scales with the space it gets (cqw), not with the page (vw).
+    <div className="ds-dealer">
       <Styles />
       <div style={{ display: 'grid', gap: '1em', justifyItems: 'center' }}>
         <span className="mp-eyebrow" style={{ fontSize: '1.4em' }}>

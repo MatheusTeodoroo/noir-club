@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "types": ["vite/client"],
+    "paths": {
+      "@mp/protocol": ["./.noir/sdk/protocol/index.ts"],
+      "@mp/game-sdk": ["./.noir/sdk/game-sdk/index.ts"],
+      "@mp/engine": ["./.noir/sdk/engine/index.ts"],
+      "@mp/engine/testing": ["./.noir/sdk/engine/testing.ts"],
+      "@mp/ui": ["./.noir/sdk/ui/index.ts"],
+      "@game/*": ["./*"]
+    }
+  },
+  "include": ["src", "test", ".noir/playground"]
+}

@@ -63,6 +63,8 @@ export interface GameCtx<Cfg = Record<string, unknown>> {
   clearTimer(key: string): void;
   /** Deadline of a running timer (room clock) — useful for countdowns in views. */
   timerDeadline(key: string): number | null;
+  /** Full duration (ms) the running timer was set with — pair it with timerDeadline for countdown rings. */
+  timerTotal(key: string): number | null;
   /** Fire a sound/fx on every display at the same instant. */
   emit(kind: 'sound' | 'fx', name: string, delayMs?: number): void;
   /** Finish the match. */
@@ -98,15 +100,93 @@ export function defineGame<S, Cfg = Record<string, unknown>>(logic: GameLogic<S,
 // through props, so a game bundle only shares `react` with the shell.
 // ---------------------------------------------------------------------------
 
+// Props of the platform components handed to games. `any` for React nodes and styles keeps the
+// SDK free of React types; games get full JSX type-checking through their own `react` import.
+export interface KitButtonProps {
+  children?: any;
+  onClick?(): void;
+  disabled?: boolean;
+  /** gold = primary, crimson = important/dangerous, ghost = secondary. */
+  variant?: 'gold' | 'crimson' | 'ghost';
+  block?: boolean;
+  small?: boolean;
+  className?: string;
+  style?: any;
+}
+
+export interface KitAvatarProps {
+  emoji: string;
+  /** Pixels, or a CSS length such as "6em" (scales with the TV stage). */
+  size?: number | string;
+  /** Gold glow (e.g. "has voted", winner). */
+  active?: boolean;
+  /** Crimson glow (e.g. "at the Dealer", accused). */
+  crimson?: boolean;
+  offline?: boolean;
+  /** Small round badge at the bottom-right (an emoji or a short string). */
+  badge?: any;
+  title?: string;
+}
+
+export interface KitCountdownProps {
+  /** Room-clock deadline, e.g. `ctx.timerDeadline('phase')` passed through a view. */
+  deadline: number | null;
+  /** Full duration in ms, for the ring's progress. */
+  total: number;
+  /** Diameter: px, or a CSS length — use em on the TV (`"7em"`), px on phones. */
+  size?: number | string;
+  /** Freeze while the room is paused (`!!platform.paused`). */
+  paused?: boolean;
+}
+
+export interface KitPanelProps {
+  children?: any;
+  className?: string;
+  style?: any;
+}
+
+export interface KitRiveViewProps {
+  /** URL of a .riv file shipped with the game (import it: `import riv from '../assets/x.riv?url'`). */
+  src: string;
+  artboard?: string;
+  /** Defaults to "Main". */
+  stateMachine?: string;
+  /** Written to the bound view model: string, number or boolean properties by name. */
+  values?: Record<string, string | number | boolean>;
+  /** Fires the trigger property `name` whenever `nonce` changes. */
+  trigger?: { name: string; nonce: number | string };
+  className?: string;
+  style?: any;
+  /** Rendered if the file fails to load (weak TV browsers). */
+  fallback?: any;
+}
+
+export interface KitTextInputProps {
+  /** Called with the trimmed text when the player taps the button or presses Enter. */
+  onSubmit(text: string): void;
+  placeholder?: string;
+  maxLength?: number;
+  /** Strip spaces while typing (one-word answers). */
+  oneWord?: boolean;
+  /** Button content, e.g. `t(L.send)`. */
+  submitLabel?: any;
+  disabled?: boolean;
+  autoFocus?: boolean;
+  /** Clear the field after a submit (default true). */
+  clearOnSubmit?: boolean;
+}
+
 export interface UIKit {
-  /** React component types from the platform design system. */
-  Button: any;
-  Avatar: any;
-  Countdown: any;
-  Panel: any;
-  RiveView: any;
-  /** Room-clock now, updated every animation frame where used. */
+  Button(props: KitButtonProps): any;
+  /** Phone text entry + submit button (autocorrect/capitalisation off, Enter submits). */
+  TextInput(props: KitTextInputProps): any;
+  Avatar(props: KitAvatarProps): any;
+  Countdown(props: KitCountdownProps): any;
+  Panel(props: KitPanelProps): any;
+  RiveView(props: KitRiveViewProps): any;
+  /** Room-clock now (ms); re-renders the calling component a few times per second. */
   useRoomNow(): number;
+  /** Plays one of the platform's built-in cues locally. Synced cues across TVs go through `ctx.emit`. */
   playSound(name: string): void;
 }
 

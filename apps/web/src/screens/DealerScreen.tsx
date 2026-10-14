@@ -64,7 +64,7 @@ export function DealerScreen({ session }: { session: Session }) {
               {t('dealer.remote')}
             </p>
           )}
-          <Countdown deadline={cur.deadline} total={DEALER_CALL_MS_HINT} size={110} />
+          <Countdown deadline={cur.deadline} total={DEALER_CALL_MS_HINT} size="5em" />
         </div>
       </div>
     );
@@ -77,7 +77,7 @@ export function DealerScreen({ session }: { session: Session }) {
           <b style={{ fontSize: '1.3em' }}>{cur.name}</b>
         </div>
         <div className="tv-corner tv-corner--tr">
-          <Countdown deadline={cur.deadline} total={DEALER_VISIT_MS_HINT} size={64} />
+          <Countdown deadline={cur.deadline} total={DEALER_VISIT_MS_HINT} size="3em" />
         </div>
         {Dealer && dealer.game ? (
           <GameBoundary resetKey={dealer.seq}>
