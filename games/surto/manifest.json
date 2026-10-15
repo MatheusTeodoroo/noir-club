@@ -1,0 +1,71 @@
+{
+  "id": "surto",
+  "version": "0.1.0",
+  "name": { "pt-BR": "Surto", "en": "Outbreak" },
+  "description": {
+    "pt-BR": "Alguns de vocês já estão infectados, e ninguém sabe quem. Toque nos outros para somar pontos sem pegar o Surto.",
+    "en": "Some of you are already infected, and nobody knows who. Touch the others to score without catching the Outbreak."
+  },
+  "minPlayers": 5,
+  "maxPlayers": 12,
+  "usesDealer": true,
+  "estimatedMinutes": 30,
+  "accent": "#7a1f2b",
+  "config": [
+    {
+      "key": "rounds",
+      "type": "number",
+      "label": { "pt-BR": "Rodadas", "en": "Rounds" },
+      "min": 1,
+      "max": 5,
+      "default": 3
+    },
+    {
+      "key": "roundMin",
+      "type": "number",
+      "label": { "pt-BR": "Duração da rodada (min)", "en": "Round length (min)" },
+      "min": 2,
+      "max": 30,
+      "default": 8
+    },
+    {
+      "key": "cureWindowMin",
+      "type": "number",
+      "label": { "pt-BR": "Janela da cura após a infecção (min)", "en": "Cure window after infection (min)" },
+      "min": 1,
+      "max": 10,
+      "default": 3
+    },
+    {
+      "key": "intervalSec",
+      "type": "number",
+      "label": { "pt-BR": "Intervalo entre rodadas (s)", "en": "Break between rounds (s)" },
+      "min": 0,
+      "max": 180,
+      "step": 15,
+      "default": 60
+    },
+    {
+      "key": "zombies",
+      "type": "select",
+      "label": { "pt-BR": "Zumbis iniciais", "en": "Starting zombies" },
+      "options": [
+        { "value": "auto", "label": { "pt-BR": "Automático (2; 1 com menos de 7)", "en": "Automatic (2; 1 under 7 players)" } },
+        { "value": "1", "label": { "pt-BR": "1", "en": "1" } },
+        { "value": "2", "label": { "pt-BR": "2", "en": "2" } },
+        { "value": "3", "label": { "pt-BR": "3", "en": "3" } }
+      ],
+      "default": "auto"
+    },
+    {
+      "key": "roleReveal",
+      "type": "select",
+      "label": { "pt-BR": "Revelar papéis", "en": "Reveal roles" },
+      "options": [
+        { "value": "dealer", "label": { "pt-BR": "No Dealer", "en": "At the Dealer" } },
+        { "value": "phone", "label": { "pt-BR": "No celular", "en": "On the phone" } }
+      ],
+      "default": "dealer"
+    }
+  ]
+}
