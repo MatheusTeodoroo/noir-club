@@ -12,6 +12,8 @@ export const CHANNEL = 'noir-playground';
 
 export type HostMessage = {
   t: 'state';
+  /** Which control room sent it: the newest one in the browser wins, older ones retire. */
+  host: { id: string; born: number };
   /** Room clock = Date.now() + offset, or exactly `frozen` while the clock is paused. */
   offset: number;
   frozen: number | null;
@@ -36,6 +38,10 @@ export interface HostSettings {
 
 export class PlaygroundHost {
   engine!: Engine;
+  readonly id = Math.random().toString(36).slice(2);
+  readonly born = Date.now();
+  /** Another control room (a second tab, or a hot reload of this page) took over. */
+  retired = false;
   clients: ClientInfo[] = [];
   remote = new Set<string>();
   offset = 0;
@@ -52,6 +58,11 @@ export class PlaygroundHost {
     public settings: HostSettings,
   ) {
     this.channel.onmessage = (ev: MessageEvent<DeviceMessage | HostMessage>) => {
+      if (ev.data.t === 'state') {
+        if (this.isOlderThan(ev.data.host)) this.retire();
+        return;
+      }
+      if (this.retired) return;
       if (ev.data.t === 'hello') this.publish(true);
       else if (ev.data.t === 'action') this.deviceAction(ev.data.from, ev.data.payload);
     };
@@ -172,10 +183,25 @@ export class PlaygroundHost {
     for (const fn of this.listeners) fn();
   }
 
+  private isOlderThan(other: { id: string; born: number } | undefined) {
+    if (!other || other.id === this.id) return false;
+    return other.born > this.born || (other.born === this.born && other.id > this.id);
+  }
+
+  /** Stops this engine so a newer control room is the only one driving the devices. */
+  private retire() {
+    if (this.retired) return;
+    this.retired = true;
+    this.dispose();
+    this.note('outra sala de controle assumiu — use a aba mais recente');
+  }
+
   private publish(force: boolean) {
+    if (this.retired) return;
     const frames = this.engine.frames(this.now());
     const msg: HostMessage = {
       t: 'state',
+      host: { id: this.id, born: this.born },
       offset: this.offset,
       frozen: this.frozenAt !== null ? this.now() : null,
       public: frames.public,

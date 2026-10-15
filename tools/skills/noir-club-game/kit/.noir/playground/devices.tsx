@@ -64,6 +64,7 @@ function useHost() {
   const [msg, setMsg] = useState<HostMessage | null>(null);
   const clock = useRef({ offset: 0, frozen: null as number | null });
   const channel = useRef<BroadcastChannel | null>(null);
+  const host = useRef<{ id: string; born: number } | null>(null);
   const [fx, setFx] = useState<{ name: string; nonce: number } | null>(null);
 
   useEffect(() => {
@@ -73,6 +74,10 @@ function useHost() {
       // Other devices share the channel; only the host's state messages matter here.
       if (ev.data.t !== 'state') return;
       const m = ev.data;
+      // Several control rooms may briefly share the channel: follow only the newest one.
+      const h = host.current;
+      if (h && m.host && m.host.id !== h.id && (m.host.born < h.born || (m.host.born === h.born && m.host.id < h.id))) return;
+      if (m.host) host.current = m.host;
       clock.current = { offset: m.offset, frozen: m.frozen };
       setMsg(m);
       for (const e of m.events) {

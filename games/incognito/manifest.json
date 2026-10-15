@@ -1,0 +1,15 @@
+{
+  "id": "incognito",
+  "version": "0.3.1",
+  "name": { "pt-BR": "Incógnito", "en": "Incognito" },
+  "description": {
+    "pt-BR": "Inocentes, Impostores e Neutros com poderes secretos. Discuta de dia, vote à tarde e sobreviva à noite.",
+    "en": "Innocents, Impostors and Neutrals with secret powers. Argue by day, vote by afternoon and survive the night."
+  },
+  "minPlayers": 5,
+  "maxPlayers": 16,
+  "usesDealer": false,
+  "estimatedMinutes": 30,
+  "accent": "#8b1a2b",
+  "config": []
+}

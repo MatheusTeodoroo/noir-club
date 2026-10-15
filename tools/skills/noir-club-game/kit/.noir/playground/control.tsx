@@ -24,6 +24,13 @@ function getHost() {
   return hostInstance;
 }
 
+// A hot reload re-runs this module (e.g. after an edit to the game logic): stop the old engine,
+// or it keeps driving the devices next to the new one.
+import.meta.hot?.dispose(() => {
+  hostInstance?.dispose();
+  hostInstance = null;
+});
+
 /** Scales a real-size device iframe into the control room. */
 function Device({
   src,
@@ -90,6 +97,11 @@ export function ControlRoom() {
 
   return (
     <div className="pg">
+      {host.retired && (
+        <div style={{ background: '#5a1020', color: '#fff', padding: '10px 16px', borderRadius: 8, marginBottom: 8 }}>
+          Outra sala de controle está aberta neste navegador e assumiu o jogo. Feche esta aba ou recarregue-a.
+        </div>
+      )}
       <header className="pg-bar">
         <b className="pg-title">
           🎲 {manifest.name['pt-BR']} <small>{manifest.version} · playground</small>
