@@ -1,0 +1,73 @@
+{
+  "id": "escala",
+  "version": "0.1.0",
+  "name": { "pt-BR": "Escala", "en": "Scale" },
+  "description": {
+    "pt-BR": "Cartas secretas de 1 a 100 e um tema na mesa. Descreva seus números com palavras e coloque tudo em ordem, juntos ou um contra o outro.",
+    "en": "Secret cards from 1 to 100 and a theme on the table. Describe your numbers in words and put everything in order, together or against each other."
+  },
+  "minPlayers": 2,
+  "maxPlayers": 16,
+  "usesDealer": false,
+  "estimatedMinutes": 20,
+  "accent": "#d4af37",
+  "config": [
+    {
+      "key": "mode",
+      "type": "select",
+      "label": { "pt-BR": "Modo", "en": "Mode" },
+      "options": [
+        { "value": "coop", "label": { "pt-BR": "Cooperativo", "en": "Cooperative" } },
+        { "value": "versus", "label": { "pt-BR": "Competitivo", "en": "Competitive" } }
+      ],
+      "default": "coop"
+    },
+    {
+      "key": "themeSource",
+      "type": "select",
+      "label": { "pt-BR": "Tema da rodada", "en": "Round theme" },
+      "options": [
+        {
+          "value": "draw",
+          "label": { "pt-BR": "Sorteado (mestre escolhe 1 de 3)", "en": "Drawn (master picks 1 of 3)" }
+        },
+        { "value": "write", "label": { "pt-BR": "Escrito pelo mestre", "en": "Written by the master" } }
+      ],
+      "default": "draw"
+    },
+    {
+      "key": "cardsPerPlayer",
+      "type": "number",
+      "label": { "pt-BR": "Cartas por jogador (máx. 100 ÷ jogadores)", "en": "Cards per player (max 100 ÷ players)" },
+      "min": 1,
+      "max": 50,
+      "default": 1
+    },
+    {
+      "key": "rounds",
+      "type": "number",
+      "label": { "pt-BR": "Rodadas", "en": "Rounds" },
+      "min": 1,
+      "max": 25,
+      "default": 5
+    },
+    {
+      "key": "clueSeconds",
+      "type": "number",
+      "label": { "pt-BR": "Tempo de dicas após metade enviar (s)", "en": "Clue time once half have sent (s)" },
+      "min": 15,
+      "max": 300,
+      "step": 15,
+      "default": 60
+    },
+    {
+      "key": "sortSeconds",
+      "type": "number",
+      "label": { "pt-BR": "Tempo para ordenar (s)", "en": "Sorting time (s)" },
+      "min": 30,
+      "max": 900,
+      "step": 30,
+      "default": 180
+    }
+  ]
+}
