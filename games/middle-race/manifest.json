@@ -1,0 +1,15 @@
+{
+  "id": "middle-race",
+  "version": "0.1.0",
+  "name": { "pt-BR": "Middle Race", "en": "Middle Race" },
+  "description": {
+    "pt-BR": "Onze classes, uma corrida e um só objetivo: cruzar a chegada exatamente no meio. Empurre, puxe e cale quem estiver no caminho.",
+    "en": "Eleven classes, one race and a single goal: cross the line right in the middle. Shove, pull and silence whoever is in the way."
+  },
+  "minPlayers": 11,
+  "maxPlayers": 11,
+  "usesDealer": false,
+  "estimatedMinutes": 45,
+  "accent": "#c9a227",
+  "config": []
+}
