@@ -1,0 +1,85 @@
+{
+  "id": "duvido",
+  "version": "0.1.0",
+  "name": { "pt-BR": "Duvido!", "en": "I Doubt It!" },
+  "description": {
+    "pt-BR": "Uma pergunta com resposta em número e palpites cada vez maiores. Quando alguém exagerar, grite DUVIDO! — quem errar leva a carta, e quem juntar mais cartas perde.",
+    "en": "One question with a numeric answer and ever-higher guesses. When someone overshoots, shout I DOUBT IT! — whoever is wrong takes the card, and the most cards loses."
+  },
+  "minPlayers": 3,
+  "maxPlayers": 16,
+  "usesDealer": false,
+  "estimatedMinutes": 15,
+  "accent": "#d4af37",
+  "config": [
+    {
+      "key": "endMode",
+      "type": "select",
+      "label": { "pt-BR": "Fim da partida", "en": "Match ends" },
+      "options": [
+        { "value": "rounds", "label": { "pt-BR": "Número fixo de rodadas", "en": "After a fixed number of rounds" } },
+        {
+          "value": "cards",
+          "label": { "pt-BR": "Quando alguém chegar a X cartas", "en": "When someone reaches X cards" }
+        }
+      ],
+      "default": "rounds"
+    },
+    {
+      "key": "cardLimit",
+      "type": "number",
+      "label": { "pt-BR": "X cartas (fim por cartas)", "en": "X cards (end by cards)" },
+      "min": 1,
+      "max": 20,
+      "default": 3
+    },
+    {
+      "key": "rounds",
+      "type": "number",
+      "label": { "pt-BR": "Rodadas (fim por rodadas)", "en": "Rounds (end by rounds)" },
+      "min": 1,
+      "max": 30,
+      "default": 10
+    },
+    {
+      "key": "categoryChoices",
+      "type": "number",
+      "label": {
+        "pt-BR": "Categorias sorteadas para escolher",
+        "en": "Categories drawn to choose from"
+      },
+      "min": 2,
+      "max": 8,
+      "default": 5
+    },
+    {
+      "key": "turnSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Tempo por turno (s, 0 = sem limite)",
+        "en": "Time per turn (s, 0 = no limit)"
+      },
+      "min": 0,
+      "max": 120,
+      "step": 5,
+      "default": 0
+    },
+    {
+      "key": "dobrei",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Dobrei! (palpite ≥ 2× o anterior ganha ficha que anula 1 carta)",
+        "en": "Doubled! (a guess ≥ 2× the last one earns a chip that cancels 1 card)"
+      },
+      "default": false
+    },
+    {
+      "key": "revealSeconds",
+      "type": "number",
+      "label": { "pt-BR": "Tempo da revelação (s)", "en": "Reveal time (s)" },
+      "min": 4,
+      "max": 20,
+      "default": 7
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@mp/game-duvido",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@mp/game-sdk": "*"
+  },
+  "devDependencies": {
+    "@mp/engine": "*"
+  }
+}
