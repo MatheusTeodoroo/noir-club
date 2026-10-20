@@ -51,9 +51,11 @@ export function installAgentHelpers(host: PlaygroundHost) {
   const pg = {
     async click(device: string, text: string) {
       const b = await waitFor(() => findButton(doc(device), text), `button "${text}" on ${device}`);
+      // Read the label first: React may reuse the same element for the next screen's button.
+      const label = (b.getAttribute('aria-label') ?? b.textContent ?? '').trim();
       b.click();
       await sleep(150);
-      return `clicked "${(b.getAttribute('aria-label') ?? b.textContent ?? '').trim()}" on ${device}`;
+      return `clicked "${label}" on ${device}`;
     },
     async type(device: string, text: string, submit = false) {
       const input = await waitFor(

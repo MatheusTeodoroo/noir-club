@@ -7,7 +7,10 @@ const relay = process.env.RELAY_URL ?? 'http://127.0.0.1:8787';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { '@games': fileURLToPath(new URL('../../games', import.meta.url)) },
+    alias: {
+      '@games': fileURLToPath(new URL('../../games', import.meta.url)),
+      '@examples': fileURLToPath(new URL('../../examples', import.meta.url)),
+    },
   },
   worker: { format: 'es' },
   server: {

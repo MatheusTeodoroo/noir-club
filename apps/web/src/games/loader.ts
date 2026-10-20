@@ -13,8 +13,19 @@ export interface RegistryEntry {
   logic: string;
 }
 
-const devManifests = import.meta.glob<GameManifest>('@games/*/manifest.json', { eager: true, import: 'default' });
-const devUi = import.meta.glob<{ default: GameUI }>('@games/*/src/ui.tsx');
+// `examples/` (reference games, e.g. the Dealer demo) load only in test servers started with
+// VITE_INCLUDE_EXAMPLES=1; they never reach the lobby list or the production build.
+const withExamples = import.meta.env.DEV && import.meta.env.VITE_INCLUDE_EXAMPLES === '1';
+const devManifests = {
+  ...import.meta.glob<GameManifest>('@games/*/manifest.json', { eager: true, import: 'default' }),
+  ...(withExamples
+    ? import.meta.glob<GameManifest>('@examples/*/manifest.json', { eager: true, import: 'default' })
+    : {}),
+};
+const devUi = {
+  ...import.meta.glob<{ default: GameUI }>('@games/*/src/ui.tsx'),
+  ...(withExamples ? import.meta.glob<{ default: GameUI }>('@examples/*/src/ui.tsx') : {}),
+};
 
 let registry: Promise<RegistryEntry[]> | null = null;
 

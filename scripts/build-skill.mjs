@@ -23,7 +23,7 @@ cpSync(join(root, 'apps/web/src/app.css'), join(sdk, 'platform.css'));
 const example = join(out, 'examples/demo-secret');
 mkdirSync(example, { recursive: true });
 for (const part of ['manifest.json', 'src', 'test']) {
-  const from = join(root, 'games/demo-secret', part);
+  const from = join(root, 'examples/demo-secret', part);
   if (existsSync(from)) cpSync(from, join(example, part), { recursive: true });
 }
 

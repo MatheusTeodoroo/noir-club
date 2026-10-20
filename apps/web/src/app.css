@@ -465,3 +465,75 @@
     transform: scale(1.4);
   }
 }
+
+/* ---------- Game picker (Host's full-screen game menu) ---------- */
+
+.game-card--static {
+  cursor: default;
+  box-shadow:
+    0 0 0 1px var(--accent, var(--gold)) inset,
+    0 12px 40px -20px var(--accent, var(--gold));
+}
+
+.picker {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(5, 3, 7, 0.92);
+  backdrop-filter: blur(6px);
+  animation: mp-fade-in 200ms var(--ease-out);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.picker-sheet {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100%;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  outline: none;
+}
+
+.picker-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  background: linear-gradient(180deg, var(--ink-0) 70%, transparent);
+}
+
+.picker-head h2 {
+  font-size: 1.4rem;
+  line-height: 1.15;
+}
+
+.picker-tools {
+  display: grid;
+  gap: 4px;
+}
+
+.picker-list {
+  display: grid;
+  gap: 10px;
+}
+
+.picker-empty {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.picker-chosen {
+  margin-left: 8px;
+  vertical-align: middle;
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}

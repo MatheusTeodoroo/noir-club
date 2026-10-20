@@ -53,7 +53,9 @@ scoreboard, and your game must lean on that rather than rebuild it.
    - **`window.pg` in the control room** (through your browser tool's JavaScript runner):
      `await pg.click('p2', 'Votar')`, `await pg.type('p3', 'pintor', true)`,
      `await pg.visit('p2')` (the whole Dealer flow), `await pg.leave('p2')`, `pg.text('display')`,
-     `pg.next()` (jump to the next timer), `pg.state()`. Accessibility snapshots do not enter the
+     `pg.next()` (jump to the next timer), `pg.state()`. After the scoreboard, the Host's phone
+     (p1) has "Voltar ao lobby" and then "Começar nova partida" — check a second match starts
+     cleanly. Accessibility snapshots do not enter the
      device iframes, so this is how to press phone buttons from the control room.
    - **Single devices in their own tabs** (they join the same engine): `/?device=display`,
      `/?device=dealer`, `/?device=player&id=p2` — keep the control room tab open. Bring a tab
@@ -66,8 +68,11 @@ scoreboard, and your game must lean on that rather than rebuild it.
    (it also rejects UI code that imports anything besides `react` and `@mp/game-sdk`, or that
    pulls the game logic into the UI bundle).
 
-8. **Hand off.** Follow [reference/integrate.md](reference/integrate.md) and tell the user what
-   was built, how to try it (`npm run play`), and how to add it to the platform.
+8. **Publish.** Follow [reference/integrate.md](reference/integrate.md): copy the game into the
+   platform repository's `games/`, run its checks, and — with the user's go-ahead — commit and
+   push; the repository's GitHub Action deploys the site with the new game. Done when the push
+   went through (or the user chose to keep it local) and you told them what was built, how to try
+   it (`npm run play`) and where to watch the deploy.
 
 ## Reference
 

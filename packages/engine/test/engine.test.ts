@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ClientInfo, DealerFrame, PlayerFrame } from '@mp/protocol';
 import { TIMING } from '@mp/protocol';
-import demo, { type State as DemoState } from '../../../games/demo-secret/src/logic.ts';
+import demo, { type State as DemoState } from '../../../examples/demo-secret/src/logic.ts';
 import { Engine, initialState } from '../src/engine.ts';
 
 const GAME = { id: demo.manifest.id, version: demo.manifest.version };

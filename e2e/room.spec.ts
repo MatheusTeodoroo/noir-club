@@ -50,7 +50,9 @@ async function visitDealer(phone: Page, dealer: Page) {
   return secret;
 }
 
-test('host, players, two displays and a dealer play a round; engine survives the host dropping', async ({ browser }) => {
+test('host, players, two displays and a dealer play a round; engine survives the host dropping', async ({
+  browser,
+}) => {
   const host = await device(browser, '/');
   await host.page.getByRole('button', { name: /Criar sala/ }).click();
   await host.page.waitForURL(/\/r\/[A-Z]{4}/);
@@ -68,7 +70,10 @@ test('host, players, two displays and a dealer play a round; engine survives the
   await pairTv(host.page, dealer.page, 'Dealer');
 
   // Pick the game; its bundle must not be loaded before that.
-  await host.page.locator('.game-card').first().click();
+  // The Dealer demo lives in examples/ and is only listed by the e2e server (VITE_INCLUDE_EXAMPLES).
+  await host.page.getByRole('button', { name: /Escolher jogo/ }).click();
+  await host.page.getByRole('searchbox').fill('Número Secreto');
+  await host.page.locator('.picker .game-card').first().click();
   await expect(tv1.page.getByText('Número Secreto').first()).toBeVisible();
   // Shorter discussion (60 → 15 s) and vote (30 → 10 s).
   const minus = host.page.getByRole('button', { name: '-' });

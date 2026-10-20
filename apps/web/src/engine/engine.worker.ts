@@ -12,7 +12,13 @@ export type ToWorker =
   | { t: 'resend' }
   | { t: 'yield' };
 
-const devLogic = import.meta.glob<{ default: GameLogic }>('@games/*/src/logic.ts');
+const devLogic = {
+  ...import.meta.glob<{ default: GameLogic }>('@games/*/src/logic.ts'),
+  // Reference games for tests only (see games/loader.ts).
+  ...(import.meta.env.DEV && import.meta.env.VITE_INCLUDE_EXAMPLES === '1'
+    ? import.meta.glob<{ default: GameLogic }>('@examples/*/src/logic.ts')
+    : {}),
+};
 
 async function loadLogic(ref: GameRef): Promise<GameLogic> {
   if (import.meta.env.DEV) {

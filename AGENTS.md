@@ -18,6 +18,9 @@ Rive for animated visuals.
   Dealer
 - `games/<id>` — one package per game: `manifest.json`, `src/logic.ts`,
   `src/ui.tsx`; built as separate versioned bundles
+- `examples/<id>` — reference games (the Dealer demo): engine tests, the e2e and the skill's
+  example use them; they are never listed in the lobby or shipped (only a dev server started with
+  `VITE_INCLUDE_EXAMPLES=1`, like the e2e's on port 5174, loads them)
 - `rive/<name>` — Rive projects, compiled to `apps/web/public/rive/<name>.riv`
 
 Secrets must only leave the engine through `publicView` / `playerView` /
@@ -31,6 +34,10 @@ components arrive through the `kit` prop.
 - `npm run dev:relay` and `npm run dev:web` — local relay (8787) and site
   (5173, proxies `/api` and `/ws`)
 - `npm run build` — Rive files, game bundles, then the site
+- Publishing: every push to `master` runs `.github/workflows/deploy.yml` (typecheck, tests,
+  build, `wrangler deploy` with the `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` repo
+  secrets). A new game goes live by landing in `games/<id>/` and being pushed. CI has no Rive
+  CLI: after editing `rive/`, run `npm run build:rive` and commit `apps/web/public/rive/*.riv`.
 - `npm run skill:install` — rebuild the `noir-club-game` Claude Code skill
   (`tools/skills/noir-club-game` + a snapshot of protocol/game-sdk/engine/ui) and install it in
   `~/.claude/skills`. Rerun after changing any of those packages, so games built outside the repo

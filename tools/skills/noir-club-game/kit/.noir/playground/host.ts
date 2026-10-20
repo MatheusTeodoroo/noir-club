@@ -173,6 +173,14 @@ export class PlaygroundHost {
   }
 
   private step(fx: { events: ScheduledEvent[] }) {
+    // The Host started a new match from the lobby: every playground device has the game loaded
+    // already, so acknowledge for all of them like the real devices would.
+    if (this.engine.state.phase === 'loading') {
+      const m = this.logic.manifest;
+      const game = { id: m.id, version: m.version };
+      for (const c of this.clients) if (c.connected) this.engine.action(c.id, { type: 'ready', game }, this.now());
+      if ((this.engine.state.phase as string) === 'playing') this.note('nova partida iniciada pelo Host');
+    }
     for (const e of fx.events) this.note(`${e.kind === 'sound' ? '🔊' : '✨'} ${e.name}`);
     this.pendingEvents.push(...fx.events);
     this.publish(false);

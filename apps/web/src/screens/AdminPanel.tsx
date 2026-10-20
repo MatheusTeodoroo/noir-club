@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { PublicFrame } from '@mp/protocol';
 import { normalizeRoomCode } from '@mp/protocol';
 import { configDefaults, type ConfigField } from '@mp/game-sdk';
@@ -6,6 +6,7 @@ import { Avatar, Button, Panel, Stepper, Toggle } from '@mp/ui';
 import { useT } from '../i18n.ts';
 import { listGames, type RegistryEntry } from '../games/loader.ts';
 import { useSession, type Session } from '../room/session.ts';
+import { GamePicker } from './GamePicker.tsx';
 
 /** The Host's controls: pick and configure a game, pair TVs, manage players and room mode. */
 export function AdminPanel({ session, frame }: { session: Session; frame: PublicFrame }) {
@@ -13,6 +14,8 @@ export function AdminPanel({ session, frame }: { session: Session; frame: Public
   const state = useSession(session);
   const pub = frame.platform;
   const [games, setGames] = useState<RegistryEntry[]>([]);
+  const [picking, setPicking] = useState(false);
+  const closePicker = useCallback(() => setPicking(false), []);
   useEffect(() => {
     void listGames().then(setGames);
   }, []);
@@ -29,33 +32,41 @@ export function AdminPanel({ session, frame }: { session: Session; frame: Public
       </h2>
 
       <Panel className="stack">
-        <h3 className="section-title">{t('admin.games')}</h3>
-        {games.map(({ manifest: m }) => (
-          <button
-            key={m.id}
-            type="button"
-            className="game-card"
-            aria-pressed={pub.game?.id === m.id}
-            style={{ ['--accent' as string]: m.accent }}
-            onClick={() =>
-              session.send({
-                type: 'selectGame',
-                game: pub.game?.id === m.id ? null : { id: m.id, version: m.version },
-              })
-            }
-          >
-            <h3>{tg(m.name)}</h3>
-            <p>{tg(m.description)}</p>
+        <h3 className="section-title">{t('admin.game')}</h3>
+        {selected ? (
+          <div className="game-card game-card--static" style={{ ['--accent' as string]: selected.accent }}>
+            <h3>{tg(selected.name)}</h3>
+            <p>{tg(selected.description)}</p>
             <div className="row wrap" style={{ gap: 6 }}>
-              <span className="mp-chip">
-                👥 {m.minPlayers}–{m.maxPlayers}
+              <span className={`mp-chip ${inRange ? '' : 'mp-chip--crimson'}`}>
+                👥 {selected.minPlayers}–{selected.maxPlayers}
               </span>
-              <span className="mp-chip">⏱ ~{m.estimatedMinutes} min</span>
-              {m.usesDealer && <span className="mp-chip mp-chip--crimson">🃏 Dealer</span>}
+              <span className="mp-chip">⏱ ~{selected.estimatedMinutes} min</span>
+              {selected.usesDealer && <span className="mp-chip mp-chip--crimson">🃏 Dealer</span>}
             </div>
-          </button>
-        ))}
+          </div>
+        ) : (
+          <p className="mp-subtitle" style={{ margin: 0 }}>
+            {t('admin.noGameYet')}
+          </p>
+        )}
+        <Button block variant={selected ? 'ghost' : 'gold'} onClick={() => setPicking(true)} disabled={!games.length}>
+          🎲 {selected ? t('admin.changeGame') : t('admin.pickGame')}
+        </Button>
       </Panel>
+
+      {picking && (
+        <GamePicker
+          games={games.map((g) => g.manifest)}
+          selectedId={pub.game?.id ?? null}
+          players={active}
+          onClose={closePicker}
+          onPick={(m) => {
+            session.send({ type: 'selectGame', game: { id: m.id, version: m.version } });
+            setPicking(false);
+          }}
+        />
+      )}
 
       {selected && (
         <Panel className="stack mp-enter">

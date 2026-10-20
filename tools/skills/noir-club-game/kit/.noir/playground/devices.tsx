@@ -1,8 +1,9 @@
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DealerFrame, Lang, PlayerFrame, PublicPlatformView } from '@mp/protocol';
-import type { GameUI, I18nText, UIKit } from '@mp/game-sdk';
+import type { GameManifest, GameUI, I18nText, UIKit } from '@mp/game-sdk';
 import { Avatar, Button, Countdown, Panel, RiveView, RoomTimeContext, Stage, TextInput, useRoomNow } from '@mp/ui';
 import ui from '@game/src/ui.tsx';
+import manifestJson from '@game/manifest.json';
 import { CHANNEL, type DeviceMessage, type HostMessage } from './host.ts';
 
 /**
@@ -13,6 +14,7 @@ import { CHANNEL, type DeviceMessage, type HostMessage } from './host.ts';
  */
 
 const game = ui as GameUI;
+const manifest = manifestJson as GameManifest;
 const kit: UIKit = { Button, TextInput, Avatar, Countdown, Panel, RiveView, useRoomNow, playSound: () => {} };
 const DEALER_CALL_MS = 60_000;
 const DEALER_VISIT_MS = 90_000;
@@ -37,6 +39,11 @@ const STRINGS = {
     queue: 'Fila',
     remoteVisit: 'Visita remota em andamento',
     noDealerUi: 'Este jogo não tem tela de Dealer (ui.Dealer)',
+    backToLobby: 'Voltar ao lobby',
+    newMatch: 'Começar nova partida',
+    waitingHost: 'Aguardando o Host começar…',
+    lobby: 'Lobby',
+    players: 'Jogadores',
   },
   en: {
     preparing: 'Setting the table…',
@@ -56,6 +63,11 @@ const STRINGS = {
     queue: 'Queue',
     remoteVisit: 'Remote visit in progress',
     noDealerUi: 'This game has no Dealer screen (ui.Dealer)',
+    backToLobby: 'Back to lobby',
+    newMatch: 'Start a new match',
+    waitingHost: 'Waiting for the Host to start…',
+    lobby: 'Lobby',
+    players: 'Players',
   },
 } as const;
 const strings = (lang: Lang) => STRINGS[lang] ?? STRINGS['pt-BR'];
@@ -76,7 +88,8 @@ function useHost() {
       const m = ev.data;
       // Several control rooms may briefly share the channel: follow only the newest one.
       const h = host.current;
-      if (h && m.host && m.host.id !== h.id && (m.host.born < h.born || (m.host.born === h.born && m.host.id < h.id))) return;
+      if (h && m.host && m.host.id !== h.id && (m.host.born < h.born || (m.host.born === h.born && m.host.id < h.id)))
+        return;
       if (m.host) host.current = m.host;
       clock.current = { offset: m.offset, frozen: m.frozen };
       setMsg(m);
@@ -179,6 +192,8 @@ export function DisplayDevice() {
           <div className="screen-center">
             <Results platform={platform} large />
           </div>
+        ) : platform.phase === 'lobby' ? (
+          <LobbyBoard platform={platform} />
         ) : platform.phase !== 'playing' || view == null ? (
           <Waiting text={strings(lang).preparing} />
         ) : (
@@ -199,6 +214,64 @@ export function DisplayDevice() {
         {fx && <div key={fx.nonce} className="pg-flash" title={fx.name} />}
       </Stage>
     </RoomTimeContext.Provider>
+  );
+}
+
+/** Simplified version of the platform's TV lobby (the real one also shows the join code and QR). */
+function LobbyBoard({ platform }: { platform: PublicPlatformView }) {
+  const s = strings(platform.lang);
+  return (
+    <div className="screen-center">
+      <div className="stack" style={{ justifyItems: 'center', gap: '2em', textAlign: 'center' }}>
+        <span className="mp-eyebrow" style={{ fontSize: '1.2em' }}>
+          {s.lobby} · {s.players} {platform.players.length}
+        </span>
+        <h1 className="mp-title" style={{ fontSize: '4em', lineHeight: 1.15 }}>
+          {manifest.name[platform.lang] ?? manifest.name['pt-BR']}
+        </h1>
+        <div className="row wrap" style={{ gap: '1.6em', justifyContent: 'center' }}>
+          {platform.players.map((p) => (
+            <div key={p.id} className="stack" style={{ justifyItems: 'center', gap: '0.4em' }}>
+              <Avatar
+                emoji={p.avatar}
+                size="5em"
+                active={p.isAdmin}
+                offline={!p.connected}
+                badge={p.isAdmin ? '♛' : undefined}
+              />
+              <b>{p.name}</b>
+            </div>
+          ))}
+        </div>
+        <p className="mp-subtitle" style={{ fontSize: '1.5em' }}>
+          {s.waitingHost}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** What the platform shows the Host's phone outside the game: start, and a way back to the lobby. */
+function HostControls({ platform, send }: { platform: PublicPlatformView; send(p: unknown): void }) {
+  const s = strings(platform.lang);
+  if (platform.phase === 'lobby') {
+    return (
+      <Button block data-pg="start" onClick={() => send({ type: 'start' })}>
+        {s.newMatch}
+      </Button>
+    );
+  }
+  if (platform.phase === 'results') {
+    return (
+      <Button block data-pg="back-to-lobby" onClick={() => send({ type: 'backToLobby' })}>
+        {s.backToLobby}
+      </Button>
+    );
+  }
+  return (
+    <Button small variant="ghost" data-pg="back-to-lobby" onClick={() => send({ type: 'backToLobby' })}>
+      {s.backToLobby}
+    </Button>
   );
 }
 
@@ -254,6 +327,12 @@ export function PlayerDevice({ id }: { id: string }) {
             <Panel>
               <Results platform={platform} />
             </Panel>
+          ) : platform.phase === 'lobby' ? (
+            <Panel>
+              <p className="mp-subtitle" style={{ textAlign: 'center', margin: 0 }}>
+                {me?.isAdmin ? (manifest.name[lang] ?? manifest.name['pt-BR']) : s.waitingHost}
+              </p>
+            </Panel>
           ) : platform.phase !== 'playing' || frame.game == null ? (
             <div className="mp-spinner" />
           ) : (
@@ -287,6 +366,7 @@ export function PlayerDevice({ id }: { id: string }) {
               </Boundary>
             </>
           )}
+          {frame?.platform.isAdmin && <HostControls platform={platform} send={(p) => send(id, p)} />}
         </div>
         <PauseOverlay platform={platform} />
       </Stage>
