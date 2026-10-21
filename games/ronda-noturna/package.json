@@ -1,0 +1,11 @@
+{
+  "name": "@mp/game-ronda-noturna",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@mp/game-sdk": "*"
+  },
+  "devDependencies": {
+    "@mp/engine": "*"
+  }
+}

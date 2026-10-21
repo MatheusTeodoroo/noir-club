@@ -1,0 +1,112 @@
+{
+  "id": "ronda-noturna",
+  "version": "0.1.0",
+  "name": { "pt-BR": "Ronda Noturna", "en": "Night Watch" },
+  "description": {
+    "pt-BR": "Dois ladrões invisíveis roubam estrelas pela cidade; três equipes de polícia os caçam — e duas delas escondem um policial corrupto.",
+    "en": "Two unseen thieves steal stars across the city; three police squads hunt them — and two of the squads hide a crooked cop."
+  },
+  "minPlayers": 10,
+  "maxPlayers": 14,
+  "usesDealer": true,
+  "estimatedMinutes": 90,
+  "accent": "#3b6fd1",
+  "config": [
+    {
+      "key": "briefing",
+      "type": "select",
+      "label": { "pt-BR": "Onde cada um vê seu papel", "en": "Where each player sees their role" },
+      "options": [
+        { "value": "phone", "label": { "pt-BR": "No próprio celular", "en": "On their own phone" } },
+        { "value": "dealer", "label": { "pt-BR": "No Dealer, um por vez", "en": "At the Dealer, one at a time" } }
+      ],
+      "default": "phone"
+    },
+    {
+      "key": "briefingSeconds",
+      "type": "number",
+      "label": { "pt-BR": "Tempo para ver os papéis (s)", "en": "Time to see the roles (s)" },
+      "min": 20,
+      "max": 300,
+      "step": 10,
+      "default": 60
+    },
+    {
+      "key": "maxRounds",
+      "type": "select",
+      "label": { "pt-BR": "Teto de rodadas", "en": "Round cap" },
+      "options": [
+        { "value": "0", "label": { "pt-BR": "Sem teto", "en": "No cap" } },
+        { "value": "10", "label": { "pt-BR": "10 rodadas", "en": "10 rounds" } },
+        { "value": "15", "label": { "pt-BR": "15 rodadas", "en": "15 rounds" } },
+        { "value": "20", "label": { "pt-BR": "20 rodadas", "en": "20 rounds" } },
+        { "value": "25", "label": { "pt-BR": "25 rodadas", "en": "25 rounds" } }
+      ],
+      "default": "15"
+    },
+    {
+      "key": "thiefMinutes",
+      "type": "number",
+      "label": { "pt-BR": "Tempo dos ladrões (min)", "en": "Thieves' time (min)" },
+      "min": 1,
+      "max": 5,
+      "default": 3
+    },
+    {
+      "key": "copMinutes",
+      "type": "number",
+      "label": { "pt-BR": "Tempo de cada equipe policial (min)", "en": "Time per police squad (min)" },
+      "min": 2,
+      "max": 8,
+      "default": 5
+    },
+    {
+      "key": "totalStars",
+      "type": "number",
+      "label": { "pt-BR": "Estrelas escondidas", "en": "Hidden stars" },
+      "min": 15,
+      "max": 40,
+      "default": 28
+    },
+    {
+      "key": "starGoal",
+      "type": "number",
+      "label": { "pt-BR": "Meta de estrelas dos ladrões", "en": "Thieves' star goal" },
+      "min": 5,
+      "max": 30,
+      "default": 15
+    },
+    {
+      "key": "revealEvery",
+      "type": "number",
+      "label": { "pt-BR": "Revelar estrelas a cada (rodadas)", "en": "Reveal stars every (rounds)" },
+      "min": 2,
+      "max": 10,
+      "default": 5
+    },
+    {
+      "key": "map",
+      "type": "select",
+      "label": { "pt-BR": "Mapa", "en": "Map" },
+      "options": [
+        { "value": "random", "label": { "pt-BR": "Aleatório (fixos)", "en": "Random (fixed)" } },
+        { "value": "m150", "label": { "pt-BR": "Bairro — 150 casas", "en": "District — 150 stops" } },
+        { "value": "m170", "label": { "pt-BR": "Centro — 170 casas", "en": "Downtown — 170 stops" } },
+        { "value": "m190", "label": { "pt-BR": "Porto — 190 casas", "en": "Harbour — 190 stops" } },
+        { "value": "m210", "label": { "pt-BR": "Capital — 210 casas", "en": "Capital — 210 stops" } },
+        { "value": "m230", "label": { "pt-BR": "Metrópole — 230 casas", "en": "Metropolis — 230 stops" } },
+        { "value": "generated", "label": { "pt-BR": "Gerar mapa novo", "en": "Generate a new map" } }
+      ],
+      "default": "random"
+    },
+    {
+      "key": "genSize",
+      "type": "number",
+      "label": { "pt-BR": "Casas do mapa gerado", "en": "Stops on a generated map" },
+      "min": 150,
+      "max": 230,
+      "step": 10,
+      "default": 190
+    }
+  ]
+}
