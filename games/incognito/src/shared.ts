@@ -574,3 +574,10 @@ export const FIXED = {
 /** Alchemist potions. */
 export type Potion = 'kill' | 'protect' | 'investigate';
 export const POTIONS: Potion[] = ['kill', 'protect', 'investigate'];
+
+/**
+ * The dawn reveal on the TV: a heartbeat lead-in, then one death per step (or "everyone woke up"),
+ * then a moment to take it in. The logic times the sounds and the dawn timer from the same numbers.
+ */
+export const DAWN_REVEAL = { lead: 3600, step: 2800, tail: 2600, heartbeat: 900 };
+export const dawnRevealMs = (deaths: number) => DAWN_REVEAL.lead + Math.max(1, deaths) * DAWN_REVEAL.step + DAWN_REVEAL.tail;

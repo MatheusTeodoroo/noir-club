@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIXED, type RoleId } from '../src/shared.ts';
+import { FIXED, dawnRevealMs, type RoleId } from '../src/shared.ts';
 import { skipDay, alive, finishVerdict, match, night, pub, pv, toNight, toVote, vote } from './helpers.ts';
 
 const day = (room: ReturnType<typeof match>) => {
@@ -237,5 +237,21 @@ describe('Incógnito — discussion skip and revealed deaths', () => {
     finishVerdict(shown);
     expect(pub(shown).revealed.p4).toEqual({ role: 'innocent' });
     expect(pub(shown).alive).not.toContain('p4');
+  });
+});
+
+describe('Incógnito — dawn reveal', () => {
+  it('early morning always lasts long enough for the staged reveal of every death', () => {
+    const roles = ['impostor', 'impostor', 'impostor', ...Array(7).fill('innocent')] as RoleId[];
+    const room = match(roles, { neutrals: 0, killMode: 'each', times: { dawn: 10, day: 180, vote: 60, night: 45 } });
+    night(room, [
+      ['p1', { type: 'kill', target: 'p4' }],
+      ['p2', { type: 'kill', target: 'p5' }],
+      ['p3', { type: 'kill', target: 'p6' }],
+    ]);
+    room.advance(FIXED.report);
+    expect(pub(room).phase).toBe('dawn');
+    expect(pub(room).dawn?.deaths).toEqual(['p4', 'p5', 'p6']);
+    expect(pub(room).total).toBe(dawnRevealMs(3) + 6000);
   });
 });

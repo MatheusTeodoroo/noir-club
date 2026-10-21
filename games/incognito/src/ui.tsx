@@ -2,7 +2,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { defineGameUI, type DisplayProps, type I18nText, type PlayerProps, type UIKit } from '@mp/game-sdk';
 import type { NightPanel, PlayerView, PublicView, Report } from './logic.ts';
 import {
+  DAWN_REVEAL,
   MAX_NEUTRALS,
+  dawnRevealMs,
   PICKABLE,
   POTIONS,
   ROLE_IDS,
@@ -49,6 +51,13 @@ const L = {
   duskTitle: { 'pt-BR': 'Anoitece', en: 'Nightfall' },
   endTitle: { 'pt-BR': 'Fim de jogo', en: 'Game over' },
   // feed
+  dawnWake: { 'pt-BR': 'A cidade desperta…', en: 'The town awakens…' },
+  dawnWho: { 'pt-BR': 'Quem não abriu os olhos esta manhã?', en: 'Who did not open their eyes this morning?' },
+  dawnAll: { 'pt-BR': 'Todos acordaram.', en: 'Everyone woke up.' },
+  dawnForNow: { 'pt-BR': 'Por enquanto…', en: 'For now…' },
+  dawnFell: { 'pt-BR': 'Esta noite, a cidade perdeu…', en: 'Tonight, the town lost…' },
+  dawnNoWake: { 'pt-BR': 'não acordou', en: 'did not wake up' },
+  dawnWasRole: { 'pt-BR': 'não acordou — era {r}', en: 'did not wake up — was {r}' },
   noDeaths: { 'pt-BR': 'Ninguém morreu esta noite.', en: 'Nobody died tonight.' },
   diedNight: { 'pt-BR': '{v} não acordou.', en: '{v} did not wake up.' },
   left: { 'pt-BR': '{v} saiu da partida.', en: '{v} left the match.' },
@@ -317,6 +326,18 @@ const CSS = `
 .ig-row div{display:grid;line-height:1.15}
 .ig-row div span{font-size:.85em}
 .ig-rise{animation:ig-rise .7s var(--ease-out) both}
+.ig-dawnstage{background:radial-gradient(ellipse at 50% 45%,rgba(60,8,16,.55),rgba(0,0,0,.92) 70%);grid-template-rows:1fr}
+.ig-dawn{display:grid;grid-template-rows:auto 1fr;justify-items:center;gap:1.5em;text-align:center;min-height:0}
+.ig-dawn-line{font-family:var(--font-display);font-size:4em;margin:0;color:var(--text);letter-spacing:.04em;animation:ig-breathe 1.8s ease-in-out infinite}
+.ig-dawn-line.small{font-size:2.4em;color:var(--text-dim);animation:none;align-self:end}
+.ig-heart{width:7em;height:7em;border-radius:50%;background:radial-gradient(circle,var(--crimson-hi),var(--crimson-lo) 60%,transparent 70%);animation:ig-beat .9s ease-in-out infinite}
+@keyframes ig-beat{0%,100%{transform:scale(.8);opacity:.55}15%{transform:scale(1.05);opacity:1}30%{transform:scale(.9)}45%{transform:scale(1);opacity:.85}}
+@keyframes ig-breathe{0%,100%{opacity:.55}50%{opacity:1}}
+.ig-dead-row{display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:2.5em 4em}
+.ig-dead{display:grid;justify-items:center;gap:.5em;animation:ig-fall 1.1s cubic-bezier(.16,1,.3,1) both}
+.ig-dead b{font-family:var(--font-display);font-size:3em;color:var(--crimson-hi);line-height:1.15;padding-top:.05em}
+.ig-dead span{font-family:var(--font-serif);font-style:italic;font-size:1.8em;color:var(--text-dim)}
+@keyframes ig-fall{0%{opacity:0;transform:scale(1.6);filter:blur(.4em) brightness(2)}60%{opacity:1;filter:none}100%{transform:scale(1)}}
 @keyframes ig-rise{from{opacity:0;transform:translateY(.6em)}}
 
 /* phone */
@@ -621,6 +642,55 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
         {feed}
       </div>
     );
+  }
+
+  // Early morning opens with a staged reveal: heartbeat, then each death one by one.
+  if (v.phase === 'dawn' && v.dawn && v.deadline !== null && v.total) {
+    const elapsed = now - (v.deadline - v.total);
+    const deaths = v.dawn.deaths;
+    if (elapsed < dawnRevealMs(deaths.length)) {
+      const shown = elapsed < DAWN_REVEAL.lead ? 0 : Math.floor((elapsed - DAWN_REVEAL.lead) / DAWN_REVEAL.step) + 1;
+      return (
+        <div className="ig-tv ig-dawnstage">
+          <Styles />
+          <div className="ig-dawn">
+            <span className="mp-eyebrow" style={{ fontSize: '1.3em' }}>
+              {`${t(L.title)} · ${fmt(t(L.day), { n: v.day })}`}
+            </span>
+            {shown === 0 ? (
+              <div className="ig-center">
+                <div className="ig-heart" />
+                <p className="ig-dawn-line">{t(L.dawnWake)}</p>
+                <p className="ig-sub">{t(L.dawnWho)}</p>
+              </div>
+            ) : deaths.length === 0 ? (
+              <div className="ig-center mp-enter">
+                <p className="ig-big" style={{ fontSize: '4.4em' }}>
+                  {t(L.dawnAll)}
+                </p>
+                <p className="ig-sub">{t(L.dawnForNow)}</p>
+              </div>
+            ) : (
+              <>
+                <p className="ig-dawn-line small">{t(L.dawnFell)}</p>
+                <div className="ig-dead-row">
+                  {deaths.slice(0, shown).map((id) => {
+                    const r = v.rules.revealDead ? v.revealed[id]?.role : undefined;
+                    return (
+                      <div key={id} className="ig-dead">
+                        <Avatar emoji={who(id).avatar} size="8em" crimson />
+                        <b>{name(id)}</b>
+                        <span>{r ? fmt(t(L.dawnWasRole), { r: t(role(r).name) }) : t(L.dawnNoWake)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
   }
 
   return (

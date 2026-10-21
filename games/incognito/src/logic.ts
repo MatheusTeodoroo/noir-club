@@ -2,7 +2,9 @@ import { defineGame, type GameManifest } from '@mp/game-sdk';
 import manifestJson from '../manifest.json';
 import { alchemyStep, resolveNight } from './night.ts';
 import {
+  DAWN_REVEAL,
   FIXED,
+  dawnRevealMs,
   MAX_NEUTRALS,
   PICKABLE,
   POTIONS,
@@ -379,6 +381,19 @@ function endNight(s: State, ctx: Ctx) {
   ctx.emit('sound', 'tick');
 }
 
+/** Early morning opens with the staged death reveal; the timer always leaves time after it. */
+function startDawn(s: State, ctx: Ctx) {
+  const deaths = s.dawn?.deaths.length ?? 0;
+  setPhase(s, ctx, 'dawn', Math.max(sec(s.setup.times.dawn), dawnRevealMs(deaths) + 6000));
+  for (let at = 0; at < DAWN_REVEAL.lead - 400; at += DAWN_REVEAL.heartbeat) ctx.emit('sound', 'tick', at);
+  ctx.emit('sound', 'drumroll', DAWN_REVEAL.lead - 2300);
+  if (deaths === 0) ctx.emit('sound', 'round', DAWN_REVEAL.lead);
+  for (let i = 0; i < deaths; i++) {
+    ctx.emit('sound', 'reveal', DAWN_REVEAL.lead + i * DAWN_REVEAL.step);
+    ctx.emit('fx', 'death', DAWN_REVEAL.lead + i * DAWN_REVEAL.step);
+  }
+}
+
 function startVote(s: State, ctx: Ctx) {
   s.votes = {};
   s.voteUsed = {};
@@ -483,9 +498,7 @@ function onPhaseTimer(s: State, ctx: Ctx) {
     case 'night':
       return endNight(s, ctx);
     case 'report':
-      setPhase(s, ctx, 'dawn', sec(s.setup.times.dawn));
-      ctx.emit('sound', 'round');
-      return;
+      return startDawn(s, ctx);
     case 'dawn':
       s.daySkips = {};
       s.dayTotal = sec(s.setup.times.day);
