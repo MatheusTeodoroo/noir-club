@@ -65,6 +65,12 @@ Timing rules that bite:
 - Dealer timers belong to the platform: a visit can still time out (and `onDealerLeave` run)
   while the game is paused for a disconnect.
 
+**Standing Dealer.** A game may also define `dealerIdleView(state, ctx)`: while nobody is called
+or inside, the Dealer screen shows it (the `Dealer` component receives it with `playerName: ''`).
+Use it when the Dealer sits in one team's room and shows that team's board the whole match —
+then keep `canVisitDealer` false so nobody queues. Whoever stands in that room sees it, so put
+there only what the whole team may know.
+
 The Dealer suits information that must be seen **privately and deliberately** — a role, a hand,
 a secret number, a clue — where a glance at a phone in a crowded room would leak it, or where
 the walk to the Dealer is itself part of the tension. Information a player can keep to themselves

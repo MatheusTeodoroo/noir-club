@@ -163,7 +163,10 @@ export function createTestRoom<S = any>(logic: GameLogic<S, any>, opts: TestRoom
     playerFrame(id: string): Omit<PlayerFrame, 'seq'> | null {
       return (frames().privates.get(id) as PlayerFrame | undefined) ?? null;
     },
-    /** Game view on the Dealer screen right now (null unless someone is verified inside). */
+    /**
+     * Game view on the Dealer screen right now: the visitor's `dealerView` while someone is verified
+     * inside, else the game's `dealerIdleView` (when called without `id`), else null.
+     */
     dealerView(id?: string): any {
       // Remote players see it on their own phone instead of the Dealer screen.
       const phone = id ? (frames().privates.get(id) as PlayerFrame | undefined) : undefined;

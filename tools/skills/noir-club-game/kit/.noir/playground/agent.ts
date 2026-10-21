@@ -53,7 +53,9 @@ export function installAgentHelpers(host: PlaygroundHost) {
       const b = await waitFor(() => findButton(doc(device), text), `button "${text}" on ${device}`);
       // Read the label first: React may reuse the same element for the next screen's button.
       const label = (b.getAttribute('aria-label') ?? b.textContent ?? '').trim();
-      b.click();
+      // SVG elements (e.g. a tappable map node with role=button) have no .click().
+      if (typeof b.click === 'function') b.click();
+      else b.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await sleep(150);
       return `clicked "${label}" on ${device}`;
     },

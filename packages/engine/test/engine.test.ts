@@ -10,7 +10,7 @@ function client(id: string, role: ClientInfo['role'], extra: Partial<ClientInfo>
   return { id, role, name: id, avatar: '🎩', connected: true, isAdmin: false, ...extra };
 }
 
-function setup() {
+function setup(logic: typeof demo = demo) {
   let now = 1_000_000;
   const e = new Engine(initialState(42));
   const clients = [
@@ -22,7 +22,7 @@ function setup() {
   ];
   e.presence(clients, now);
   e.action('host', { type: 'selectGame', game: GAME }, now);
-  e.setLogic(demo, now);
+  e.setLogic(logic, now);
   e.action('host', { type: 'start' }, now);
   for (const c of clients) e.action(c.id, { type: 'ready', game: GAME }, now);
   return {
@@ -139,6 +139,17 @@ describe('dealer queue', () => {
     t.act('ana', { type: 'dealerCode', code: t.e.state.dealer.current!.code });
     t.act('ana', { type: 'dealerLeave' });
     expect(playerFrame(t, 'ana').platform.canRequestDealer).toBe(false);
+  });
+
+  it("shows the game's idle view while nobody is called or inside", () => {
+    const t = setup({ ...demo, dealerIdleView: (s: DemoState) => ({ idle: true, round: s.round }) });
+    expect(dealerFrame(t).game).toEqual({ idle: true, round: 1 });
+    t.act('ana', { type: 'dealerRequest' });
+    expect(dealerFrame(t).game).toBeNull();
+    t.act('ana', { type: 'dealerCode', code: t.e.state.dealer.current!.code });
+    expect(dealerFrame(t).game).not.toHaveProperty('idle');
+    t.act('ana', { type: 'dealerLeave' });
+    expect(dealerFrame(t).game).toEqual({ idle: true, round: 1 });
   });
 });
 

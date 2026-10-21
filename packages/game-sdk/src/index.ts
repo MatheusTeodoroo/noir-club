@@ -89,6 +89,11 @@ export interface GameLogic<S = any, Cfg = any> {
   playerView(state: S, playerId: ClientId, ctx: GameCtx<Cfg>): unknown;
   /** Shown on the dealer device while `playerId` is verified inside. */
   dealerView?(state: S, playerId: ClientId, ctx: GameCtx<Cfg>): unknown;
+  /**
+   * Shown on the dealer device while nobody is called or visiting. For games whose Dealer sits in
+   * one team's room and shows that team's board the whole match (usually nobody ever visits).
+   */
+  dealerIdleView?(state: S, ctx: GameCtx<Cfg>): unknown;
 }
 
 export function defineGame<S, Cfg = Record<string, unknown>>(logic: GameLogic<S, Cfg>): GameLogic<S, Cfg> {
@@ -209,6 +214,7 @@ export interface PlayerProps<V = any> extends CommonUIProps {
 
 export interface DealerProps<DV = any> extends CommonUIProps {
   view: DV;
+  /** The visitor's name; empty while the Dealer shows the game's `dealerIdleView`. */
   playerName: string;
 }
 

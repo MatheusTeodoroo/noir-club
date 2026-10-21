@@ -18,8 +18,24 @@ export function DealerScreen({ session }: { session: Session }) {
   const cur = dealer?.current ?? null;
   const playing = frame?.platform.phase === 'playing';
 
+  const Dealer = gameUI?.Dealer;
+
   let body;
-  if (!playing || !dealer || !cur) {
+  if (playing && dealer && !cur && Dealer && dealer.game != null) {
+    // The game's standing view (dealerIdleView): this Dealer shows one team's board all match.
+    body = (
+      <GameBoundary resetKey={dealer.seq}>
+        <Dealer
+          kit={kit}
+          lang={lang}
+          t={(x: { 'pt-BR': string; en: string }) => x[lang]}
+          platform={frame!.platform}
+          view={dealer.game}
+          playerName=""
+        />
+      </GameBoundary>
+    );
+  } else if (!playing || !dealer || !cur) {
     body = (
       <div className="screen-center">
         <div className="stack" style={{ justifyItems: 'center', gap: '2em', textAlign: 'center' }}>
@@ -69,7 +85,6 @@ export function DealerScreen({ session }: { session: Session }) {
       </div>
     );
   } else {
-    const Dealer = gameUI?.Dealer;
     body = (
       <>
         <div className="tv-corner tv-corner--tl">

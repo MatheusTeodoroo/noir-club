@@ -33,6 +33,7 @@ export default defineGame<State, Config>({
   publicView(state, ctx): PublicView,                  // required — every TV
   playerView(state, playerId, ctx): PlayerView,        // required — one phone
   dealerView?(state, playerId, ctx): DealerView,       // Dealer screen while playerId is inside
+  dealerIdleView?(state, ctx): DealerView,             // Dealer screen while nobody visits (platform.md)
 });
 ```
 

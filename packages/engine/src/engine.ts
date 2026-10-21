@@ -778,7 +778,9 @@ export class Engine {
           game:
             cur?.verified && curPlayer && !curPlayer.remote && this.logic?.dealerView
               ? this.logic.dealerView(matchState, cur.playerId, ctx)
-              : null,
+              : !cur && s.phase === 'playing' && hasGame && this.logic?.dealerIdleView
+                ? this.logic.dealerIdleView(matchState, ctx)
+                : null,
         });
       }
     }

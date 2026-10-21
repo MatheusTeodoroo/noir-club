@@ -447,7 +447,14 @@ export function DealerDevice() {
   const frame = msg.privates['dealer'] as DealerFrame | undefined;
   const cur = frame?.current ?? null;
   let body: ReactNode;
-  if (!cur) {
+  if (!cur && game.Dealer && frame?.game != null) {
+    // The game's standing view (dealerIdleView), shown while nobody visits.
+    body = (
+      <Boundary resetKey={JSON.stringify(frame.game)}>
+        <game.Dealer kit={kit} lang={lang} t={tFor(lang)} platform={platform} view={frame.game} playerName="" />
+      </Boundary>
+    );
+  } else if (!cur) {
     body = (
       <Waiting
         text={frame?.queue.length ? `${s.queue}: ${frame.queue.map((q) => q.name).join(', ')}` : s.dealerWaits}
