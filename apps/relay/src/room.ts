@@ -489,11 +489,13 @@ export class RoomObject extends DurableObject<Env> {
   private async scheduleAlarm() {
     const meta = this.meta;
     if (!meta) return;
-    const next =
-      meta.engineOfflineSince !== null
-        ? meta.engineOfflineSince + TIMING.engineMigrateMs
-        : Date.now() + ROOM_IDLE_TTL_MS;
+    const now = Date.now();
+    // Wake for the engine migration while it is still ahead; once it has passed (nobody could take
+    // the engine, e.g. everyone left), only the idle clean-up remains. Scheduling the past deadline
+    // again would re-fire the alarm immediately, forever, for every abandoned room.
+    const migrateAt = meta.engineOfflineSince !== null ? meta.engineOfflineSince + TIMING.engineMigrateMs : null;
+    const next = migrateAt !== null && migrateAt > now ? migrateAt : Math.max(now, meta.lastSeen) + ROOM_IDLE_TTL_MS;
     const current = await this.ctx.storage.getAlarm();
-    if (current === null || current > next || current < Date.now()) await this.ctx.storage.setAlarm(next);
+    if (current === null || current > next || current < now) await this.ctx.storage.setAlarm(next);
   }
 }

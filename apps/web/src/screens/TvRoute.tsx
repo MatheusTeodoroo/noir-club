@@ -4,6 +4,7 @@ import { deviceIdentity, storageKey } from '../identity.ts';
 import { Button, Stage } from '@mp/ui';
 import { unlockAudio } from '../audio.ts';
 import { useT } from '../i18n.ts';
+import { LangSwitch } from '../room/siteLinks.tsx';
 import { Logo } from '../room/common.tsx';
 import { Session } from '../room/session.ts';
 import { DisplayScreen } from './DisplayScreen.tsx';
@@ -76,6 +77,10 @@ function TapToStart({ onStart }: { onStart(): void }) {
   }, []);
   return (
     <Stage className="tv">
+      {/* Outside the tap-anywhere area, so choosing a language doesn't start the TV. */}
+      <div className="corner-tools">
+        <LangSwitch />
+      </div>
       <div className="screen-center" style={{ cursor: 'pointer' }} onClick={onStart}>
         <div className="stack" style={{ justifyItems: 'center', gap: '2em' }}>
           <Logo size={1.4} />

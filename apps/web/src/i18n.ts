@@ -75,6 +75,15 @@ const pt = {
   'status.kicked': 'Você foi removido da sala.',
   'results.title': 'Placar',
   'results.points': 'pts',
+  'lang.label': 'Idioma',
+  'links.title': 'Ajude a melhorar o Noir Club',
+  'links.suggest': 'Sugerir um jogo',
+  'links.bug': 'Reportar um bug',
+  'links.copyright': 'Direitos autorais',
+  'links.notice':
+    'Noir Club é um projeto independente de jogos sociais. Se algum conteúdo aqui é seu e foi usado sem permissão, envie uma reivindicação de direitos autorais.',
+  'links.opensNewTab': 'abre em nova aba',
+  'results.feedback': 'Algo deu errado ou tem uma ideia?',
 } as const;
 
 type Key = keyof typeof pt;
@@ -152,6 +161,15 @@ const en: Record<Key, string> = {
   'status.kicked': 'You were removed from the room.',
   'results.title': 'Scoreboard',
   'results.points': 'pts',
+  'lang.label': 'Language',
+  'links.title': 'Help improve Noir Club',
+  'links.suggest': 'Suggest a game',
+  'links.bug': 'Report a bug',
+  'links.copyright': 'Copyright',
+  'links.notice':
+    'Noir Club is an independent social-games project. If any content here is yours and was used without permission, submit a copyright claim.',
+  'links.opensNewTab': 'opens in a new tab',
+  'results.feedback': 'Something went wrong or have an idea?',
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { 'pt-BR': pt, en };
@@ -178,6 +196,22 @@ export function makeT(lang: Lang) {
 export type T = ReturnType<typeof makeT>;
 
 export const LangContext = createContext<Lang>('pt-BR');
+
+/** Changes this device's language (saved for next visits). Screens that follow the room's language override LangContext. */
+export const SetLangContext = createContext<(lang: Lang) => void>(() => {});
+
+export function saveLang(lang: Lang) {
+  try {
+    localStorage.setItem('mp.lang', lang);
+  } catch {
+    /* storage unavailable: the choice lasts for this visit */
+  }
+  document.documentElement.lang = lang;
+}
+
+export function useSetLang() {
+  return useContext(SetLangContext);
+}
 
 export function useT() {
   const lang = useContext(LangContext);

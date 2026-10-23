@@ -6,6 +6,7 @@ import { deviceIdentity } from '../identity.ts';
 import { Button, Panel, Stage } from '@mp/ui';
 import { useT } from '../i18n.ts';
 import { Logo } from '../room/common.tsx';
+import { LangSwitch, SiteLinks } from '../room/siteLinks.tsx';
 
 export function Home() {
   const { t } = useT();
@@ -40,6 +41,9 @@ export function Home() {
 
   return (
     <Stage>
+      <div className="corner-tools">
+        <LangSwitch />
+      </div>
       <div className="screen-center">
         <div className="stack mp-enter" style={{ width: '100%', maxWidth: 420, gap: 28 }}>
           <Logo />
@@ -73,6 +77,7 @@ export function Home() {
             </Button>
             <span style={{ color: 'var(--text-mute)', fontSize: '0.8rem' }}>{t('home.tvHint')}</span>
           </div>
+          <SiteLinks full />
         </div>
       </div>
     </Stage>

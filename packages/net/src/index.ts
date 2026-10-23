@@ -164,6 +164,7 @@ export class RoomClient {
   private ws: WebSocket | null = null;
   private handlers: Handlers = {};
   private retry = 0;
+  private replacedRetries = 0;
   private closed = false;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private mesh: PeerMesh;
@@ -258,6 +259,7 @@ export class RoomClient {
     if (grant) q.set('grant', grant);
     const ws = new WebSocket(`${wsBase()}/ws/room/${code}?${q}`);
     this.ws = ws;
+    const startedAt = localNow();
 
     ws.onopen = () => {
       this.retry = 0;
@@ -271,6 +273,16 @@ export class RoomClient {
       if (this.ws !== ws) return;
       if (this.pingTimer) clearInterval(this.pingTimer);
       this.mesh.closeAll();
+      // 4001 = "replaced": this device opened a newer socket. Right after connecting it is usually a
+      // race instead — a socket this page already discarded (reload, React StrictMode) reached the
+      // relay after the live one and displaced it — so reconnect a few times before giving up.
+      const raced = ev.code === 4001 && localNow() - startedAt < 5_000 && this.replacedRetries < 3;
+      if (raced) {
+        this.replacedRetries++;
+        this.setStatus('reconnecting');
+        setTimeout(() => !this.closed && this.connect(), 300);
+        return;
+      }
       if (this.closed || ev.code === 4000 || ev.code === 4003 || ev.code === 4001) {
         this.setStatus('closed');
         return;
@@ -290,6 +302,7 @@ export class RoomClient {
   private onRelay(msg: RelayToClient) {
     switch (msg.t) {
       case 'welcome':
+        this.replacedRetries = 0;
         this.you = msg.you;
         this.clients = msg.clients;
         this.engineId = msg.engineId;

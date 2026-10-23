@@ -4,6 +4,7 @@ import { normalizeRoomCode } from '@mp/protocol';
 import { deviceIdentity, storageKey } from '../identity.ts';
 import { Avatar, Button, Panel, Stage } from '@mp/ui';
 import { useT } from '../i18n.ts';
+import { LangSwitch } from '../room/siteLinks.tsx';
 import { AVATARS } from '../room/common.tsx';
 import { Session } from '../room/session.ts';
 import { PlayerScreen } from './PlayerScreen.tsx';
@@ -63,6 +64,9 @@ function JoinForm({ onJoin }: { onJoin(p: Profile): void }) {
 
   return (
     <Stage>
+      <div className="corner-tools">
+        <LangSwitch />
+      </div>
       <div className="screen-center">
         <Panel className="stack mp-enter" style={{ width: '100%', maxWidth: 420, gap: 18 }}>
           <div className="stack" style={{ justifyItems: 'center', gap: 10 }}>

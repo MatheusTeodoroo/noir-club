@@ -3,6 +3,7 @@ import type { PlayerFrame, PublicFrame } from '@mp/protocol';
 import type { GameUI } from '@mp/game-sdk';
 import { Avatar, Button, Countdown, Panel, RoomTimeContext, Stage, Toggle } from '@mp/ui';
 import { useT } from '../i18n.ts';
+import { LangSwitch, SiteLinks } from '../room/siteLinks.tsx';
 import { GameBoundary, kit, Scoreboard, StatusOverlay, useGameUI } from '../room/common.tsx';
 import { useSession, type Session } from '../room/session.ts';
 import { AdminPanel, TvPairing } from './AdminPanel.tsx';
@@ -134,7 +135,12 @@ function Lobby({ session, frame, me }: { session: Session; frame: PublicFrame; m
           checked={me.platform.remote}
           onChange={(remote) => session.send({ type: 'setRemote', remote })}
         />
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <span>{t('lang.label')}</span>
+          <LangSwitch />
+        </div>
       </Panel>
+      <SiteLinks />
     </div>
   );
 }
@@ -251,6 +257,7 @@ function Results({ session, frame, me }: { session: Session; frame: PublicFrame;
           {t('admin.backToLobby')}
         </Button>
       )}
+      <SiteLinks lead={t('results.feedback')} />
     </div>
   );
 }
