@@ -1,6 +1,7 @@
 import { defineGame, type GameManifest } from '@mp/game-sdk';
 import manifestJson from '../manifest.json';
 import { alchemyStep, resolveNight } from './night.ts';
+import { RULES, SLIDES, type Hint } from './texts.ts';
 import {
   DAWN_REVEAL,
   FIXED,
@@ -36,6 +37,7 @@ import {
   teamOf,
   usesLeft,
   type Announcement,
+  type Config,
   type Ctx,
   type Death,
   type EndResult,
@@ -50,7 +52,7 @@ import {
   type Win,
 } from './state.ts';
 
-export type { Phase, Report, State, Death, Revealed, Announcement, LiveEvent, Outcome, EndResult, LogEntry };
+export type { Config, Phase, Report, State, Death, Revealed, Announcement, LiveEvent, Outcome, EndResult, LogEntry };
 
 export const manifest = manifestJson as GameManifest;
 
@@ -60,6 +62,12 @@ type Rules = Pick<Setup, 'killMode' | 'abilityMode' | 'spectator' | 'oratorVotes
 
 export interface PublicView {
   phase: Phase;
+  slide: number;
+  slides: number;
+  tvRules: number | null;
+  tvClass: RoleId | null;
+  /** First night and day with the tutorial on: a one-line tip for the TV. */
+  hint: Hint | null;
   day: number;
   night: number;
   deadline: number | null;
@@ -115,6 +123,10 @@ export interface NightPanel {
 
 export interface PlayerView {
   phase: Phase;
+  slide: number;
+  slides: number;
+  tvRules: number | null;
+  tvClass: RoleId | null;
   day: number;
   deadline: number | null;
   total: number | null;
@@ -159,6 +171,9 @@ export interface PlayerView {
 }
 
 export type Action =
+  | { type: 'intro'; dir: 1 | -1 | 'skip' }
+  | { type: 'tvRules'; page: number | null }
+  | { type: 'tvClass'; role: RoleId | null }
   | { type: 'setup'; patch: Partial<Setup> }
   | { type: 'start' }
   | { type: 'ack' }
@@ -187,9 +202,11 @@ const isRole = (v: unknown): v is RoleId => isStr(v) && (ROLE_IDS as string[]).i
 const isIndex = (v: unknown, list: readonly unknown[] | undefined): v is number =>
   typeof v === 'number' && Number.isInteger(v) && !!list && v >= 0 && v < list.length;
 
-/** The Host: p1 while connected, else the first connected participant. */
+/** The Host: the room's Host while connected, else p1, else the first connected participant. */
 function hostId(ctx: Ctx): string {
-  return (ctx.players.find((p) => p.id === 'p1' && p.connected) ?? ctx.players.find((p) => p.connected) ?? ctx.players[0])?.id ?? 'p1';
+  return (
+    ctx.players.find((p) => p.isHost && p.connected) ??
+    ctx.players.find((p) => p.id === 'p1' && p.connected) ?? ctx.players.find((p) => p.connected) ?? ctx.players[0])?.id ?? 'p1';
 }
 
 const connectedIds = (ctx: Ctx) => ctx.players.filter((p) => p.connected).map((p) => p.id);
@@ -248,6 +265,9 @@ function patchSetup(cur: Setup, patch: unknown): Setup | null {
 function freshState(setup: Setup): State {
   return {
     phase: 'setup',
+    slide: 0,
+    tvRules: null,
+    tvClass: null,
     setup,
     day: 0,
     nightNo: 0,
@@ -630,11 +650,31 @@ function allAcked(s: State, ctx: Ctx) {
 
 // ---------------------------------------------------------------- Game
 
-export default defineGame<State, Record<string, never>>({
+/** Safety net: a tutorial nobody advances (the Host left) gives way to the setup. */
+const INTRO_MAX_MS = 5 * 60_000;
+
+function endIntro(s: State, ctx: Ctx) {
+  ctx.clearTimer('intro');
+  s.phase = 'setup';
+  s.slide = 0;
+}
+
+function hintFor(s: State, ctx: Ctx): Hint | null {
+  if (!ctx.config.tutorial || s.nightNo !== 1 || s.day > 1) return null;
+  const map: Partial<Record<Phase, Hint>> = { night: 'night', report: 'report', dawn: 'dawn', day: 'day', vote: 'vote', verdict: 'verdict' };
+  return map[s.phase] ?? null;
+}
+
+export default defineGame<State, Config>({
   manifest,
 
   setup(ctx) {
-    return freshState(defaultSetup(connectedIds(ctx).length));
+    const s = freshState(defaultSetup(connectedIds(ctx).length));
+    if (ctx.config.tutorial) {
+      s.phase = 'intro';
+      ctx.setTimer('intro', INTRO_MAX_MS);
+    }
+    return s;
   },
 
   onAction(s, pid, raw, ctx) {
@@ -647,6 +687,27 @@ export default defineGame<State, Record<string, never>>({
 
     // ---- Host and phase-flow actions
     switch (a.type) {
+      case 'intro': {
+        if (s.phase !== 'intro' || !isHost) return;
+        const last = s.slide === SLIDES.length - 1;
+        if (a.dir === 'skip' || (a.dir === 1 && last)) endIntro(s, ctx);
+        else if (a.dir === 1) s.slide += 1;
+        else if (a.dir === -1 && s.slide > 0) s.slide -= 1;
+        return;
+      }
+      case 'tvRules': {
+        // Shared screens follow the Host only; one overlay at a time.
+        if (!isHost || !(a.page === null || isIndex(a.page, RULES))) return;
+        s.tvRules = a.page as number | null;
+        if (a.page !== null) s.tvClass = null;
+        return;
+      }
+      case 'tvClass': {
+        if (!isHost || !(a.role === null || isRole(a.role))) return;
+        s.tvClass = a.role as RoleId | null;
+        if (a.role !== null) s.tvRules = null;
+        return;
+      }
       case 'setup': {
         if (s.phase !== 'setup' || !isHost) return;
         const next = patchSetup(s.setup, a.patch);
@@ -841,9 +902,15 @@ export default defineGame<State, Record<string, never>>({
 
   onTimer(s, key, ctx) {
     if (key === 'phase') onPhaseTimer(s, ctx);
+    else if (key === 'intro' && s.phase === 'intro') endIntro(s, ctx);
   },
 
   onPlayerTimeout(s, pid, ctx) {
+    // The Host left during the tutorial: nobody else can advance it.
+    if (s.phase === 'intro') {
+      if (!ctx.players.some((p) => p.isHost && p.connected)) endIntro(s, ctx);
+      return;
+    }
     if (s.phase === 'setup' || s.phase === 'end' || !s.alive[pid]) return;
     killPlayer(s, pid, 'left', ctx);
     purgeVotes(s);
@@ -869,6 +936,11 @@ export default defineGame<State, Record<string, never>>({
     if (s.setup.revealDead) for (const d of s.deaths) revealed[d.id] = { ...revealed[d.id], role: apparentRole(s, d.id) };
     return {
       phase: s.phase,
+      slide: s.slide,
+      slides: SLIDES.length,
+      tvRules: s.tvRules,
+      tvClass: s.tvClass,
+      hint: hintFor(s, ctx),
       day: s.day,
       night: s.nightNo,
       deadline: ctx.timerDeadline('phase'),
@@ -971,6 +1043,10 @@ export default defineGame<State, Record<string, never>>({
 
     return {
       phase: s.phase,
+      slide: s.slide,
+      slides: SLIDES.length,
+      tvRules: s.tvRules,
+      tvClass: s.tvClass,
       day: s.day,
       deadline: ctx.timerDeadline('phase'),
       total: s.phase === 'day' ? s.dayTotal : ctx.timerTotal('phase'),

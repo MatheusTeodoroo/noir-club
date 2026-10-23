@@ -4,9 +4,15 @@ import { role, type ActionKind, type NightEvent, type Potion, type RoleId, type 
 // Engine-side state and the rules shared by the day and the night: deaths, wins, uses.
 // Everything here is private; only the views in logic.ts decide what leaves the engine.
 
-export type Ctx = GameCtx<Record<string, never>>;
+/** Lobby settings; the rest of the setup happens inside the game. */
+export interface Config {
+  tutorial: boolean;
+}
+
+export type Ctx = GameCtx<Config>;
 
 export type Phase =
+  | 'intro' // tutorial slides on the TV, advanced by the Host
   | 'setup' // Host builds the match, everyone reads the guide
   | 'reveal' // everyone checks their class
   | 'night'
@@ -166,6 +172,11 @@ export interface EndResult {
 
 export interface State {
   phase: Phase;
+  /** Tutorial slide on screen during the intro. */
+  slide: number;
+  /** Rules page / class card the Host is showing on the TV. */
+  tvRules: number | null;
+  tvClass: RoleId | null;
   setup: Setup;
   /** Day number; night n is followed by day n. */
   day: number;

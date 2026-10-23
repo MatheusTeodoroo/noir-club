@@ -92,6 +92,18 @@ read the guide meanwhile.
 | revealDead | boolean | false | show the class of every dead/expelled player on the TV |
 | times.dawn/day/vote/night | seconds | 20/180/60/45 | 10–60 / 30–600 / 20–180 / 20–120 |
 
+## Tutorial and rules
+Tutorial (lobby config "tutorial", default on) — runs before the Host's setup, Host advances, 5-minute safety timer, Host leaving moves on:
+1. Como jogar — the three sides (demo: Sheriff / Poisoner / Journalist cards).
+2. Sua classe é só sua — hold-to-see card, TV is the table (demo: phone hold card → class card).
+3. À noite, todos tocam — decoy picks, night report (demo: phone picker with a highlighted target).
+4. O ciclo de um dia — Early Morning → Morning → Afternoon (demo: phase chips).
+5. Como vencer — the three win conditions (demo: team cards).
+
+Rules (📖 Regras tab on every phone; the Host can show a page or any class card on the TV): Overview · Sides and winning · The setup · Night · Report and Early Morning · Morning: the debate · Afternoon: the vote · Verdict · Special situations · The classes (cards below, searchable) · End of the game.
+
+Hints (tutorial on, first night and day only): one line on the TV per phase.
+
 ## Dealer
 Not used: classes live on the phone behind "hold to see"; everyone taps something at night so
 nobody can tell who acts.

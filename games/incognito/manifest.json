@@ -1,6 +1,6 @@
 {
   "id": "incognito",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "name": { "pt-BR": "Incógnito", "en": "Incognito" },
   "description": {
     "pt-BR": "Inocentes, Impostores e Neutros com poderes secretos. Discuta de dia, vote à tarde e sobreviva à noite.",
@@ -11,5 +11,12 @@
   "usesDealer": false,
   "estimatedMinutes": 30,
   "accent": "#8b1a2b",
-  "config": []
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": { "pt-BR": "Tutorial (como jogar antes da partida)", "en": "Tutorial (how to play before the match)" },
+      "default": true
+    }
+  ]
 }

@@ -21,6 +21,7 @@ import {
   type SetupError,
   type Team,
 } from './shared.ts';
+import { CREDITS, HINTS, RULES, SLIDES, type SlideDemo as SlideDemoKind } from './texts.ts';
 
 // Only `react`, `@mp/game-sdk` and ./shared.ts (public catalogue) are imported here. Platform
 // components come in through `kit`, text goes through `t()`, styles are scoped with `ig-`.
@@ -94,7 +95,19 @@ const L = {
   oratorN: { 'pt-BR': 'Orador vale {n} votos', en: 'Orator counts {n} votes' },
   // phone
   tabGame: { 'pt-BR': 'Jogo', en: 'Game' },
-  tabGuide: { 'pt-BR': 'Guia', en: 'Guide' },
+  tabGuide: { 'pt-BR': '📖 Regras', en: '📖 Rules' },
+  tutorial: { 'pt-BR': 'Tutorial', en: 'Tutorial' },
+  introTitle: { 'pt-BR': 'Como jogar', en: 'How to play' },
+  hostAdvances: { 'pt-BR': 'O Host avança pelo celular', en: 'The Host moves on from their phone' },
+  followTv: { 'pt-BR': 'Acompanhe o tutorial na TV.', en: 'Follow the tutorial on the TV.' },
+  prev: { 'pt-BR': 'Anterior', en: 'Back' },
+  next: { 'pt-BR': 'Próximo', en: 'Next' },
+  toSetup: { 'pt-BR': 'Montar a partida', en: 'Set up the match' },
+  skipTutorial: { 'pt-BR': 'Pular tutorial', en: 'Skip tutorial' },
+  rules: { 'pt-BR': 'Regras', en: 'Rules' },
+  showOnTv: { 'pt-BR': 'Mostrar na TV', en: 'Show on TV' },
+  hideFromTv: { 'pt-BR': 'Tirar da TV', en: 'Hide from TV' },
+  credits: { 'pt-BR': 'Créditos', en: 'Credits' },
   waitHost: { 'pt-BR': 'O Host está configurando a partida. Leia o Guia enquanto isso.', en: 'The Host is setting up. Read the Guide meanwhile.' },
   hold: { 'pt-BR': 'Segure para ver sua classe', en: 'Hold to see your class' },
   yourTeam: { 'pt-BR': 'Seus parceiros', en: 'Your partners' },
@@ -251,30 +264,13 @@ const EVENT: Record<NightEvent['kind'], I18nText> = {
   entangled: { 'pt-BR': '{v} foi enredado.', en: '{v} was entangled.' },
 };
 
-const RULES: I18nText[] = [
-  {
-    'pt-BR': 'Ciclo: Noite → Manhã Cedo (mortes e habilidades da manhã) → Manhã (discussão) → Tarde (votação) → Noite.',
-    en: 'Cycle: Night → Early Morning (deaths, morning abilities) → Morning (debate) → Afternoon (vote) → Night.',
-  },
-  {
-    'pt-BR': 'Inocentes vencem quando todos os Impostores e Neutros morrerem. Impostores vencem quando forem tantos quanto os Inocentes vivos. Cada Neutro tem a própria vitória — e ela encerra o jogo na hora.',
-    en: 'Innocents win when every Impostor and Neutral is dead. Impostors win once they match the living Innocents. Each Neutral has their own win — and it ends the game at once.',
-  },
-  {
-    'pt-BR': 'À noite todos tocam em algo no celular, mesmo sem habilidade, para ninguém perceber quem age. Os resultados chegam no relatório ao fim da noite.',
-    en: 'At night everyone taps something, even without an ability, so nobody can tell who acts. Results arrive in the report at the end of the night.',
-  },
-  {
-    'pt-BR': 'Mortes são anunciadas sem revelar a classe. Na votação vence a maioria; empate ou "Pular" no topo: ninguém sai. A TV mostra só a contagem, nunca quem votou em quem.',
-    en: 'Deaths are announced without the class. The vote goes to the majority; a tie or "Skip" on top: nobody leaves. The TV shows only totals, never who voted for whom.',
-  },
-  {
-    'pt-BR': 'Jogador bloqueado (Chaveiro, Construtor, Tentáculo) não age naquela noite, mas ainda pode sofrer ações. Classes não se repetem.',
-    en: 'A blocked player (Locksmith, Builder, Tentacle) takes no action that night but can still be targeted. Classes never repeat.',
-  },
-];
-
 const TEAM_CLASS: Record<Team, string> = { innocent: 'ig-inn', impostor: 'ig-imp', neutral: 'ig-neu' };
+
+const WIN_LINE: Record<Team, I18nText> = {
+  innocent: { 'pt-BR': 'Eliminam todos os Impostores e Neutros.', en: 'Eliminate every Impostor and Neutral.' },
+  impostor: { 'pt-BR': 'Ficam tantos quanto os Inocentes vivos.', en: 'Match the living Innocents.' },
+  neutral: { 'pt-BR': 'Cada um com a própria vitória — e ela encerra o jogo.', en: 'Each has their own goal — and it ends the game.' },
+};
 
 const CSS = `
 .ig-tv{height:100vh;box-sizing:border-box;padding:2.2em 3.2em 5.5em;display:grid;grid-template-rows:auto 1fr;gap:1.4em;overflow:hidden}
@@ -326,6 +322,50 @@ const CSS = `
 .ig-row div{display:grid;line-height:1.15}
 .ig-row div span{font-size:.85em}
 .ig-rise{animation:ig-rise .7s var(--ease-out) both}
+/* Tutorial slide (TV) */
+.ig-slide{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:4em;padding:3em 4.5em 5.5em}
+.ig-slide p{font-size:1.6em;line-height:1.45;margin:0 0 .7em;color:var(--text)}
+.ig-slide b,.ig-tvrules b,.ig-rulespage b{color:var(--gold-hi);font-weight:600}
+.ig-dots{display:flex;gap:.6em;margin-top:1.2em}
+.ig-dots span{width:.8em;height:.8em;border-radius:50%;background:var(--line-strong)}
+.ig-dots span[data-on=true]{background:var(--gold)}
+.ig-demo-cards{display:grid;gap:1em;justify-items:stretch}
+.ig-mini{padding:1em 1.4em;max-width:none}
+.ig-mini h2{font-size:1.9em}
+.ig-mini p{font-size:1.15em}
+.ig-demo-row{display:flex;align-items:center;justify-content:center;gap:1.5em}
+.ig-demo-arrow{font-size:3em;color:var(--gold)}
+.ig-mock{width:16em;min-height:20em;border-radius:2em;padding:1.6em 1.2em;box-sizing:border-box;background:var(--ink-1);box-shadow:0 0 0 .25em var(--ink-3),0 1.5em 3em rgba(0,0,0,.5);display:grid;align-content:center;gap:1em}
+.ig-mock-wide{width:22em;min-height:auto;justify-items:center}
+.ig-mock-hold{min-height:9em;border-radius:1em;display:grid;place-items:center;text-align:center;padding:1em;color:var(--gold);font-weight:600;font-size:1.1em;
+  background:repeating-linear-gradient(45deg,rgba(212,175,55,.08) 0 .6em,rgba(212,175,55,.02) .6em 1.2em),var(--ink-2);box-shadow:0 0 0 1px var(--line-strong) inset}
+.ig-mock-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.8em}
+.ig-mock-pick{padding:.6em;border-radius:.8em;background:rgba(255,255,255,.04);box-shadow:0 0 0 1px var(--line) inset;display:grid;place-items:center}
+.ig-mock-pick.on{background:linear-gradient(180deg,rgba(226,195,90,.35),rgba(168,133,32,.25));box-shadow:0 0 0 .15em var(--gold) inset;animation:ig-pulse 1.6s ease-in-out infinite}
+@keyframes ig-pulse{50%{transform:scale(1.06)}}
+.ig-mock-note{margin:0;font-family:var(--font-serif);font-style:italic;font-size:1.1em;color:var(--text-dim);text-align:center}
+.ig-cycle{display:grid;gap:.7em;justify-items:center}
+.ig-cycle-step{font-family:var(--font-display);font-size:1.7em;padding:.35em 1.2em;border-radius:999px;box-shadow:0 0 0 1px var(--line-strong) inset;min-width:9em;text-align:center}
+.ig-cycle-step.night{color:#c9c3f0}
+.ig-cycle-back{font-size:2.6em;color:var(--gold)}
+/* Rules page / class card over the TV */
+.ig-tvrules{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(5,3,7,.88)}
+.ig-tvrules .mp-panel{width:min(60em,90vw);padding:2.4em 3em}
+.ig-tvrules h2{font-family:var(--font-display);font-size:2.6em;margin:.2em 0 .6em;color:var(--gold-hi)}
+.ig-tvrules p{font-size:1.45em;line-height:1.45;margin:0 0 .6em}
+.ig-tvcard{max-width:44em;padding:2.4em 3em}
+.ig-tvcard h2{font-size:3.4em}
+.ig-tvcard p{font-size:1.7em}
+.ig-hint{font-family:var(--font-serif);font-style:italic;font-size:1.5em;color:var(--gold-hi);margin:.4em 0 0}
+/* Rules on the phone */
+.ig-rulespage{display:grid;gap:10px}
+.ig-rulespage h3{font-family:var(--font-display);font-size:1.35rem;margin:0;color:var(--gold-hi)}
+.ig-rulespage p{margin:0;font-size:15px;line-height:1.5;color:var(--text)}
+.ig-row{display:flex;gap:8px}
+.ig-row > *{flex:1}
+.ig-classes-head{margin:8px 0 0;font:600 13px var(--font-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.ig-tvbtn{margin-top:8px;min-height:36px;border:0;border-radius:8px;padding:0 12px;background:var(--ink-3);color:var(--gold-hi);font:600 13px var(--font-ui);cursor:pointer}
+.ig-tvbtn[aria-pressed=true]{box-shadow:0 0 0 2px var(--gold) inset}
 .ig-dawnstage{background:radial-gradient(ellipse at 50% 45%,rgba(60,8,16,.55),rgba(0,0,0,.92) 70%);grid-template-rows:1fr}
 .ig-dawn{display:grid;grid-template-rows:auto 1fr;justify-items:center;gap:1.5em;text-align:center;min-height:0}
 .ig-dawn-line{font-family:var(--font-display);font-size:4em;margin:0;color:var(--text);letter-spacing:.04em;animation:ig-breathe 1.8s ease-in-out infinite}
@@ -400,6 +440,254 @@ function eventText(t: T, e: NightEvent, name: (id: string) => string) {
   return fmt(t(EVENT[e.kind]), { v: name(e.victim) });
 }
 
+// ---------------------------------------------------------------- Tutorial and rules
+
+/** Renders **bold** inside a translated string. */
+function rich(text: string): ReactNode[] {
+  return text
+    .split(/(\*\*[^*]+\*\*)/g)
+    .map((part, i) => (part.startsWith('**') && part.endsWith('**') ? <b key={i}>{part.slice(2, -2)}</b> : part));
+}
+
+const DEMO_SEATS = ['🎩', '🃏', '🎲', '🍷', '💎', '👑'];
+
+/** Small live illustrations next to each slide, drawn with the game's real pieces. */
+function SlideDemo({ demo, kit, t }: { demo: SlideDemoKind; kit: DisplayProps['kit']; t: T }) {
+  const { Avatar } = kit;
+  if (demo === 'sides') {
+    return (
+      <div className="ig-demo-cards">
+        {(['sheriff', 'poisoner', 'journalist'] as RoleId[]).map((id, i) => (
+          <div key={id} className={`ig-card ig-mini ${TEAM_CLASS[role(id).team]} ig-rise`} style={{ animationDelay: `${300 + i * 250}ms` }}>
+            <span className="mp-eyebrow ig-team">{t(TEAM_NAME[role(id).team])}</span>
+            <h2>{t(role(id).name)}</h2>
+            <p>{t(role(id).short)}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (demo === 'secret') {
+    return (
+      <div className="ig-demo-row">
+        <div className="ig-mock">
+          <div className="ig-mock-hold">{t(L.hold)}</div>
+        </div>
+        <span className="ig-demo-arrow">→</span>
+        <div className="ig-mock">
+          <div className={`ig-card ig-mini ${TEAM_CLASS.innocent}`}>
+            <span className="mp-eyebrow ig-team">{t(TEAM_NAME.innocent)}</span>
+            <h2>{t(role('guard').name)}</h2>
+            <p>{t(role('guard').short)}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (demo === 'night') {
+    return (
+      <div className="ig-mock ig-mock-wide">
+        <span className="mp-eyebrow">{t(role('sheriff').name)}</span>
+        <div className="ig-mock-grid">
+          {DEMO_SEATS.map((e, i) => (
+            <div key={e} className={`ig-mock-pick ${i === 3 ? 'on' : ''}`}>
+              <Avatar emoji={e} size="2.6em" />
+            </div>
+          ))}
+        </div>
+        <p className="ig-mock-note">{t(L.locked)}</p>
+      </div>
+    );
+  }
+  if (demo === 'cycle') {
+    const steps = [L.nightTitle, L.reportTitle, L.dawnTitle, L.dayTitle, L.voteTitle, L.verdictTitle];
+    return (
+      <div className="ig-cycle">
+        {steps.map((s, i) => (
+          <span key={i} className={`ig-cycle-step ig-rise ${i === 0 ? 'night' : ''}`} style={{ animationDelay: `${200 + i * 180}ms` }}>
+            {t(s)}
+          </span>
+        ))}
+        <span className="ig-cycle-back">↺</span>
+      </div>
+    );
+  }
+  return (
+    <div className="ig-demo-cards">
+      {(['innocent', 'impostor', 'neutral'] as Team[]).map((team, i) => (
+        <div key={team} className={`ig-card ig-mini ${TEAM_CLASS[team]} ig-rise`} style={{ animationDelay: `${300 + i * 250}ms` }}>
+          <h2>{t(TEAM_PLURAL[team])}</h2>
+          <p>{t(WIN_LINE[team])}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TutorialSlide({ view, kit, t }: { view: PublicView; kit: DisplayProps['kit']; t: T }) {
+  const s = SLIDES[view.slide]!;
+  return (
+    <div className="ig-slide mp-enter" key={view.slide}>
+      <div>
+        <span className="mp-eyebrow" style={{ fontSize: '1.2em' }}>
+          {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+        </span>
+        <h1 className="ig-h1" style={{ fontSize: '3.8em', margin: '.2em 0 .5em' }}>
+          {t(s.title)}
+        </h1>
+        {s.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        {view.slide === 0 && CREDITS && <p className="ig-sub">{t(CREDITS)}</p>}
+        <div className="ig-dots" aria-hidden>
+          {Array.from({ length: view.slides }, (_, i) => (
+            <span key={i} data-on={i === view.slide} />
+          ))}
+        </div>
+        <p className="ig-sub" style={{ fontSize: '1.2em', marginTop: '1em' }}>
+          {t(L.hostAdvances)}
+        </p>
+      </div>
+      <SlideDemo demo={s.demo} kit={kit} t={t} />
+    </div>
+  );
+}
+
+/** A rules page or a class card on the TV, while the Host shows it from their phone. */
+function TvOverlay({ view, kit, t }: { view: PublicView; kit: DisplayProps['kit']; t: T }) {
+  const { Panel } = kit;
+  if (view.tvClass) {
+    return (
+      <div className="ig-tvrules">
+        <RoleCard key={view.tvClass} id={view.tvClass} t={t} className="mp-enter ig-tvcard" />
+      </div>
+    );
+  }
+  if (view.tvRules === null) return null;
+  const r = RULES[view.tvRules]!;
+  return (
+    <div className="ig-tvrules">
+      <Panel className="mp-enter" key={view.tvRules}>
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {view.tvRules + 1}/{RULES.length}
+        </span>
+        <h2>{t(r.title)}</h2>
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+      </Panel>
+    </div>
+  );
+}
+
+/** The 📖 Rules tab: paged rules (the Host can mirror a page on the TV), then every class card. */
+function Guide({ c }: { c: Ctx }) {
+  const { t, send, kit, view } = c;
+  const { Button } = kit;
+  const isHost = view.isHost;
+  const [page, setPage] = useState(view.tvRules ?? 0);
+  const [q, setQ] = useState('');
+  const onTv = isHost && view.tvRules !== null;
+  useEffect(() => {
+    if (onTv) send({ type: 'tvRules', page });
+  }, [page]);
+  const r = RULES[page]!;
+  const last = page === RULES.length - 1;
+  const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  const teams: Team[] = ['innocent', 'impostor', 'neutral'];
+  return (
+    <div className="ig-guide">
+      <div className="ig-g ig-rulespage" role="region" aria-label={t(L.rules)}>
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h3>{t(r.title)}</h3>
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        {last && CREDITS && (
+          <p>
+            <b>{t(L.credits)}</b> — {t(CREDITS)}
+          </p>
+        )}
+        <div className="ig-row">
+          <Button small variant="ghost" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            ‹ {t(L.prev)}
+          </Button>
+          <Button small variant="ghost" disabled={last} onClick={() => setPage(page + 1)}>
+            {t(L.next)} ›
+          </Button>
+        </div>
+        {isHost && (
+          <Button small onClick={() => send({ type: 'tvRules', page: onTv ? null : page })}>
+            📺 {t(onTv ? L.hideFromTv : L.showOnTv)}
+          </Button>
+        )}
+      </div>
+      <h4 className="ig-classes-head">{t(L.sClasses)}</h4>
+      <input className="ig-input" placeholder={t(L.search)} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t(L.search)} />
+      {teams.map((team) => {
+        const list = ROLE_IDS.filter((id) => role(id).team === team && norm(t(role(id).name) + ' ' + t(role(id).text)).includes(norm(q)));
+        if (!list.length) return null;
+        return (
+          <div key={team} className={`ig-sec ${TEAM_CLASS[team]}`}>
+            <h4 className="ig-team">{t(TEAM_PLURAL[team])}</h4>
+            {list.map((id) => (
+              <div key={id} className="ig-g">
+                <b>{t(role(id).name)}</b>
+                <p>{t(role(id).text)}</p>
+                {isHost && (
+                  <button
+                    type="button"
+                    className="ig-tvbtn"
+                    aria-pressed={view.tvClass === id}
+                    onClick={() => send({ type: 'tvClass', role: view.tvClass === id ? null : id })}
+                  >
+                    📺 {t(view.tvClass === id ? L.hideFromTv : L.showOnTv)}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The Host drives the tutorial from their phone; everyone else follows the TV. */
+function IntroPane({ c }: { c: Ctx }) {
+  const { view: v, t, kit, send } = c;
+  const { Panel, Button } = kit;
+  const last = v.slide === v.slides - 1;
+  return (
+    <div className="ig-ph">
+      <Panel className="stack" style={{ textAlign: 'center' }}>
+        <span className="mp-eyebrow">
+          {t(L.tutorial)} · {v.slide + 1}/{v.slides}
+        </span>
+        <h3 style={{ margin: 0 }}>{t(SLIDES[v.slide]!.title)}</h3>
+        {!v.isHost && <p className="ig-note">{t(L.followTv)}</p>}
+      </Panel>
+      {v.isHost && (
+        <>
+          <div className="ig-row">
+            <Button variant="ghost" disabled={v.slide === 0} onClick={() => send({ type: 'intro', dir: -1 })}>
+              ‹ {t(L.prev)}
+            </Button>
+            <Button onClick={() => send({ type: 'intro', dir: 1 })}>{last ? t(L.toSetup) : `${t(L.next)} ›`}</Button>
+          </div>
+          {!last && (
+            <Button block small variant="ghost" onClick={() => send({ type: 'intro', dir: 'skip' })}>
+              {t(L.skipTutorial)}
+            </Button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- Display
 
 function RoleCard({ id, t, className = '' }: { id: RoleId; t: T; className?: string }) {
@@ -422,7 +710,19 @@ function rulesLines(t: T, r: PublicView['rules']) {
   ];
 }
 
-function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
+function Display(props: DisplayProps<PublicView>) {
+  const { view, kit, t } = props;
+  if (!view) return null;
+  return (
+    <>
+      <Styles />
+      {view.phase === 'intro' ? <TutorialSlide view={view} kit={kit} t={t} /> : <Board {...props} />}
+      <TvOverlay view={view} kit={kit} t={t} />
+    </>
+  );
+}
+
+function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
   const { Avatar, Countdown } = kit;
   const now = kit.useRoomNow();
   const who = useWho(platform);
@@ -432,6 +732,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
 
   const timed = !['setup', 'end'].includes(v.phase);
   const titles: Record<PublicView['phase'], [I18nText, I18nText | null]> = {
+    intro: [L.introTitle, null],
     setup: [L.setupTitle, L.setupSub],
     reveal: [L.revealTitle, L.revealSub],
     night: [L.nightTitle, L.nightSub],
@@ -703,6 +1004,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
           </span>
           <h1 className="ig-h1">{t(title)}</h1>
           {sub && <p className="ig-sub">{t(sub)}</p>}
+          {v.hint && <p className="ig-hint">{t(HINTS[v.hint])}</p>}
         </div>
         {timed && <Countdown deadline={v.deadline} total={v.total ?? 0} size="7em" paused={!!platform.paused} />}
       </header>
@@ -829,40 +1131,6 @@ function Hold({ c }: { c: Ctx }) {
         t(L.hold)
       )}
     </button>
-  );
-}
-
-function Guide({ t }: { t: T }) {
-  const [q, setQ] = useState('');
-  const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-  const teams: Team[] = ['innocent', 'impostor', 'neutral'];
-  return (
-    <div className="ig-guide">
-      <div className="ig-sec">
-        <h4>{t(L.rulesHead)}</h4>
-        {RULES.map((r, i) => (
-          <div key={i} className="ig-g">
-            <p style={{ margin: 0 }}>{t(r)}</p>
-          </div>
-        ))}
-      </div>
-      <input className="ig-input" placeholder={t(L.search)} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t(L.search)} />
-      {teams.map((team) => {
-        const list = ROLE_IDS.filter((id) => role(id).team === team && norm(t(role(id).name) + ' ' + t(role(id).text)).includes(norm(q)));
-        if (!list.length) return null;
-        return (
-          <div key={team} className={`ig-sec ${TEAM_CLASS[team]}`}>
-            <h4 className="ig-team">{t(TEAM_PLURAL[team])}</h4>
-            {list.map((id) => (
-              <div key={id} className="ig-g">
-                <b>{t(role(id).name)}</b>
-                <p>{t(role(id).text)}</p>
-              </div>
-            ))}
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
@@ -1484,6 +1752,7 @@ function Omni({ c }: { c: Ctx }) {
 function GamePane({ c }: { c: Ctx }) {
   const { view: v, t, kit, send } = c;
   const { Panel, Countdown, Button } = kit;
+  if (v.phase === 'intro') return <IntroPane c={c} />;
   if (v.phase === 'setup') return v.setup ? <SetupPanel c={c} /> : <p className="ig-note">{t(L.waitHost)}</p>;
 
   if (v.phase === 'end') {
@@ -1580,7 +1849,7 @@ function Player({ view, kit, t, send, platform }: PlayerProps<PlayerView>) {
           {t(L.tabGuide)}
         </button>
       </div>
-      {tab === 'guide' ? <Guide t={t} /> : <GamePane c={c} />}
+      {tab === 'guide' ? <Guide c={c} /> : <GamePane c={c} />}
     </div>
   );
 }

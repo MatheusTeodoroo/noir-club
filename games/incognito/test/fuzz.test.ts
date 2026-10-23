@@ -87,7 +87,12 @@ describe('Incógnito — fuzz', () => {
     for (let seed = 1; seed <= 120; seed++) {
       const r = rng(seed);
       const players = 5 + Math.floor(r() * 12);
-      const room = createTestRoom<State>(game, { players, seed });
+      const room = createTestRoom<State>(game, { players, seed, config: { tutorial: seed % 2 === 0 } });
+      // With the tutorial on, the Host flips back and forth through it, shows rules on the TV, then moves on.
+      for (const dir of [1, -1, 1]) room.act('p1', { type: 'intro', dir });
+      room.act('p1', { type: 'tvRules', page: 1 });
+      room.act('p1', { type: 'intro', dir: 'skip' });
+      room.act('p1', { type: 'tvRules', page: null });
       const base = suggested(players);
       const picks = Object.fromEntries(PICKABLE.filter(() => r() < 0.25).map((id) => [id, 'force']));
       room.act('p1', {

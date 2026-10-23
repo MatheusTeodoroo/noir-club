@@ -9,7 +9,7 @@ export const pv = (room: Room, id: string) => room.playerView(id) as PlayerView;
 
 /** Starts a match and overwrites the dealt classes: roles[i] goes to p(i+1). */
 export function match(roles: RoleId[], patch: Partial<Setup> = {}, opts: { ack?: boolean } = {}) {
-  const room = createTestRoom<State>(game, { players: roles.length });
+  const room = createTestRoom<State>(game, { players: roles.length, config: { tutorial: false } });
   const impostors = roles.filter((r) => role(r).team === 'impostor').length;
   const neutrals = roles.filter((r) => role(r).team === 'neutral').length;
   room.act('p1', { type: 'setup', patch: { impostors, neutrals, ...patch } });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createTestRoom } from '@mp/engine/testing';
 import game, { type PlayerView, type PublicView, type State } from '../src/logic.ts';
 import { FIXED, role, type RoleId, type Setup } from '../src/shared.ts';
+import { HINTS, RULES, SLIDES } from '../src/texts.ts';
 
 import { skipDay, alive, finishVerdict, match, night, pub, pv, toNight, toVote, vote } from './helpers.ts';
 
@@ -90,7 +91,7 @@ describe('Incógnito — flow', () => {
   });
 
   it('refuses to start an invalid setup', () => {
-    const room = createTestRoom<State>(game, { players: 5 });
+    const room = createTestRoom<State>(game, { players: 5, config: { tutorial: false } });
     room.act('p1', { type: 'setup', patch: { impostors: 2, neutrals: 1 } }); // 2 innocents ≤ 2 impostors
     expect(pv(room, 'p1').setup?.errors).toContain('tooManyImpostors');
     room.act('p1', { type: 'start' });
@@ -103,7 +104,7 @@ describe('Incógnito — flow', () => {
 
   it('deals forced classes and never banned ones, without repeats', () => {
     for (let seed = 1; seed <= 20; seed++) {
-      const room = createTestRoom<State>(game, { players: 12, seed });
+      const room = createTestRoom<State>(game, { players: 12, seed, config: { tutorial: false } });
       room.act('p1', {
         type: 'setup',
         patch: { impostors: 3, neutrals: 2, picks: { sheriff: 'force', twin: 'force', cultist: 'force', guard: 'ban', sniper: 'ban' } },
@@ -177,7 +178,7 @@ describe('Incógnito — secrets', () => {
   });
 
   it('keeps forced and banned classes secret from the TV and the other phones', () => {
-    const room = createTestRoom<State>(game, { players: 6 });
+    const room = createTestRoom<State>(game, { players: 6, config: { tutorial: false } });
     room.act('p1', { type: 'setup', patch: { picks: { sheriff: 'force', guard: 'ban' } } });
     expect(room.publicJson()).not.toContain('sheriff');
     expect(JSON.stringify(pv(room, 'p2'))).not.toContain('sheriff');
@@ -596,3 +597,72 @@ describe('Incógnito — neutral wins end the match', () => {
   });
 });
 
+
+describe('Incógnito — tutorial and rules', () => {
+  it('opens with the tutorial, which only the Host advances, then goes to the setup', () => {
+    const room = createTestRoom<State>(game, { players: 5 });
+    expect(pub(room)).toMatchObject({ phase: 'intro', slide: 0, slides: SLIDES.length });
+    room.act('p2', { type: 'intro', dir: 1 });
+    expect(pub(room).slide).toBe(0);
+    room.act('p1', { type: 'intro', dir: 1 });
+    room.act('p1', { type: 'intro', dir: -1 });
+    expect(pub(room).slide).toBe(0);
+    for (let i = 0; i < SLIDES.length; i++) room.act('p1', { type: 'intro', dir: 1 });
+    expect(pub(room).phase).toBe('setup');
+  });
+
+  it('lets the Host skip the tutorial', () => {
+    const room = createTestRoom<State>(game, { players: 5 });
+    room.act('p1', { type: 'intro', dir: 'skip' });
+    expect(pub(room).phase).toBe('setup');
+  });
+
+  it('moves on to the setup if the Host leaves during the tutorial', () => {
+    const room = createTestRoom<State>(game, { players: 5 });
+    room.disconnect('p1');
+    room.advance(20_001);
+    expect(pub(room).phase).toBe('setup');
+  });
+
+  it('moves on by itself if nobody advances the tutorial for 5 minutes', () => {
+    const room = createTestRoom<State>(game, { players: 5 });
+    room.advance(5 * 60_000);
+    expect(pub(room).phase).toBe('setup');
+  });
+
+  it('shows a rules page or a class card on the TV only when the Host asks', () => {
+    const room = createTestRoom<State>(game, { players: 5 });
+    room.act('p2', { type: 'tvRules', page: 0 });
+    expect(pub(room).tvRules).toBeNull();
+    room.act('p1', { type: 'tvRules', page: RULES.length });
+    expect(pub(room).tvRules).toBeNull();
+    room.act('p1', { type: 'tvRules', page: 2 });
+    expect(pub(room).tvRules).toBe(2);
+    room.act('p1', { type: 'tvClass', role: 'guard' });
+    expect(pub(room)).toMatchObject({ tvClass: 'guard', tvRules: null });
+    room.act('p1', { type: 'tvClass', role: 'nonsense' });
+    expect(pub(room).tvClass).toBe('guard');
+    room.act('p1', { type: 'tvClass', role: null });
+    expect(pub(room).tvClass).toBeNull();
+  });
+
+  it('gives first-night and first-day hints only while the tutorial option is on', () => {
+    const on = createTestRoom<State>(game, { players: 5 });
+    on.act('p1', { type: 'intro', dir: 'skip' });
+    on.act('p1', { type: 'start' });
+    for (const id of on.ids) on.act(id, { type: 'ack' });
+    expect(pub(on)).toMatchObject({ phase: 'night', hint: 'night' });
+    const off = match(['impostor', 'innocent', 'innocent', 'innocent', 'innocent'], { neutrals: 0 });
+    expect(pub(off)).toMatchObject({ phase: 'night', hint: null });
+  });
+
+  it('has the tutorial, every rules page and every hint in both languages', () => {
+    for (const page of [...SLIDES, ...RULES]) {
+      for (const text of [page.title, ...page.body]) {
+        expect(text['pt-BR'].trim()).not.toBe('');
+        expect(text.en.trim()).not.toBe('');
+      }
+    }
+    for (const text of Object.values(HINTS)) expect(text['pt-BR'] && text.en).toBeTruthy();
+  });
+});
