@@ -1,0 +1,39 @@
+{
+  "id": "agent-decker",
+  "version": "0.1.0",
+  "name": { "pt-BR": "Agent Decker", "en": "Agent Decker" },
+  "description": {
+    "pt-BR": "Jogo solo de construção de baralho: infiltre-se no complexo sem disparar o alarme e cumpra 5 missões. Original de Manuel Correia (CC BY-NC 4.0).",
+    "en": "Solo deckbuilding game: sneak through the complex without raising the alarm and complete 5 missions. Original by Manuel Correia (CC BY-NC 4.0)."
+  },
+  "minPlayers": 1,
+  "maxPlayers": 1,
+  "usesDealer": false,
+  "estimatedMinutes": 20,
+  "accent": "#2f56c8",
+  "config": [
+    {
+      "key": "missions",
+      "type": "number",
+      "label": { "pt-BR": "Missões da campanha", "en": "Campaign missions" },
+      "min": 1,
+      "max": 5,
+      "default": 5
+    },
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": { "pt-BR": "Tutorial (como jogar + dicas)", "en": "Tutorial (how to play + hints)" },
+      "default": true
+    },
+    {
+      "key": "turnSeconds",
+      "type": "number",
+      "label": { "pt-BR": "Tempo por turno (s, 0 = sem limite)", "en": "Time per turn (s, 0 = no limit)" },
+      "min": 0,
+      "max": 300,
+      "step": 30,
+      "default": 0
+    }
+  ]
+}
