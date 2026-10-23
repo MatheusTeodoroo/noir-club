@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createTestRoom } from '@mp/engine/testing';
 import game, { type BoardView, type DealerView, type PlayerView, type PublicView, type State } from '../src/logic.ts';
 import { TEAMS } from '../src/shared.ts';
+import { HINTS, RULES, SLIDES } from '../src/texts.ts';
 
 type Room = ReturnType<typeof createTestRoom<State>>;
 
@@ -13,7 +14,7 @@ const honest = (s: State) => cops(s).filter((id) => !s.corrupt.includes(id));
 
 /** A room past the briefing (unless `brief` is false), on the 150-stop map. */
 function newRoom(players = 10, config: Record<string, unknown> = {}, seed = 7, brief = false) {
-  const room = createTestRoom<State>(game, { players, seed, config: { map: 'm150', maxRounds: '10', ...config } });
+  const room = createTestRoom<State>(game, { players, seed, config: { tutorial: false, map: 'm150', maxRounds: '10', ...config } });
   if (!brief) room.advance(60_000);
   return room;
 }
@@ -560,6 +561,99 @@ describe(game.manifest.name['pt-BR'], () => {
       expect(pub(room).total).toBe(400_000);
       room.advance(400_000);
       expect(pub(room).phase).toBe('placing');
+    });
+  });
+
+  describe('tutorial and rules', () => {
+    const withTutorial = (config: Record<string, unknown> = {}) =>
+      createTestRoom<State>(game, { players: 10, seed: 7, config: { map: 'm150', ...config } });
+
+    it('opens with the tutorial, which only the Host advances, then the role briefing', () => {
+      const room = withTutorial();
+      expect(pub(room)).toMatchObject({ phase: 'intro', slide: 0, slides: SLIDES.length, tvRules: null });
+      expect(room.dealerView()).toBeNull();
+      expect(room.publicJson()).not.toContain('"corrupt"');
+      room.act('p2', { type: 'intro', dir: 1 });
+      expect(pub(room).slide).toBe(0);
+      room.act('p1', { type: 'intro', dir: 1 });
+      room.act('p1', { type: 'intro', dir: -1 });
+      expect(pub(room).slide).toBe(0);
+      for (let i = 0; i < SLIDES.length - 1; i++) room.act('p1', { type: 'intro', dir: 1 });
+      expect(pub(room)).toMatchObject({ phase: 'intro', slide: SLIDES.length - 1 });
+      room.act('p1', { type: 'intro', dir: 1 });
+      expect(pub(room).phase).toBe('briefing');
+    });
+
+    it('lets the Host skip the tutorial', () => {
+      const room = withTutorial();
+      room.act('p1', { type: 'intro', dir: 'skip' });
+      expect(pub(room).phase).toBe('briefing');
+    });
+
+    it('moves on without the Host if they leave, or after 5 minutes', () => {
+      const left = withTutorial();
+      left.disconnect('p1');
+      left.advance(20_001);
+      expect(pub(left).phase).toBe('briefing');
+      const idle = withTutorial();
+      idle.advance(5 * 60_000);
+      expect(pub(idle).phase).toBe('briefing');
+    });
+
+    it('starts at the role briefing when the tutorial is off', () => {
+      const room = withTutorial({ tutorial: false });
+      expect(pub(room).phase).toBe('briefing');
+      expect(pub(room).hint).toBeNull();
+    });
+
+    it('shows a rules page on the TV only when the Host asks, only real pages, in any phase', () => {
+      const room = newRoom();
+      placeAll(room);
+      skipBreak(room);
+      const before = room.snapshot();
+      room.act('p2', { type: 'tvRules', page: 0 });
+      room.act('p1', { type: 'tvRules', page: RULES.length });
+      room.act('p1', { type: 'tvRules', page: -1 });
+      room.act('p1', { type: 'tvRules', page: 1.5 });
+      expect(room.snapshot()).toBe(before);
+      room.act('p1', { type: 'tvRules', page: 3 });
+      expect(pub(room).tvRules).toBe(3);
+      expect(view(room, 'p5').tvRules).toBe(3);
+      room.act('p1', { type: 'tvRules', page: null });
+      expect(pub(room).tvRules).toBeNull();
+    });
+
+    it('gives first-round hints only while the tutorial option is on', () => {
+      const room = withTutorial();
+      room.act('p1', { type: 'intro', dir: 'skip' });
+      expect(pub(room).hint).toBeNull(); // briefing
+      for (const id of room.ids) room.act(id, { type: 'ready' });
+      expect(pub(room).hint).toBe('placing');
+      placeAll(room);
+      expect(pub(room).hint).toBe('intermission');
+      skipBreak(room);
+      expect(pub(room).hint).toBe('thieves');
+      for (const id of st(room).thieves) room.act(id, { type: 'move', path: [] });
+      skipBreak(room);
+      expect(pub(room).hint).toBe('cops');
+      // Every cop passes until round 2 begins.
+      for (let i = 0; i < 40 && pub(room).round < 2; i++) {
+        const s = st(room);
+        if (s.phase === 'cops') room.act(s.teams[s.groupSeq[s.groupIdx]!][s.memberIdx]!, { type: 'pass' });
+        else skipBreak(room);
+      }
+      expect(pub(room).round).toBe(2);
+      expect(pub(room).hint).toBeNull();
+    });
+
+    it('has the tutorial, every rules page and every hint in both languages', () => {
+      const texts = [...SLIDES, ...RULES].flatMap((p) => [p.title, ...p.body]).concat(Object.values(HINTS));
+      for (const text of texts) {
+        expect(text['pt-BR'].trim()).not.toBe('');
+        expect(text.en.trim()).not.toBe('');
+      }
+      expect(SLIDES.length).toBeGreaterThanOrEqual(3);
+      expect(SLIDES.length).toBeLessThanOrEqual(6);
     });
   });
 

@@ -1,6 +1,7 @@
 import { defineGame, type GameCtx, type GameManifest } from '@mp/game-sdk';
 import manifestJson from '../manifest.json';
 import { adjacency, FIXED_BOARDS, generateBoard } from './board.ts';
+import { RULES, SLIDES } from './texts.ts';
 import { ACTIONS_PER_COP, groupOrder, POINTS_PER_WINNER, TEAMS, THIEF_STEPS, type Side, type Team } from './shared.ts';
 
 // Ronda Noturna: two hidden thieves steal stars across a metro-map city; three police teams
@@ -10,6 +11,8 @@ import { ACTIONS_PER_COP, groupOrder, POINTS_PER_WINNER, TEAMS, THIEF_STEPS, typ
 export const manifest = manifestJson as GameManifest;
 
 export interface Config {
+  /** Tutorial slides on the TV before the role briefing, plus first-round hints. */
+  tutorial: boolean;
   /** '0' = no round cap (and so no final vote). */
   maxRounds: string;
   thiefMinutes: number;
@@ -27,7 +30,7 @@ export interface Config {
 
 type Ctx = GameCtx<Config>;
 
-export type Phase = 'briefing' | 'placing' | 'intermission' | 'thieves' | 'cops' | 'vote' | 'over';
+export type Phase = 'intro' | 'briefing' | 'placing' | 'intermission' | 'thieves' | 'cops' | 'vote' | 'over';
 
 /** Who may read a log line: everyone, corrupt cops and thieves, or thieves only. */
 type Vis = 'all' | 'corrupt' | 'thieves';
@@ -114,6 +117,10 @@ export interface State {
   result: Result | null;
   /** Briefing: who has seen their role (tapped "ready" on the phone, or visited the Dealer). */
   ready: Record<string, boolean>;
+  /** Tutorial slide on screen during the intro. */
+  slide: number;
+  /** Rules page the Host is showing on the TV, or null. */
+  tvRules: number | null;
 }
 
 /** What a player learns about themselves at the briefing (phone or Dealer). */
@@ -161,6 +168,11 @@ export interface PublicView {
   voted: string[];
   result: Result | null;
   briefing: null | { mode: 'phone' | 'dealer'; ready: string[] };
+  slide: number;
+  slides: number;
+  tvRules: number | null;
+  /** First-round "what to do now" line while the tutorial option is on. */
+  hint: 'placing' | 'intermission' | 'thieves' | 'cops' | null;
 }
 
 /** What one phone shows. */
@@ -198,6 +210,9 @@ export interface PlayerView {
   goal: number;
   /** During the briefing: where to look, and whether I'm done. */
   briefing: null | { mode: 'phone' | 'dealer'; ready: boolean };
+  slide: number;
+  slides: number;
+  tvRules: number | null;
 }
 
 /** The Dealer screen: a role card during a briefing visit, else the thieves' board. */
@@ -230,9 +245,13 @@ export type Action =
   | { type: 'act'; kind: 'investigate' | 'arrest'; node: number }
   | { type: 'pass' }
   | { type: 'vote'; target: string }
-  | { type: 'ready' };
+  | { type: 'ready' }
+  | { type: 'intro'; dir: 1 | -1 | 'skip' }
+  | { type: 'tvRules'; page: number | null };
 
 const INTERMISSION_MS = 10_000;
+/** Safety net: if the Host never advances the tutorial (left the room), the game moves on. */
+const INTRO_MAX_MS = 5 * 60_000;
 /** Dealer briefing: time allowed per player for the walk and the read. */
 const DEALER_BRIEF_PER_PLAYER_MS = 40_000;
 const REVEAL_INTERMISSION_MS = 14_000;
@@ -255,6 +274,8 @@ function sideOf(state: State, id: string): Side | null {
   if (state.thieves.includes(id)) return 'thieves';
   return TEAMS.find((t) => state.teams[t].includes(id)) ?? null;
 }
+const isHost = (ctx: Ctx, id: string) => ctx.players.some((p) => p.id === id && p.isHost);
+
 function connected(ctx: Ctx, id: string) {
   return !!ctx.players.find((p) => p.id === id)?.connected;
 }
@@ -305,6 +326,12 @@ function currentTurn(state: State): Turn {
 // ---------------------------------------------------------------------------
 // Flow
 
+function endIntro(state: State, ctx: Ctx) {
+  ctx.clearTimer('intro');
+  state.tvRules = null;
+  startBriefing(state, ctx);
+}
+
 function briefingMode(ctx: Ctx): 'phone' | 'dealer' {
   return ctx.config.briefing === 'dealer' ? 'dealer' : 'phone';
 }
@@ -331,6 +358,18 @@ function endBriefing(state: State, ctx: Ctx) {
   state.phase = 'placing';
   ctx.emit('sound', 'phase');
   advancePlacing(state, ctx);
+}
+
+function hintFor(state: State): PublicView['hint'] {
+  switch (state.phase) {
+    case 'placing':
+    case 'intermission':
+    case 'thieves':
+    case 'cops':
+      return state.phase;
+    default:
+      return null;
+  }
 }
 
 function roleCard(state: State, ctx: Ctx, id: string): RoleCard {
@@ -656,8 +695,13 @@ export default defineGame<State, Config>({
       votes: {},
       result: null,
       ready: {},
+      slide: 0,
+      tvRules: null,
     };
-    startBriefing(state, ctx);
+    if (ctx.config.tutorial) {
+      state.phase = 'intro';
+      ctx.setTimer('intro', INTRO_MAX_MS);
+    } else startBriefing(state, ctx);
     return state;
   },
 
@@ -665,6 +709,22 @@ export default defineGame<State, Config>({
     const action = raw as Action;
     if (!action || typeof action !== 'object') return;
     const turn = currentTurn(state);
+
+    // Shared screens (tutorial slides, rules on the TV) follow the Host only.
+    if (action.type === 'tvRules') {
+      const ok =
+        action.page === null || (Number.isInteger(action.page) && action.page >= 0 && action.page < RULES.length);
+      if (ok && isHost(ctx, playerId)) state.tvRules = action.page;
+      return;
+    }
+    if (action.type === 'intro') {
+      if (state.phase !== 'intro' || !isHost(ctx, playerId)) return;
+      const last = state.slide === SLIDES.length - 1;
+      if (action.dir === 'skip' || (action.dir === 1 && last)) endIntro(state, ctx);
+      else if (action.dir === 1) state.slide += 1;
+      else if (action.dir === -1 && state.slide > 0) state.slide -= 1;
+      return;
+    }
 
     if (action.type === 'ready') {
       if (state.phase !== 'briefing' || briefingMode(ctx) !== 'phone' || state.ready[playerId]) return;
@@ -727,6 +787,10 @@ export default defineGame<State, Config>({
   },
 
   onTimer(state, key, ctx) {
+    if (key === 'intro') {
+      if (state.phase === 'intro') endIntro(state, ctx);
+      return;
+    }
     if (key === 'end') {
       const r = state.result!;
       const winners =
@@ -763,7 +827,10 @@ export default defineGame<State, Config>({
 
   onPlayerTimeout(state, playerId, ctx) {
     const turn = currentTurn(state);
-    if (state.phase === 'briefing') {
+    if (state.phase === 'intro') {
+      // Only the Host can advance the tutorial: if they're gone, move on.
+      if (isHost(ctx, playerId)) endIntro(state, ctx);
+    } else if (state.phase === 'briefing') {
       checkBriefing(state, ctx);
     } else if (state.phase === 'placing' && turn.actor === playerId) {
       advancePlacing(state, ctx);
@@ -825,6 +892,10 @@ export default defineGame<State, Config>({
         state.phase === 'briefing'
           ? { mode: briefingMode(ctx), ready: Object.keys(state.ready).filter((id) => state.ready[id]) }
           : null,
+      slide: state.slide,
+      slides: SLIDES.length,
+      tvRules: state.tvRules,
+      hint: ctx.config.tutorial && state.round <= 1 ? hintFor(state) : null,
     };
   },
 
@@ -871,12 +942,15 @@ export default defineGame<State, Config>({
       role: roleCard(state, ctx, playerId),
       goal: goal(ctx),
       briefing: state.phase === 'briefing' ? { mode: briefingMode(ctx), ready: !!state.ready[playerId] } : null,
+      slide: state.slide,
+      slides: SLIDES.length,
+      tvRules: state.tvRules,
     };
   },
 
   dealerIdleView(state, ctx): DealerView | null {
-    // During the briefing anyone may walk in: show nothing of the thieves' board yet.
-    if (state.phase === 'briefing') return null;
+    // Before the board exists (tutorial, briefing) anyone may walk in: show nothing yet.
+    if (state.phase === 'intro' || state.phase === 'briefing') return null;
     return {
       kind: 'board',
       phase: state.phase,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   defineGameUI,
   type DealerProps,
@@ -9,6 +9,7 @@ import {
 import type { BoardView, DealerView, LogEntry, PlayerView, PublicView, Result, RoleCard, Turn } from './logic.ts';
 import { adjacency, generateBoard, LINE_COLORS, type Board } from './board.ts';
 import { TEAM_COLORS, TEAMS, type Side, type Team } from './shared.ts';
+import { CREDITS, HINTS, RULES, SLIDES } from './texts.ts';
 
 // Only `react` and `@mp/game-sdk` may be imported from packages. Platform components come in
 // through `kit`, text goes through `t()`, and styles are scoped with the `rng-` prefix.
@@ -166,6 +167,21 @@ const L = {
   dealerNow: { 'pt-BR': 'Agora: {side}', en: 'Now: {side}' },
   starsLeft: { 'pt-BR': 'no mapa', en: 'on the map' },
   crookedTag: { 'pt-BR': 'corrupto', en: 'crooked' },
+  // Tutorial and rules
+  tutorial: { 'pt-BR': 'Tutorial', en: 'Tutorial' },
+  hostAdvances: { 'pt-BR': 'O Host avança pelo celular', en: 'The Host moves on from their phone' },
+  followTv: { 'pt-BR': 'Acompanhe o tutorial na TV.', en: 'Follow the tutorial on the TV.' },
+  prev: { 'pt-BR': 'Anterior', en: 'Back' },
+  next: { 'pt-BR': 'Próximo', en: 'Next' },
+  start: { 'pt-BR': 'Começar', en: 'Start' },
+  skip: { 'pt-BR': 'Pular tutorial', en: 'Skip tutorial' },
+  rules: { 'pt-BR': 'Regras', en: 'Rules' },
+  showOnTv: { 'pt-BR': 'Mostrar na TV', en: 'Show on TV' },
+  hideFromTv: { 'pt-BR': 'Tirar da TV', en: 'Hide from TV' },
+  close: { 'pt-BR': 'Fechar', en: 'Close' },
+  hall: { 'pt-BR': 'Corredor', en: 'Hall' },
+  demoUpTo2: { 'pt-BR': 'até 2 casas', en: 'up to 2 stops' },
+  demo2Actions: { 'pt-BR': '2 ações cada', en: '2 actions each' },
   // Briefing
   briefTitle: { 'pt-BR': 'Conheçam seus papéis', en: 'Learn your roles' },
   briefPhone: {
@@ -286,6 +302,37 @@ const CSS = `
 .rng-dealer{container-type:inline-size;display:grid;grid-template-rows:auto 1fr;gap:1em;padding:2em 2.4em}
 .tv .rng-dealer{height:100vh}
 .rng-dealer .rng-body{grid-template-columns:1fr 20em}
+/* tutorial and rules */
+.rng-slide{height:100vh;display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:3.5em;padding:3.5em 4.5em}
+.rng-slide p{font-size:1.55em;line-height:1.45;margin:0 0 .7em;color:var(--text)}
+.rng-slide b,.rng-rules b,.rng-tvrules b{color:var(--gold-hi);font-weight:600}
+.rng-dots{display:flex;gap:.6em;margin-top:1.4em}
+.rng-dots span{width:.8em;height:.8em;border-radius:50%;background:var(--line-strong)}
+.rng-dots span[data-on=true]{background:var(--gold)}
+.rng-demo{display:grid;gap:1.2em;justify-items:center;align-content:center}
+.rng-demopawn{width:3.8em;height:3.8em;overflow:visible}
+.rng-demopawn text{font-family:var(--font-ui)}
+.rng-demoside{display:grid;justify-items:center;gap:.3em}
+.rng-demoside .rng-team-h{font-size:1.1em}
+.rng-plan{display:grid;grid-template-columns:1fr 1.2fr 1fr;grid-template-rows:auto auto;gap:.8em;font-size:1.3em}
+.rng-room,.rng-hall{display:grid;place-items:center;gap:.3em;padding:1.1em .8em;border-radius:.6em;background:rgba(255,255,255,.03);box-shadow:0 0 0 2px var(--team,var(--line-strong)) inset;text-align:center}
+.rng-hall{grid-row:1/3;grid-column:2;--team:var(--gold-lo)}
+.rng-room b,.rng-hall b{font-family:var(--font-display);letter-spacing:.06em;text-transform:uppercase}
+.rng-demomap{height:24em}
+.rng-steps{display:grid;gap:.7em;font-size:1.3em}
+.rng-step{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.7em;padding:.4em .8em;border-radius:.6em;background:rgba(255,255,255,.03);box-shadow:0 0 0 1px var(--line) inset}
+.rng-step span{font-family:var(--font-display);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.rng-step small{color:var(--text-dim)}
+.rng-step .rng-demopawn{width:2.2em;height:2.2em}
+.rng-tvrules{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(5,3,7,.9)}
+.rng-tvrules .mp-panel{width:min(62em,90vw);padding:2.2em 3em}
+.rng-tvrules h2{font-family:var(--font-display);font-size:2.6em;margin:.2em 0 .6em;color:var(--gold-hi)}
+.rng-tvrules p{font-size:1.45em;line-height:1.45;margin:0 0 .6em}
+.rng-sheet{position:fixed;inset:0;z-index:40;background:rgba(5,3,7,.95);overflow-y:auto;padding:16px}
+.rng-rules{max-width:480px;margin:0 auto;display:grid;gap:12px}
+.rng-rules h3{font-family:var(--font-display);font-size:1.4rem;margin:0;color:var(--gold-hi)}
+.rng-rules p{margin:0;line-height:1.5}
+.rng-hint{margin:.4em 0 0;font-size:1.25em;color:var(--gold-hi)}
 /* briefing */
 .rng-brief{display:grid;align-content:center;gap:2em;min-height:0;padding-bottom:1em}
 .rng-briefcols{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2em;align-items:start}
@@ -793,8 +840,275 @@ function BriefingScreen({ view, kit, t, platform }: DisplayProps<PublicView>) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Tutorial and rules
+
+/** Renders **bold** inside a translated string. */
+function rich(text: string): ReactNode[] {
+  return text
+    .split(/(\*\*[^*]+\*\*)/g)
+    .map((part, i) => (part.startsWith('**') && part.endsWith('**') ? <b key={i}>{part.slice(2, -2)}</b> : part));
+}
+
+/** A pawn drawn as on the map: avatar inside a ring in the squad's colour (or the thieves' diamond). */
+function DemoPawn({ emoji, color, thief }: { emoji: string; color?: string; thief?: boolean }) {
+  return (
+    <svg viewBox="-0.4 -0.4 0.8 0.8" className="rng-demopawn" aria-hidden>
+      {thief ? (
+        <rect x={-0.24} y={-0.24} width={0.48} height={0.48} rx={0.06} transform="rotate(45)" fill="#0b0b0d" stroke="#e44a5b" strokeWidth={0.06} />
+      ) : (
+        <circle r={0.27} fill="#0b0b0d" stroke={color} strokeWidth={0.08} />
+      )}
+      <text y={0.11} textAnchor="middle" fontSize={0.32}>
+        {emoji}
+      </text>
+    </svg>
+  );
+}
+
+const DEMO_AVATARS = ['🎩', '🦊', '🌙', '🍷', '👑', '🦉', '🎲', '💎', '🐺', '🃏', '🎭', '🗝️'];
+/** A fixed sample map for the tutorial (never the match's map, so nothing real is shown). */
+const DEMO_BOARD = { seed: 9, size: 150 };
+const DEMO_PAWNS: Record<number, Pawn[]> = {
+  52: [{ id: 'd1', color: TEAM_COLORS.red, kind: 'cop' }],
+  11: [
+    { id: 'd2', color: TEAM_COLORS.blue, kind: 'cop' },
+    { id: 'd3', color: TEAM_COLORS.green, kind: 'cop' },
+  ],
+};
+
+function SlideDemo({ demo, t }: { demo: (typeof SLIDES)[number]['demo']; t: T }) {
+  const demoBoard = useBoard(demo === 'map' ? DEMO_BOARD : undefined);
+  if (demo === 'sides') {
+    const column = (side: Side, n: number) => (
+      <div className="rng-demoside" key={side}>
+        <span className="rng-team-h">{sideName(t, side)}</span>
+        <div className="row" style={{ gap: '.3em' }}>
+          {Array.from({ length: n }, (_, i) => (
+            <DemoPawn
+              key={i}
+              emoji={DEMO_AVATARS[(side.length * 3 + i) % DEMO_AVATARS.length]!}
+              thief={side === 'thieves'}
+              color={side === 'thieves' ? undefined : TEAM_COLORS[side as Team]}
+            />
+          ))}
+        </div>
+      </div>
+    );
+    return (
+      <div className="rng-demo">
+        {column('thieves', 2)}
+        {TEAMS.map((team) => column(team, 3))}
+        <p className="rng-sub" style={{ fontSize: '1.3em' }}>
+          ★ × 15 · ⛓ × 2
+        </p>
+      </div>
+    );
+  }
+  if (demo === 'rooms') {
+    const room = (label: string, color: string, screen: string) => (
+      <div className="rng-room" style={{ ['--team' as string]: color }}>
+        <b>{label}</b>
+        <span>{screen}</span>
+      </div>
+    );
+    return (
+      <div className="rng-plan">
+        {room(t(L.thieves), '#e44a5b', '🃏 Dealer')}
+        {room(t(L.redShort), TEAM_COLORS.red, '📺')}
+        <div className="rng-hall">
+          <b>{t(L.hall)}</b>
+          <span>📺</span>
+        </div>
+        {room(t(L.blueShort), TEAM_COLORS.blue, '📺')}
+        {room(t(L.greenShort), TEAM_COLORS.green, '📺')}
+      </div>
+    );
+  }
+  if (demo === 'map' && demoBoard) {
+    const focus = demoBoard.nodes[22]!;
+    const avatars = { d1: '🎩', d2: '🦊', d3: '🌙' };
+    return (
+      <div className="rng-mapbox rng-demomap">
+        <CityMap
+          board={demoBoard}
+          pawns={DEMO_PAWNS}
+          stars={[27]}
+          avatars={avatars}
+          viewBox={`${focus.x - 3.5} ${focus.y - 2.5} 7 5`}
+        />
+      </div>
+    );
+  }
+  if (demo === 'round') {
+    return (
+      <div className="rng-steps">
+        <div className="rng-step">
+          <DemoPawn emoji="🦊" thief />
+          <span>{t(L.thieves)}</span>
+          <small>{t(L.demoUpTo2)}</small>
+        </div>
+        {TEAMS.map((team, i) => (
+          <div className="rng-step" key={team}>
+            <DemoPawn emoji={DEMO_AVATARS[i]!} color={TEAM_COLORS[team]} />
+            <span>{sideName(t, team)}</span>
+            <small>{t(L.demo2Actions)}</small>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="rng-demo" style={{ fontSize: '1.5em' }}>
+      <div className="rng-hold" style={{ fontSize: '1.2em', display: 'grid', placeItems: 'center' }}>
+        🔒 {t(L.hold)}
+      </div>
+      <div className="rng-log" style={{ maskImage: 'none' }}>
+        <div>{fill(t(L.lArrestMiss), { who: '👑 Felipe', a: 12 })}</div>
+      </div>
+      <div className="row" style={{ gap: '.6em' }}>
+        {[TEAM_COLORS.red, TEAM_COLORS.blue, TEAM_COLORS.green].map((c, i) => (
+          <span key={c} className="rng-tag" style={{ fontSize: '1em' }}>
+            <span className="rng-dot" style={{ background: c }} />
+            {i === 1 ? t(L.nobody) : `✓ ${DEMO_AVATARS[i + 4]}`}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TutorialSlide({ view, t }: { view: PublicView; t: T }) {
+  const s = SLIDES[view.slide]!;
+  return (
+    <div className="rng-slide mp-enter" key={view.slide}>
+      <div>
+        <span className="mp-eyebrow" style={{ fontSize: '1.2em' }}>
+          {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+        </span>
+        <h1 className="rng-h1" style={{ fontSize: '3.6em', margin: '.2em 0 .5em' }}>
+          {t(s.title)}
+        </h1>
+        {s.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        {view.slide === 0 && CREDITS && (
+          <p className="rng-sub" style={{ fontSize: '1.2em' }}>
+            {rich(t(CREDITS))}
+          </p>
+        )}
+        <div className="rng-dots" aria-hidden>
+          {Array.from({ length: view.slides }, (_, i) => (
+            <span key={i} data-on={i === view.slide} />
+          ))}
+        </div>
+        <p className="rng-sub" style={{ fontSize: '1.1em', marginTop: '1em' }}>
+          {t(L.hostAdvances)}
+        </p>
+      </div>
+      <SlideDemo demo={s.demo} t={t} />
+    </div>
+  );
+}
+
+/** A rules page over the TV, while the Host shows it from their phone. */
+function TvRules({ page, kit, t }: { page: number; kit: DisplayProps['kit']; t: T }) {
+  const r = RULES[page]!;
+  return (
+    <div className="rng-tvrules">
+      <kit.Panel className="mp-enter" key={page}>
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h2>{t(r.title)}</h2>
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+      </kit.Panel>
+    </div>
+  );
+}
+
+/** Full rules on the phone: anyone reads at their own pace; the Host can mirror the page on the TV. */
+function RulesReader({
+  view,
+  kit,
+  t,
+  send,
+  isHost,
+  onClose,
+}: {
+  view: PlayerView;
+  kit: PlayerProps['kit'];
+  t: T;
+  send(a: unknown): void;
+  isHost: boolean;
+  onClose(): void;
+}) {
+  const { Button, Panel } = kit;
+  const [page, setPage] = useState(view.tvRules ?? 0);
+  const onTv = isHost && view.tvRules !== null;
+  useEffect(() => {
+    if (onTv) send({ type: 'tvRules', page });
+  }, [page]);
+  const r = RULES[page]!;
+  const last = page === RULES.length - 1;
+  return (
+    <div className="rng-sheet" role="dialog" aria-modal="true" aria-label={t(L.rules)}>
+      <Panel className="rng-rules">
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h3>{t(r.title)}</h3>
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        <div className="rng-row2">
+          <Button small variant="ghost" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            ‹ {t(L.prev)}
+          </Button>
+          <Button small variant="ghost" disabled={last} onClick={() => setPage(page + 1)}>
+            {t(L.next)} ›
+          </Button>
+        </div>
+        {isHost && (
+          <Button small onClick={() => send({ type: 'tvRules', page: onTv ? null : page })}>
+            📺 {t(onTv ? L.hideFromTv : L.showOnTv)}
+          </Button>
+        )}
+        <Button
+          small
+          variant="ghost"
+          onClick={() => {
+            if (onTv) send({ type: 'tvRules', page: null });
+            onClose();
+          }}
+        >
+          {t(L.close)}
+        </Button>
+      </Panel>
+    </div>
+  );
+}
+
 function Display(props: DisplayProps<PublicView>) {
-  return props.view?.phase === 'briefing' ? <BriefingScreen {...props} /> : <Board {...props} />;
+  const { view, kit, t } = props;
+  if (!view) return null;
+  return (
+    <>
+      {view.phase === 'intro' ? (
+        <>
+          <Styles />
+          <TutorialSlide view={view} t={t} />
+        </>
+      ) : view.phase === 'briefing' ? (
+        <BriefingScreen {...props} />
+      ) : (
+        <Board {...props} />
+      )}
+      {view.tvRules !== null && <TvRules page={view.tvRules} kit={kit} t={t} />}
+    </>
+  );
 }
 
 function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
@@ -847,6 +1161,7 @@ function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
             {head.title}
           </h1>
           <p className="rng-sub">{head.sub}</p>
+          {view.hint && !over && <p className="rng-hint">💡 {t(HINTS[view.hint])}</p>}
         </div>
         {view.deadline !== null && !over && (
           <Countdown deadline={view.deadline} total={view.total ?? 0} size="6.5em" paused={!!platform.paused} />
@@ -1064,7 +1379,60 @@ function HoldToSee({ label, children }: { label: string; children: any }) {
   );
 }
 
-function Player({ view, kit, t, send, platform, you }: PlayerProps<PlayerView>) {
+/** The phone: the tutorial controls or the game screen, with the rules one tap away in every phase. */
+function Player(props: PlayerProps<PlayerView>) {
+  const { view, kit, t, send, you } = props;
+  const [rules, setRules] = useState(false);
+  if (!view) return null;
+  const { Button, Panel } = kit;
+  const host = you.isAdmin;
+  let body: ReactNode;
+  if (view.phase === 'intro') {
+    const last = view.slide === view.slides - 1;
+    body = (
+      <div className="rng-ph">
+        <Styles />
+        <Panel className="stack" style={{ textAlign: 'center' }}>
+          <span className="mp-eyebrow">
+            {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+          </span>
+          <h3 style={{ margin: 0 }}>{t(SLIDES[view.slide]!.title)}</h3>
+          {!host && <p className="rng-status">{t(L.followTv)}</p>}
+        </Panel>
+        {host && (
+          <>
+            <div className="rng-row2">
+              <Button variant="ghost" disabled={view.slide === 0} onClick={() => send({ type: 'intro', dir: -1 })}>
+                ‹ {t(L.prev)}
+              </Button>
+              <Button onClick={() => send({ type: 'intro', dir: 1 })}>{last ? t(L.start) : `${t(L.next)} ›`}</Button>
+            </div>
+            {!last && (
+              <Button block small variant="ghost" onClick={() => send({ type: 'intro', dir: 'skip' })}>
+                {t(L.skip)}
+              </Button>
+            )}
+          </>
+        )}
+      </div>
+    );
+  } else {
+    body = <PlayerScreen {...props} />;
+  }
+  return (
+    <>
+      {body}
+      <div style={{ marginTop: 12 }}>
+        <Button block small variant="ghost" onClick={() => setRules(true)}>
+          📖 {t(L.rules)}
+        </Button>
+      </div>
+      {rules && <RulesReader view={view} kit={kit} t={t} send={send} isHost={host} onClose={() => setRules(false)} />}
+    </>
+  );
+}
+
+function PlayerScreen({ view, kit, t, send, platform, you }: PlayerProps<PlayerView>) {
   const board = useBoard(view?.board);
   const adj = useMemo(() => (board ? adjacency(board) : []), [board]);
   const name = useNames(platform);

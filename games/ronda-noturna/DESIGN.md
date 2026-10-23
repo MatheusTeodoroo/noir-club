@@ -28,6 +28,7 @@ public log is identical to an honest cop's (test: "honest cops see only public m
 ## Phases
 | Phase | Ends by timer (config key, default) | Ends early when | TV shows | Phone does | Dealer shows |
 |---|---|---|---|---|---|
+| intro (only with `tutorial`) | 5 min safety net | the Host taps Start on the last slide, or Skip; or the Host leaves | tutorial slide with a live demo | Host: Back / Next / Skip; others: slide title | nothing |
 | briefing | `briefingSeconds`, 60 (Dealer mode: at least 40 s per player) | every connected player tapped Ready / visited the Dealer | teams, turn orders, who is done (no map yet) | own team and order; role behind "segure" + Ready (phone mode), or "go to the Dealer" (Dealer mode) | Dealer mode: the visitor's role card; otherwise waiting |
 | placing | none (user's choice) | everyone placed | who is placing, cops' pawns | place pawn on the map (in order: red, blue, green, thieves) | stars, gang |
 | intermission | 10 s (14 s after a reveal) | — | "Up next: X — X to your room" (+ star-count reveal) | who is next | idem |
@@ -39,6 +40,8 @@ public log is identical to an honest cop's (test: "honest cops see only public m
 ## Actions
 | Action payload | Sent from | Valid when | Effect |
 |---|---|---|---|
+| `{type:'intro', dir}` | Host | intro | previous / next slide; next on the last or `'skip'` → briefing |
+| `{type:'tvRules', page}` | Host | any phase; `page` a real rules page or null | shows that rules page over the TV, or clears it |
 | `{type:'ready'}` | anyone | briefing in phone mode, once | marks them done; all done → placing |
 | `{type:'place', node}` | placer | placing, own turn; thieves not on a star | pawn placed; thieves mark the trail |
 | `{type:'move', path}` | thief | thieves' phase, own turn; 0–2 adjacent steps | trail marked, stars on the path collected, 15 → thieves win |
@@ -60,6 +63,7 @@ public log is identical to an honest cop's (test: "honest cops see only public m
 ## Config (Host settings)
 | key | type | default | range/options |
 |---|---|---|---|
+| tutorial | boolean | true | tutorial slides before the briefing + first-round hints |
 | briefing | select | phone | phone (hold to see + Ready) / dealer (one visit each) |
 | briefingSeconds | number | 60 | 20–300 (Dealer mode: at least 40 s × players) |
 | maxRounds | select | 15 | none, 10, 15, 20, 25 |
@@ -70,6 +74,22 @@ public log is identical to an honest cop's (test: "honest cops see only public m
 | revealEvery | number | 5 | 2–10 |
 | map | select | random fixed | 5 fixed maps (150/170/190/210/230 stops) or "generate a new map" |
 | genSize | number | 190 | 150–230, step 10 |
+
+## Tutorial and rules
+Texts in `src/texts.ts` (PT-BR and EN). Tutorial slides, before the role briefing:
+1. **How to play** — two thieves vs three squads, two crooked cops; how each side wins. Demo: the
+   sides drawn as map pawns.
+2. **Each side in its own room** — rooms, hall, the Dealer in the thieves' room. Demo: floor plan.
+3. **The map** — numbered stops, one step per line, public police pawns, hidden thieves and stars.
+   Demo: a crop of a sample map (never the match's) with pawns and a star.
+4. **The round** — thieves up to 2 stops, then each squad, 2 actions per cop; Investigate vs Arrest.
+   Demo: the turn order with pawns.
+5. **Secrets and the end** — hold to see, crooked arrests fail, the final vote. Demo: the hold
+   button, a failed arrest line, a vote.
+
+Rules outline (11 pages): Overview → Roles → Rooms and screens → Setup → The thieves' turn → The
+police turn → Arrests and stars → The round and the reveals → The final vote → End, points and
+dropouts → Credits. Hints during round 1 (tutorial on): placing, intermission, thieves, cops. Credits: inspired by Crooked Cops — line on the first slide, last rules page, CREDITS.md.
 
 ## Dealer
 Briefing (when the Host picks "Dealer"): before the board appears, every player queues once
