@@ -16,6 +16,10 @@ a game is a pure state machine plus three views. Read `reference/platform.md` be
 the platform already does lobby, joining, the Dealer queue and codes, pauses, sync and the final
 scoreboard, and your game must lean on that rather than rebuild it.
 
+Every game **teaches itself**: a tutorial on the TV before the first round and the full rules on
+every phone, which the Host can put on the TV ([reference/rules.md](reference/rules.md); Agent
+Decker is the model). A game without both is not done.
+
 ## Steps
 
 1. **Design.** Read [reference/platform.md](reference/platform.md) and
@@ -23,8 +27,9 @@ scoreboard, and your game must lean on that rather than rebuild it.
    (step 2 saves it as `DESIGN.md` in the game folder).
    Settle open questions with the user only when the answer changes the game (rules, hidden
    information, scoring); pick sensible defaults for everything else and list them in the sheet.
-   Done when every section of the sheet is filled and every piece of hidden information has an
-   owner, a view that shows it, and a moment it becomes public (or never).
+   Done when every section of the sheet is filled — including the tutorial slide list and the
+   rules outline — and every piece of hidden information has an owner, a view that shows it, and
+   a moment it becomes public (or never).
 
 2. **Scaffold.** Pick a kebab-case id and run, from the folder that should contain the game:
    `node <skill>/scripts/new-game.mjs <id> --pt "Nome" --en "Name"`, then in the new folder
@@ -34,7 +39,8 @@ scoreboard, and your game must lean on that rather than rebuild it.
 
 3. **Logic.** Rewrite `manifest.json` and `src/logic.ts` to the design, following
    [reference/sdk.md](reference/sdk.md). The starter game is a compact, correct example of the
-   contract; for games that use the Dealer, also read `<skill>/examples/demo-secret/src/logic.ts`.
+   contract (tutorial intro and rules on the TV included); for games that use the Dealer, also
+   read `<skill>/examples/demo-secret/src/logic.ts`.
    Done when `npm run typecheck` reports no errors in `src/logic.ts` (errors in the starter's
    `src/ui.tsx` and `test/` are expected until steps 4–5 replace them).
 
@@ -45,10 +51,18 @@ scoreboard, and your game must lean on that rather than rebuild it.
 5. **Views.** Rewrite `src/ui.tsx` — Display, Player and (if the game uses it) Dealer — following
    [reference/ui.md](reference/ui.md). Done when `npm run typecheck` is clean.
 
-6. **Play.** The playground is the real engine driving a TV, the Dealer and one phone per player,
+6. **Rules and tutorial.** Write `src/texts.ts` (tutorial slides, full rules, credits) and the
+   tutorial demos following [reference/rules.md](reference/rules.md), with Agent Decker
+   (`<skill>/examples/agent-decker/src/texts.ts`, `ui.tsx`) as the model for tone, depth and
+   layout. Done when the tutorial and every rules page exist in PT-BR and EN, each slide has a
+   live demo built from the game's own pieces, the rules cover every action and edge case in the
+   design sheet, and the tutorial/rules tests from `testing.md` pass.
+
+7. **Play.** The playground is the real engine driving a TV, the Dealer and one phone per player,
    with clock controls and an event log, at http://localhost:5180. Start it with your preview
    tool's `play` launch config (the scaffold wrote `.claude/launch.json`) or `npm run play` in a
-   background shell. Play a full match at the minimum and at the maximum player count, then
+   background shell. Play a full match — tutorial included, with the rules shown on the TV at
+   least once — at the minimum and at the maximum player count, then
    walk the checklist at the end of `ui.md`; fix and replay. Driving it:
    - **`window.pg` in the control room** (through your browser tool's JavaScript runner):
      `await pg.click('p2', 'Votar')`, `await pg.type('p3', 'pintor', true)`,
@@ -64,11 +78,11 @@ scoreboard, and your game must lean on that rather than rebuild it.
    checklist item holds. Without a browser tool, say so and rely on the tests plus a careful read
    of `ui.tsx` against the checklist.
 
-7. **Bundle.** `npm run build`. Done when it prints `built …/dist/<id>@<version>` and exits 0
+8. **Bundle.** `npm run build`. Done when it prints `built …/dist/<id>@<version>` and exits 0
    (it also rejects UI code that imports anything besides `react` and `@mp/game-sdk`, or that
    pulls the game logic into the UI bundle).
 
-8. **Publish.** Follow [reference/integrate.md](reference/integrate.md): copy the game into the
+9. **Publish.** Follow [reference/integrate.md](reference/integrate.md): copy the game into the
    platform repository's `games/`, run its checks, and — with the user's go-ahead — commit and
    push; the repository's GitHub Action deploys the site with the new game. Done when the push
    went through (or the user chose to keep it local) and you told them what was built, how to try
@@ -79,6 +93,7 @@ scoreboard, and your game must lean on that rather than rebuild it.
 - [reference/platform.md](reference/platform.md) — devices, room lifecycle, Dealer flow, clock and sync, disconnects, what the platform renders for you
 - [reference/design.md](reference/design.md) — the design sheet and what makes a good in-person social game
 - [reference/sdk.md](reference/sdk.md) — manifest, the `defineGame` contract, `ctx`, views, rules for logic code
+- [reference/rules.md](reference/rules.md) — the required tutorial and rules reader: flow, content, writing, credits (model: Agent Decker)
 - [reference/testing.md](reference/testing.md) — `createTestRoom` API and the required test cases
 - [reference/ui.md](reference/ui.md) — `defineGameUI`, the `kit`, styling for TV and phone, visual identity, play checklist
 - [reference/rive.md](reference/rive.md) — optional Rive animations

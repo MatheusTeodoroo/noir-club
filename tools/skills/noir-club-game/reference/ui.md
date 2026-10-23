@@ -10,7 +10,8 @@ Worked examples: the starter `src/ui.tsx` (no Dealer) and `<skill>/examples/demo
 - Import only `react` and `@mp/game-sdk`, plus assets and `import type { … } from './logic.ts'`.
   A *value* import from the logic would ship the rules and their secrets (word banks, answers)
   to every phone and TV; put constants both sides need (length limits, option lists without
-  secrets) in `src/shared.ts` and import that from both. `npm run build` rejects anything else.
+  secrets) in `src/shared.ts`, and tutorial/rules text in `src/texts.ts`, and import those from
+  both. `npm run build` rejects anything else.
   The platform's components arrive through the `kit` prop.
 - Components render only their `view` prop and `platform`; they never compute game rules.
 - Text: every visible string lives in one `L` map of `{ 'pt-BR': '…', en: '…' }` objects and is
@@ -112,8 +113,19 @@ serif), `mp-eyebrow` (small spaced caps), `mp-panel`, `mp-chip` (+ `mp-chip--cri
   wrapper `min-height: 100vh` only under `.tv` (`.tv .xx-dealer { min-height: 100vh }`), as the
   demo does.
 
-## Play checklist (step 6)
+## Tutorial and rules screens
 
+Required in every game — flow, content and layout in [rules.md](rules.md): the TV tutorial slide
+with its live demo, the 📖 Rules button on every phone screen, the phone rules sheet with
+"Show on TV" for the Host, and the TV rules overlay. The starter's `TutorialSlide`, `TvRules` and
+`RulesReader` are the base; Agent Decker's are the fuller model.
+
+## Play checklist (step 7)
+
+- A newcomer can learn the game from the tutorial alone: every slide readable from the sofa, each
+  demo shows the real pieces, Back / Next / Skip work from the Host's phone only.
+- 📖 Rules opens from every phone screen; "Show on TV" puts the page over any phase on the TV and
+  follows the Host's page turns; closing clears it.
 - Every phase reads at a glance on the TV: title, instruction line, countdown, who has acted.
 - At `maxPlayers` the TV board fits with nothing clipped; at `minPlayers` it does not look empty.
 - Phones: every action reachable with a thumb, the current choice clearly highlighted, nothing

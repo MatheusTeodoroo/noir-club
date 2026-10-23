@@ -20,11 +20,18 @@ for (const pkg of ['protocol', 'game-sdk', 'engine', 'ui']) {
 }
 cpSync(join(root, 'apps/web/src/app.css'), join(sdk, 'platform.css'));
 
-const example = join(out, 'examples/demo-secret');
-mkdirSync(example, { recursive: true });
-for (const part of ['manifest.json', 'src', 'test']) {
-  const from = join(root, 'examples/demo-secret', part);
-  if (existsSync(from)) cpSync(from, join(example, part), { recursive: true });
+// Worked examples: the Dealer demo, and Agent Decker as the model for rules and tutorial.
+const examples = [
+  ['demo-secret', join(root, 'examples/demo-secret')],
+  ['agent-decker', join(root, 'games/agent-decker')],
+];
+for (const [name, dir] of examples) {
+  const example = join(out, 'examples', name);
+  mkdirSync(example, { recursive: true });
+  for (const part of ['manifest.json', 'DESIGN.md', 'CREDITS.md', 'src', 'test']) {
+    const from = join(dir, part);
+    if (existsSync(from)) cpSync(from, join(example, part), { recursive: true });
+  }
 }
 
 console.log(`skill built: ${out}`);

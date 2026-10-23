@@ -56,3 +56,8 @@ Write each as its own `it(...)`:
 7. **Dealer** (if used): only allowed players can enter (`playerFrame(id).platform.canRequestDealer`),
    `enterDealer` returns exactly that player's secret, and a remote player gets it on their phone.
 8. **Scoring**: a scripted round produces the exact points the design specifies, including a tie.
+9. **Tutorial and rules** (the starter's `describe('tutorial and rules')` has all five):
+   the match opens in the intro and only the Host advances it; the Host can skip it; the game
+   starts on its own if the Host leaves during it; `tvRules` accepts only the Host and only
+   existing pages; every slide and rules page has non-empty PT-BR and EN text. Gameplay tests
+   start past the tutorial with `config: { tutorial: false }`.

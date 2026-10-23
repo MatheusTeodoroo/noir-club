@@ -10,7 +10,8 @@ push to `master` of the platform repo runs a GitHub Action that tests, builds ev
 1. **Find the repo.** Ask the user where the platform repository is, unless the conversation
    already says; it is a folder whose `package.json` is named `multiplayer-plataform` and that has
    `games/`, `apps/web/` and `.github/workflows/deploy.yml`.
-2. **Copy** `manifest.json`, `src/`, `test/`, `DESIGN.md` and any other game content folders
+2. **Copy** `manifest.json`, `src/` (with `texts.ts`), `test/`, `DESIGN.md`, `CREDITS.md` (adaptations)
+   and any other game content folders
    (`assets/`, word lists…) into `games/<id>/`. Leave `.noir/`, `node_modules/`, `dist/`,
    `.claude/` and the config files behind — the repo provides its own. Updating a game that is
    already there: replace those same files and **bump `version`** in `manifest.json`.

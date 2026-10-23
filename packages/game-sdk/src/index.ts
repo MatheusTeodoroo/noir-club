@@ -36,6 +36,8 @@ export interface PlayerInfo {
   avatar: string;
   connected: boolean;
   remote: boolean;
+  /** The room's Host: drives shared screens such as tutorial slides and rules shown on the TV. */
+  isHost: boolean;
 }
 
 export interface Rng {

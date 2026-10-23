@@ -1,24 +1,30 @@
 import { defineGame, type GameCtx, type GameManifest } from '@mp/game-sdk';
 import manifestJson from '../manifest.json';
+import { RULES, SLIDES } from './texts.ts';
 
 // Starter game: everyone secretly picks 1–5 on their phone; at the reveal, the highest pick that
-// nobody else made scores that many points. It exercises the whole contract — secret state,
-// a timed phase, an early finish when everyone acted, a reveal and the final ranking — and is
-// meant to be replaced by your game, keeping the same shape.
+// nobody else made scores that many points. It exercises the whole contract — a tutorial intro,
+// rules shown on the TV, secret state, a timed phase, an early finish when everyone acted, a
+// reveal and the final ranking — and is meant to be replaced by your game, keeping the same shape.
 
 export const manifest = manifestJson as GameManifest;
 
 export interface Config {
+  tutorial: boolean;
   rounds: number;
   pickSeconds: number;
 }
 
-type Phase = 'pick' | 'reveal';
+type Phase = 'intro' | 'pick' | 'reveal';
 
 /** Engine-side state. Everything here is private until a view exposes it. */
 export interface State {
   round: number;
   phase: Phase;
+  /** Tutorial slide on screen during the intro. */
+  slide: number;
+  /** Rules page the Host is showing on the TV, or null. */
+  tvRules: number | null;
   /** SECRET until the reveal. */
   picks: Record<string, number>;
   scores: Record<string, number>;
@@ -30,6 +36,9 @@ export interface PublicView {
   round: number;
   rounds: number;
   phase: Phase;
+  slide: number;
+  slides: number;
+  tvRules: number | null;
   deadline: number | null;
   /** Full length of the running phase timer, for the countdown ring. */
   total: number | null;
@@ -42,17 +51,23 @@ export interface PublicView {
 /** What one phone shows. */
 export interface PlayerView {
   phase: Phase;
+  slide: number;
+  slides: number;
+  tvRules: number | null;
   deadline: number | null;
   /** Full length of the running phase timer, for the countdown ring. */
   total: number | null;
   myPick: number | null;
 }
 
-export type Action = { type: 'pick'; value: number };
+export type Action =
+  { type: 'pick'; value: number } | { type: 'intro'; dir: 1 | -1 | 'skip' } | { type: 'tvRules'; page: number | null };
 
 type Ctx = GameCtx<Config>;
 
 const REVEAL_MS = 8_000;
+/** Safety net: if the Host never advances the tutorial (left the room), the game starts anyway. */
+const INTRO_MAX_MS = 5 * 60_000;
 
 function startRound(state: State, ctx: Ctx) {
   state.phase = 'pick';
@@ -76,24 +91,50 @@ function reveal(state: State, ctx: Ctx) {
   ctx.emit('fx', 'reveal', 2000);
 }
 
+const isHost = (ctx: Ctx, playerId: string) => ctx.players.some((p) => p.id === playerId && p.isHost);
+
 export default defineGame<State, Config>({
   manifest,
 
   setup(ctx) {
     const state: State = {
       round: 1,
-      phase: 'pick',
+      phase: 'intro',
+      slide: 0,
+      tvRules: null,
       picks: {},
       scores: Object.fromEntries(ctx.players.map((p) => [p.id, 0])),
       last: null,
     };
-    startRound(state, ctx);
+    if (ctx.config.tutorial) ctx.setTimer('intro', INTRO_MAX_MS);
+    else startRound(state, ctx);
     return state;
   },
 
   onAction(state, playerId, raw, ctx) {
     const action = raw as Action;
-    if (action?.type !== 'pick' || state.phase !== 'pick') return;
+    if (!action || typeof action !== 'object') return;
+
+    // Shared screens (tutorial slides, rules on the TV) follow the Host only.
+    if (action.type === 'tvRules') {
+      const ok =
+        action.page === null || (Number.isInteger(action.page) && action.page >= 0 && action.page < RULES.length);
+      if (ok && isHost(ctx, playerId)) state.tvRules = action.page;
+      return;
+    }
+    if (action.type === 'intro') {
+      if (state.phase !== 'intro' || !isHost(ctx, playerId)) return;
+      const last = state.slide === SLIDES.length - 1;
+      if (action.dir === 'skip' || (action.dir === 1 && last)) {
+        ctx.clearTimer('intro');
+        state.tvRules = null;
+        startRound(state, ctx);
+      } else if (action.dir === 1) state.slide += 1;
+      else if (action.dir === -1 && state.slide > 0) state.slide -= 1;
+      return;
+    }
+
+    if (action.type !== 'pick' || state.phase !== 'pick') return;
     if (!Number.isInteger(action.value) || action.value < 1 || action.value > 5) return;
     state.picks[playerId] = action.value;
     ctx.emit('sound', 'tick');
@@ -102,6 +143,10 @@ export default defineGame<State, Config>({
   },
 
   onTimer(state, key, ctx) {
+    if (key === 'intro') {
+      if (state.phase === 'intro') startRound(state, ctx);
+      return;
+    }
     if (key !== 'phase') return;
     if (state.phase === 'pick') {
       reveal(state, ctx);
@@ -113,8 +158,14 @@ export default defineGame<State, Config>({
     }
   },
 
-  onPlayerTimeout(state, _playerId, ctx) {
-    // The missing player simply doesn't pick; finish early if everyone else already did.
+  onPlayerTimeout(state, playerId, ctx) {
+    // The Host left during the tutorial: nobody else can advance it, so start playing.
+    if (state.phase === 'intro' && isHost(ctx, playerId)) {
+      ctx.clearTimer('intro');
+      startRound(state, ctx);
+      return;
+    }
+    // A missing player simply doesn't pick; finish early if everyone else already did.
     if (
       state.phase === 'pick' &&
       ctx.players.filter((p) => p.connected).every((p) => state.picks[p.id] !== undefined)
@@ -128,6 +179,9 @@ export default defineGame<State, Config>({
       round: state.round,
       rounds: ctx.config.rounds,
       phase: state.phase,
+      slide: state.slide,
+      slides: SLIDES.length,
+      tvRules: state.tvRules,
       deadline: ctx.timerDeadline('phase'),
       total: ctx.timerTotal('phase'),
       picked: Object.keys(state.picks),
@@ -139,6 +193,9 @@ export default defineGame<State, Config>({
   playerView(state, playerId, ctx): PlayerView {
     return {
       phase: state.phase,
+      slide: state.slide,
+      slides: SLIDES.length,
+      tvRules: state.tvRules,
       deadline: ctx.timerDeadline('phase'),
       total: ctx.timerTotal('phase'),
       myPick: state.picks[playerId] ?? null,

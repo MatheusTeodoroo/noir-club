@@ -1,7 +1,10 @@
 {
   "id": "__ID__",
   "version": "0.1.0",
-  "name": { "pt-BR": "__NAME_PT__", "en": "__NAME_EN__" },
+  "name": {
+    "pt-BR": "__NAME_PT__",
+    "en": "__NAME_EN__"
+  },
   "description": {
     "pt-BR": "TODO: uma frase que vende o jogo na TV.",
     "en": "TODO: one sentence that sells the game on the TV."
@@ -13,9 +16,21 @@
   "accent": "#d4af37",
   "config": [
     {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
       "key": "rounds",
       "type": "number",
-      "label": { "pt-BR": "Rodadas", "en": "Rounds" },
+      "label": {
+        "pt-BR": "Rodadas",
+        "en": "Rounds"
+      },
       "min": 1,
       "max": 5,
       "default": 3
@@ -23,7 +38,10 @@
     {
       "key": "pickSeconds",
       "type": "number",
-      "label": { "pt-BR": "Tempo para escolher (s)", "en": "Time to pick (s)" },
+      "label": {
+        "pt-BR": "Tempo para escolher (s)",
+        "en": "Time to pick (s)"
+      },
       "min": 10,
       "max": 120,
       "step": 5,

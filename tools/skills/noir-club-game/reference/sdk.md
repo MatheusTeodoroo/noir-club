@@ -14,7 +14,7 @@ Types: `.noir/sdk/game-sdk/index.ts`. Worked examples: the starter `src/logic.ts
 | `usesDealer` | enables the Dealer queue and `dealerView` |
 | `estimatedMinutes` | shown in the lobby |
 | `accent` | hex colour for the lobby card glow; stay within gold / crimson / deep jewel tones |
-| `config` | Host settings: `number` (`min`, `max`, `step`, `default`), `boolean` (`default`), `select` (`options: [{ value, label }]`, `default`); each with a bilingual `label`. Values arrive clamped in `ctx.config` |
+| `config` | Host settings: `number` (`min`, `max`, `step`, `default`), `boolean` (`default`), `select` (`options: [{ value, label }]`, `default`); each with a bilingual `label`. Values arrive clamped in `ctx.config`. Every game has a `tutorial` boolean first, default `true` (see rules.md) |
 
 Import it in logic with `import manifestJson from '../manifest.json'` and pass it as `manifest`.
 
@@ -46,7 +46,7 @@ state. Export your `State`, view and `Action` types: the UI and tests import the
 |---|---|
 | `ctx.now` | room-clock time in ms (the only clock) |
 | `ctx.rng` | seeded RNG: `next()`, `int(min, max)`, `pick(list)`, `shuffle(list)` (the only randomness) |
-| `ctx.players` | participants: `{ id, name, avatar, connected, remote }`, fixed for the match |
+| `ctx.players` | participants: `{ id, name, avatar, connected, remote, isHost }`, fixed for the match; `isHost` marks who drives shared screens (tutorial, rules on the TV) |
 | `ctx.config` | Host settings from the manifest, typed by your `Config` |
 | `ctx.atDealer` | id of the player verified at the Dealer, or null |
 | `ctx.setTimer(key, ms)` / `ctx.clearTimer(key)` | one timer per key; setting a key again replaces it |

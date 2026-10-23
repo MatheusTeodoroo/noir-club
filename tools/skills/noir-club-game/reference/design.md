@@ -58,6 +58,15 @@ Used? Who may visit, when, how many times, what they see, when the Dealer closes
 ## Disconnects
 What `onPlayerTimeout` does in each phase. What happens to their pending choices.
 
+## Tutorial and rules
+Tutorial slides (3–6): title and the one idea each teaches, plus the live demo the TV shows beside
+it. Rules outline: the page titles in order (overview → pieces → actions → round → special
+situations → scoring and end → credits). Hints, if any: which states trigger which one-liner.
+See reference/rules.md.
+
+## Credits
+"Original game" — or the adapted game's author, link and license (and CREDITS.md).
+
 ## Remote players
 Anything that differs for them (usually nothing beyond the Dealer view on their phone).
 

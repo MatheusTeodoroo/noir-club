@@ -581,6 +581,7 @@ export class Engine {
         avatar: p.avatar,
         remote: p.remote,
         connected: !!s.clients[p.id]?.connected,
+        isHost: !!s.clients[p.id]?.isAdmin,
       }));
   }
 

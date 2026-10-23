@@ -34,11 +34,16 @@ async function waitFor<T>(fn: () => T | null | undefined, what: string, ms = 400
 
 function findButton(d: Document, text: string) {
   const want = text.toLowerCase();
-  const buttons = [...d.querySelectorAll<HTMLElement>('button, [role="button"]')].filter(
-    (b) => !(b as HTMLButtonElement).disabled,
-  );
   const label = (b: HTMLElement) => (b.getAttribute('aria-label') ?? b.textContent ?? '').trim().toLowerCase();
-  return buttons.find((b) => label(b) === want) ?? buttons.find((b) => label(b).includes(want));
+  const search = (root: ParentNode) => {
+    const buttons = [...root.querySelectorAll<HTMLElement>('button, [role="button"]')].filter(
+      (b) => !(b as HTMLButtonElement).disabled,
+    );
+    return buttons.find((b) => label(b) === want) ?? buttons.find((b) => label(b).includes(want));
+  };
+  // An open dialog (e.g. the rules sheet) covers the screen: look there first, like a person would.
+  const dialogs = [...d.querySelectorAll<HTMLElement>('[role="dialog"]')];
+  return (dialogs.length ? search(dialogs[dialogs.length - 1]!) : undefined) ?? search(d);
 }
 
 function setInput(input: HTMLInputElement, value: string) {
