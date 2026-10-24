@@ -28,8 +28,9 @@ para Zumbis Iniciais (consome sem efeito); pedidos de toque só são recusados p
 ## Phases
 | Phase | Ends by timer (config key, default) | Ends early when | TV shows | Phone does | Dealer shows |
 |---|---|---|---|---|---|
+| `intro` (só com `tutorial`) | 5 min (rede de segurança) | o Host toca Começar no último slide ou Pular; ou o Host sai | slide do tutorial com demonstração ao lado | Host: Anterior / Próximo / Pular; outros: título do slide | — |
 | `roles` | dealer: 30 s + 20 s/jogador; phone: 45 s | todos viram o papel | "Descubra seu papel", quem já viu | dealer: ir ao Dealer / phone: segurar para ver, "Entendi" | o papel do visitante, enorme |
-| `round` | `roundMin` (8 min) | — | rodada x/y, cronômetro, 3 toques recentes, nº de toques | lista de alvos, pedidos, códigos, curas | — |
+| `round` | `roundMin` (8 min) | — | rodada x/y, relógio MM:SS, 3 toques recentes, dica da rodada 1 (com tutorial) | lista de alvos, pedidos, códigos, curas | — |
 | `interval` | max(8 s, `intervalSec` 60 s) | — | nº de Zumbis e de Humanos | dar cura; "Olhe para a TV" | — |
 | `final` | 25 s | — | linha do tempo: Zumbis Iniciais, infecções, curas, doações, pontos, cenário | "Olhe para a TV" | — |
 
@@ -43,6 +44,8 @@ para Zumbis Iniciais (consome sem efeito); pedidos de toque só são recusados p
 | `{type:'code', value}` | phone | pedido aceito, ainda não confirmou | se igual ao código do outro: confirma; senão +1 erro (3 erros cancela). Os dois confirmados → toque resolvido |
 | `{type:'cure'}` | phone | `round`, curas ≥ 1 | consome 1; cura se infectado por toque nesta rodada há ≤ `cureWindowMin` e não é Zumbi Inicial |
 | `{type:'give', target}` | phone | `round` ou `interval`, curas ≥ 1, target ≠ self | transfere 1 cura |
+| `{type:'intro', dir: 1 | -1 | 'skip'}` | Host | `intro` | próximo / anterior; próximo no último slide ou pular → `roles` |
+| `{type:'tvRules', page | null}` | Host | qualquer fase, página dentro de `RULES` | mostra a página das regras sobre a TV, ou tira |
 
 ## Scoring and end
 Toque: Z+Z nada; H+Z → H infectado; H+H +1 ponto cada. Fim de rodada: Humano sem nenhum toque vira
@@ -55,6 +58,7 @@ Sem Morte Súbita.
 ## Config (Host settings)
 | key | type | default | range/options |
 |---|---|---|---|
+| tutorial | boolean | true | slides antes dos papéis + dicas na rodada 1 |
 | rounds | number | 3 | 1–5 |
 | roundMin | number | 8 | 2–30 |
 | cureWindowMin | number | 3 | 1–10 |
@@ -62,12 +66,22 @@ Sem Morte Súbita.
 | zombies | select | auto | auto (2; 1 com < 7 jogadores), 1, 2, 3 |
 | roleReveal | select | dealer | dealer, phone |
 
+## Tutorial and rules
+Textos em `src/texts.ts` (PT-BR + EN). Tutorial, 5 slides com demonstração: Como jogar (mesa de
+"?") → O toque (dois celulares com códigos cruzados) → O que um toque faz (H+H, H+Z, Z+Z) → A cura
+(tomar / dar) → Rodadas e vitória (contagem Zumbis × Humanos). Regras, 8 páginas: Visão geral →
+Papéis → Tocar → Resultado de um toque → Curas → Rodadas, intervalos e ausências → Pontuação e fim →
+Créditos. 📖 Regras em toda tela do celular; o Host mostra uma página na TV sobre qualquer fase.
+Dicas na rodada 1 (tutorial ligado), derivadas do estado: `touch` (nenhum toque ainda), `idle`
+(1–2 toques), `cure` (3+). Créditos: inspirado no Zombie Game do programa The Genius (1ª temporada)
+— linha no 1º slide, última página das regras, `CREDITS.md`.
+
 ## Dealer
 Usado só no modo `dealer`, só na fase `roles`: cada jogador visita uma vez e vê o próprio papel.
 Fecha ao fim da fase. Remotos veem no celular.
 
 ## Disconnects
-`onPlayerTimeout`: pedidos abertos do jogador são cancelados; na fase `roles` conta como visto. Ele
+`onPlayerTimeout`: no `intro`, se for o Host, o jogo segue para `roles`. Pedidos abertos do jogador são cancelados; na fase `roles` conta como visto. Ele
 continua no jogo e pode virar Zumbi por não tocar.
 
 ## Remote players

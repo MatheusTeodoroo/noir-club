@@ -1,6 +1,6 @@
 {
   "id": "surto",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": { "pt-BR": "Surto", "en": "Outbreak" },
   "description": {
     "pt-BR": "Alguns de vocês já estão infectados, e ninguém sabe quem. Toque nos outros para somar pontos sem pegar o Surto.",
@@ -12,6 +12,12 @@
   "estimatedMinutes": 30,
   "accent": "#7a1f2b",
   "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": { "pt-BR": "Tutorial antes de começar", "en": "Tutorial before starting" },
+      "default": true
+    },
     {
       "key": "rounds",
       "type": "number",

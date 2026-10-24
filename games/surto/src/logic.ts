@@ -1,6 +1,7 @@
 import { defineGame, type GameCtx, type GameManifest } from '@mp/game-sdk';
 import manifestJson from '../manifest.json';
 import { CODE_MISSES, REQUEST_MS } from './shared.ts';
+import { RULES, SLIDES } from './texts.ts';
 
 // Surto: a few players start infected. Touches happen in person and are confirmed by a crossed
 // 2-digit code on both phones; nobody learns what a touch did. Humans score per human touch,
@@ -9,6 +10,7 @@ import { CODE_MISSES, REQUEST_MS } from './shared.ts';
 export const manifest = manifestJson as GameManifest;
 
 export interface Config {
+  tutorial: boolean;
   rounds: number;
   roundMin: number;
   cureWindowMin: number;
@@ -17,7 +19,9 @@ export interface Config {
   roleReveal: 'dealer' | 'phone';
 }
 
-export type Phase = 'roles' | 'round' | 'interval' | 'final';
+export type Phase = 'intro' | 'roles' | 'round' | 'interval' | 'final';
+/** First-round coaching line on the TV while the tutorial option is on. */
+export type Hint = 'touch' | 'idle' | 'cure' | null;
 export type Role = 'zombie' | 'human';
 
 /** A touch in progress between two phones. */
@@ -68,6 +72,10 @@ export interface FinalResult {
 
 export interface State {
   phase: Phase;
+  /** Tutorial slide on screen during the intro. */
+  slide: number;
+  /** Rules page the Host is showing on the TV, or null. */
+  tvRules: number | null;
   round: number;
   /** SECRET: the starting zombies. */
   initial: string[];
@@ -93,8 +101,16 @@ export interface State {
   final: FinalResult | null;
 }
 
-export interface PublicView {
+/** Tutorial and rules state, the same on the TV and every phone. */
+export interface GuideView {
+  slide: number;
+  slides: number;
+  tvRules: number | null;
+}
+
+export interface PublicView extends GuideView {
   phase: Phase;
+  hint: Hint;
   round: number;
   rounds: number;
   mode: Config['roleReveal'];
@@ -120,7 +136,7 @@ export interface RequestView {
   total: number | null;
 }
 
-export interface PlayerView {
+export interface PlayerView extends GuideView {
   phase: Phase;
   round: number;
   mode: Config['roleReveal'];
@@ -148,12 +164,18 @@ export type Action =
   | { type: 'cancel' }
   | { type: 'code'; value: number }
   | { type: 'cure' }
-  | { type: 'give'; target: string };
+  | { type: 'give'; target: string }
+  | { type: 'intro'; dir: 1 | -1 | 'skip' }
+  | { type: 'tvRules'; page: number | null };
 
 type Ctx = GameCtx<Config>;
 
 const FINAL_MS = 25_000;
 const MIN_INTERVAL_MS = 8_000;
+/** Safety net: if the Host never advances the tutorial, the roles phase starts anyway. */
+const INTRO_MAX_MS = 5 * 60_000;
+
+const isHost = (ctx: Ctx, id: string) => ctx.players.some((p) => p.id === id && p.isHost);
 
 const isPlayer = (ctx: Ctx, id: unknown): id is string =>
   typeof id === 'string' && ctx.players.some((p) => p.id === id);
@@ -167,6 +189,23 @@ function zombieCount(ctx: Ctx) {
 function rolesMs(ctx: Ctx) {
   return ctx.config.roleReveal === 'dealer' ? 30_000 + 20_000 * ctx.players.length : 45_000;
 }
+
+function startRoles(state: State, ctx: Ctx) {
+  ctx.clearTimer('intro');
+  state.phase = 'roles';
+  state.tvRules = null;
+  ctx.setTimer('phase', rolesMs(ctx));
+  ctx.emit('sound', 'phase');
+}
+
+/** Derived from state, never scripted: what the room should be doing right now in round 1. */
+function hint(state: State, ctx: Ctx): Hint {
+  if (!ctx.config.tutorial || state.round !== 1 || state.phase !== 'round') return null;
+  if (state.touchCount === 0) return 'touch';
+  return state.touchCount < 3 ? 'idle' : 'cure';
+}
+
+const guide = (state: State): GuideView => ({ slide: state.slide, slides: SLIDES.length, tvRules: state.tvRules });
 
 function counts(state: State) {
   const zombies = Object.values(state.zombie).filter(Boolean).length;
@@ -304,7 +343,9 @@ export default defineGame<State, Config>({
     const ids = ctx.players.map((p) => p.id);
     const initial = ctx.rng.shuffle([...ids]).slice(0, zombieCount(ctx));
     const state: State = {
-      phase: 'roles',
+      phase: 'intro',
+      slide: 0,
+      tvRules: null,
       round: 1,
       initial,
       zombie: Object.fromEntries(ids.map((id) => [id, initial.includes(id)])),
@@ -322,8 +363,8 @@ export default defineGame<State, Config>({
       history: [],
       final: null,
     };
-    ctx.setTimer('phase', rolesMs(ctx));
-    ctx.emit('sound', 'phase');
+    if (ctx.config.tutorial) ctx.setTimer('intro', INTRO_MAX_MS);
+    else startRoles(state, ctx);
     return state;
   },
 
@@ -333,6 +374,23 @@ export default defineGame<State, Config>({
     const mine = openRequest(state, playerId);
 
     switch (action.type) {
+      // Shared screens (tutorial slides, rules on the TV) follow the Host only.
+      case 'tvRules': {
+        const page = action.page;
+        const ok = page === null || (Number.isInteger(page) && page >= 0 && page < RULES.length);
+        if (ok && isHost(ctx, playerId)) state.tvRules = page;
+        return;
+      }
+
+      case 'intro': {
+        if (state.phase !== 'intro' || !isHost(ctx, playerId)) return;
+        const last = state.slide === SLIDES.length - 1;
+        if (action.dir === 'skip' || (action.dir === 1 && last)) startRoles(state, ctx);
+        else if (action.dir === 1) state.slide += 1;
+        else if (action.dir === -1 && state.slide > 0) state.slide -= 1;
+        return;
+      }
+
       case 'seen':
         if (state.phase === 'roles' && ctx.config.roleReveal === 'phone') markSeen(state, ctx, playerId);
         return;
@@ -413,6 +471,10 @@ export default defineGame<State, Config>({
       if (req) dropRequest(state, ctx, req, 'expired');
       return;
     }
+    if (key === 'intro') {
+      if (state.phase === 'intro') startRoles(state, ctx);
+      return;
+    }
     if (key !== 'phase') return;
     switch (state.phase) {
       case 'roles':
@@ -434,6 +496,7 @@ export default defineGame<State, Config>({
   onPlayerTimeout(state, playerId, ctx) {
     const req = openRequest(state, playerId);
     if (req) dropRequest(state, ctx, req, 'expired');
+    if (state.phase === 'intro' && isHost(ctx, playerId)) startRoles(state, ctx);
     if (state.phase === 'roles') markSeen(state, ctx, playerId);
   },
 
@@ -451,7 +514,9 @@ export default defineGame<State, Config>({
 
   publicView(state, ctx): PublicView {
     return {
+      ...guide(state),
       phase: state.phase,
+      hint: hint(state, ctx),
       round: state.round,
       rounds: ctx.config.rounds,
       mode: ctx.config.roleReveal,
@@ -485,11 +550,12 @@ export default defineGame<State, Config>({
     }
     const showRole = state.phase === 'roles' && ctx.config.roleReveal === 'phone';
     return {
+      ...guide(state),
       phase: state.phase,
       round: state.round,
       mode: ctx.config.roleReveal,
-      deadline: ctx.timerDeadline('phase'),
-      total: ctx.timerTotal('phase'),
+      deadline: ctx.timerDeadline(state.phase === 'intro' ? 'intro' : 'phase'),
+      total: ctx.timerTotal(state.phase === 'intro' ? 'intro' : 'phase'),
       role: showRole ? (state.initial.includes(playerId) ? 'zombie' : 'human') : null,
       seen: state.seen.includes(playerId),
       targets: ctx.players

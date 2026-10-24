@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   defineGameUI,
   type DealerProps,
@@ -8,6 +8,7 @@ import {
 } from '@mp/game-sdk';
 import type { DealerView, Notice, PlayerView, PublicView } from './logic.ts';
 import { CODE_MISSES } from './shared.ts';
+import { CREDITS, RULES, SLIDES, type Demo } from './texts.ts';
 
 // Only `react` and `@mp/game-sdk` may be imported here (plus shared constants and logic types).
 // Platform components come in through `kit`, text goes through `t()`, styles use the `sg-` prefix.
@@ -106,6 +107,35 @@ const L = {
     en: 'You are healthy. Score by touching Humans — and avoid the Zombies.',
   },
   secret: { 'pt-BR': 'Memorize. Não conte a ninguém.', en: 'Memorise it. Tell no one.' },
+  // first-round hints (tutorial on)
+  hintTouch: {
+    'pt-BR': 'Dica: toque no nome de alguém no celular para pedir um toque.',
+    en: 'Tip: tap someone’s name on your phone to ask for a touch.',
+  },
+  hintIdle: {
+    'pt-BR': 'Dica: quem não tocar ninguém até o fim da rodada vira Zumbi.',
+    en: 'Tip: whoever touches no one by the end of the round turns.',
+  },
+  hintCure: {
+    'pt-BR': 'Dica: desconfiou de um toque? Tome a cura logo — ela só vale por pouco tempo.',
+    en: 'Tip: suspicious of a touch? Take the cure soon — it only works for a short while.',
+  },
+  // tutorial and rules
+  tutorial: { 'pt-BR': 'Tutorial', en: 'Tutorial' },
+  hostAdvances: { 'pt-BR': 'O Host avança pelo celular', en: 'The Host moves on from their phone' },
+  followTv: { 'pt-BR': 'Acompanhe o tutorial na TV.', en: 'Follow the tutorial on the TV.' },
+  prev: { 'pt-BR': 'Anterior', en: 'Back' },
+  next: { 'pt-BR': 'Próximo', en: 'Next' },
+  start: { 'pt-BR': 'Começar', en: 'Start' },
+  skip: { 'pt-BR': 'Pular tutorial', en: 'Skip tutorial' },
+  rules: { 'pt-BR': 'Regras', en: 'Rules' },
+  showOnTv: { 'pt-BR': 'Mostrar na TV', en: 'Show on TV' },
+  hideFromTv: { 'pt-BR': 'Tirar da TV', en: 'Hide from TV' },
+  close: { 'pt-BR': 'Fechar', en: 'Close' },
+  demoWho: { 'pt-BR': 'Zumbi ou Humano?', en: 'Zombie or Human?' },
+  demoTypes: { 'pt-BR': 'digita', en: 'types' },
+  demoNothing: { 'pt-BR': 'nada', en: 'nothing' },
+  demoTurns: { 'pt-BR': 'vira Zumbi', en: 'turns' },
 } satisfies Record<string, I18nText>;
 
 const NOTICE: Record<Notice['kind'], I18nText> = {
@@ -119,6 +149,38 @@ const NOTICE: Record<Notice['kind'], I18nText> = {
 };
 
 const CSS = `
+/* tutorial (TV) */
+.sg-slide{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:4em;padding:4em 5em 5.5em;
+  background:radial-gradient(ellipse at 50% 120%,rgba(122,31,43,.28),transparent 60%)}
+.sg-slide p{font-size:1.55em;line-height:1.45;margin:0 0 .7em;color:var(--text)}
+.sg-slide b,.sg-rules b,.sg-tvrules b{color:var(--gold-hi);font-weight:600}
+.sg-credit{font-family:var(--font-serif);font-style:italic;color:var(--text-dim)}
+.sg-slide .sg-credit{font-size:1.2em}
+.sg-dots{display:flex;gap:.6em;margin-top:1.4em}
+.sg-dots span{width:.8em;height:.8em;border-radius:50%;background:var(--line-strong)}
+.sg-dots span[data-on='true']{background:var(--gold)}
+.sg-ico-z{color:var(--crimson-hi)}
+.sg-ico-c{color:var(--gold-hi)}
+.sg-demo{display:grid;justify-items:center;align-content:center;gap:1.2em;text-align:center}
+.sg-demorow{display:flex;align-items:center;justify-content:center;gap:1em;font-size:1.4em;font-weight:600}
+.sg-demogrid{display:grid;grid-template-columns:repeat(3,auto);gap:1.4em 2em;justify-content:center}
+.sg-phone{display:grid;justify-items:center;gap:.3em;padding:1em 1.4em;border-radius:1em;background:var(--ink-2);box-shadow:0 0 0 1px var(--line-strong) inset}
+.sg-phone b{font-family:var(--font-display);font-size:2.6em;color:var(--gold-hi);line-height:1}
+.sg-phone small{font-size:.8em;color:var(--text-dim);font-weight:400}
+.sg-tag{padding:.25em .7em;border-radius:999px;font-size:.85em;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 0 0 1px var(--gold) inset;color:var(--gold-hi)}
+.sg-tag.z{box-shadow:0 0 0 1px var(--crimson) inset;color:var(--crimson-hi)}
+.sg-out{min-width:6em;text-align:left;color:var(--text-dim)}
+.sg-hint{display:inline-block;margin-top:.7em;padding:.35em 1em;border-radius:999px;font-size:1.25em;color:var(--gold-hi);background:rgba(212,175,55,.1);box-shadow:0 0 0 1px var(--gold-lo) inset}
+/* rules on the TV */
+.sg-tvrules{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(5,3,7,.9)}
+.sg-tvrules .mp-panel{width:min(62em,90vw);padding:2.2em 3em}
+.sg-tvrules h2{font-family:var(--font-display);font-size:2.6em;margin:.2em 0 .5em;color:var(--gold-hi)}
+.sg-tvrules p{font-size:1.4em;line-height:1.45;margin:0 0 .6em}
+/* rules on the phone */
+.sg-sheet{position:fixed;inset:0;z-index:40;background:rgba(5,3,7,.94);overflow-y:auto;padding:16px}
+.sg-rules{max-width:480px;margin:0 auto;display:grid;gap:12px}
+.sg-rules h3{font-family:var(--font-display);font-size:1.4rem;margin:0;color:var(--gold-hi)}
+.sg-rules p{margin:0;line-height:1.5}
 .sg-wrap{height:100vh;display:grid;grid-template-rows:auto 1fr;padding:2.6em 4em 4.5em;gap:1.6em;box-sizing:border-box;
   background:radial-gradient(ellipse at 50% 120%,rgba(122,31,43,.28),transparent 60%)}
 .sg-head{display:flex;align-items:flex-start;justify-content:space-between;gap:2em}
@@ -196,6 +258,297 @@ const who = (players: Players, id: string | null) => players.find((p) => p.id ==
 
 // ───────────────────────────────── Display (TV) ─────────────────────────────────
 
+// ───────────────────────────── Tutorial and rules (every game has both) ─────────────────────────────
+
+type Kit = DisplayProps['kit'];
+type T = DisplayProps['t'];
+
+/** Renders **bold** and the {zombie} / {cure} icons inside a translated string. */
+function rich(text: string): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*|\{zombie\}|\{cure\})/g).map((part, i) => {
+    if (part === '{zombie}')
+      return (
+        <span key={i} className="sg-ico-z" aria-hidden>
+          ☣
+        </span>
+      );
+    if (part === '{cure}')
+      return (
+        <span key={i} className="sg-ico-c" aria-hidden>
+          ✚
+        </span>
+      );
+    if (part.startsWith('**') && part.endsWith('**')) return <b key={i}>{part.slice(2, -2)}</b>;
+    return part;
+  });
+}
+
+const DEMO_SEATS = [
+  ['🎩', 'Ana'],
+  ['🦊', 'Beto'],
+  ['🌙', 'Caio'],
+  ['🎲', 'Duda'],
+  ['🍷', 'Eli'],
+  ['💎', 'Fran'],
+] as const;
+
+/** Live illustrations next to each slide, drawn with the game's own pieces. */
+function SlideDemo({ demo, kit, t }: { demo: Demo; kit: Kit; t: T }) {
+  const { Avatar } = kit;
+  const H = <span className="sg-tag">{t(L.human)}</span>;
+  const Z = <span className="sg-tag z">☣ {t(L.zombie)}</span>;
+  if (demo === 'table') {
+    return (
+      <div className="sg-demo">
+        <div className="sg-demogrid">
+          {DEMO_SEATS.map(([emoji, name]) => (
+            <div key={name} className="sg-seat">
+              <Avatar emoji={emoji} size="4em" badge="?" />
+              <span>{name}</span>
+            </div>
+          ))}
+        </div>
+        <p className="sg-sub" style={{ margin: 0 }}>
+          {t(L.demoWho)}
+        </p>
+      </div>
+    );
+  }
+  if (demo === 'touch') {
+    const code = (n: string) => <b style={{ color: 'var(--gold-hi)' }}>{n}</b>;
+    return (
+      <div className="sg-demo">
+        <div className="sg-demorow">
+          <div className="sg-phone">
+            <Avatar emoji="🎩" size="2.4em" />
+            <small>Ana</small>
+            <b>47</b>
+          </div>
+          <span className="sg-amp" style={{ fontSize: '2em' }}>
+            ⇄
+          </span>
+          <div className="sg-phone">
+            <Avatar emoji="🦊" size="2.4em" />
+            <small>Beto</small>
+            <b>82</b>
+          </div>
+        </div>
+        <div className="sg-demorow" style={{ fontSize: '1.2em', fontWeight: 400, color: 'var(--text-dim)' }}>
+          <span>
+            Ana {t(L.demoTypes)} {code('82')}
+          </span>
+          <span>·</span>
+          <span>
+            Beto {t(L.demoTypes)} {code('47')}
+          </span>
+        </div>
+      </div>
+    );
+  }
+  if (demo === 'outcomes') {
+    return (
+      <div className="sg-demo" style={{ justifyItems: 'start' }}>
+        <div className="sg-demorow">
+          {H} + {H} <span className="sg-out">→ +1 · +1</span>
+        </div>
+        <div className="sg-demorow">
+          {H} + {Z} <span className="sg-out sg-ico-z">→ {t(L.demoTurns)}</span>
+        </div>
+        <div className="sg-demorow">
+          {Z} + {Z} <span className="sg-out">→ {t(L.demoNothing)}</span>
+        </div>
+      </div>
+    );
+  }
+  if (demo === 'cure') {
+    return (
+      <div className="sg-demo">
+        <span className="sg-big" style={{ fontSize: '7em' }}>
+          ✚
+        </span>
+        <div className="sg-demorow">
+          <span className="sg-tag">✚ {t(L.takeCure)}</span>
+          <span className="sg-tag">
+            {t(L.giveCure)} → Beto
+          </span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="sg-demorow" style={{ gap: '5em' }}>
+      <div className="sg-stat">
+        <span className="sg-big sg-red" style={{ fontSize: '6em' }}>
+          2
+        </span>
+        <span className="sg-label">{t(L.zombies)}</span>
+      </div>
+      <div className="sg-stat">
+        <span className="sg-big" style={{ fontSize: '6em' }}>
+          4
+        </span>
+        <span className="sg-label">{t(L.humans)}</span>
+      </div>
+    </div>
+  );
+}
+
+function TutorialSlide({ view, kit, t }: { view: PublicView; kit: Kit; t: T }) {
+  const s = SLIDES[view.slide]!;
+  return (
+    <div className="sg-slide mp-enter" key={view.slide}>
+      <div>
+        <span className="mp-eyebrow" style={{ fontSize: '1.2em' }}>
+          {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+        </span>
+        <h1 className="sg-h1" style={{ fontSize: '3.4em', margin: '.2em 0 .5em' }}>
+          {t(s.title)}
+        </h1>
+        {s.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        {view.slide === 0 && CREDITS && <p className="sg-credit">{rich(t(CREDITS))}</p>}
+        <div className="sg-dots" aria-hidden>
+          {Array.from({ length: view.slides }, (_, i) => (
+            <span key={i} data-on={i === view.slide} />
+          ))}
+        </div>
+        <p className="sg-sub" style={{ fontSize: '1.1em', marginTop: '1em' }}>
+          {t(L.hostAdvances)}
+        </p>
+      </div>
+      <SlideDemo demo={s.demo} kit={kit} t={t} />
+    </div>
+  );
+}
+
+/** A rules page on the TV, while the Host shows it from their phone. */
+function TvRules({ page, kit, t }: { page: number; kit: Kit; t: T }) {
+  const r = RULES[page]!;
+  const last = page === RULES.length - 1;
+  return (
+    <div className="sg-tvrules">
+      <kit.Panel className="mp-enter" key={page}>
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h2>{t(r.title)}</h2>
+        {last && CREDITS && <p className="sg-credit">{rich(t(CREDITS))}</p>}
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+      </kit.Panel>
+    </div>
+  );
+}
+
+/** Full rules on the phone: anyone can read them; the Host can mirror the page on the TV. */
+function RulesReader({
+  view,
+  kit,
+  t,
+  send,
+  isHost,
+  onClose,
+}: {
+  view: PlayerView;
+  kit: PlayerProps['kit'];
+  t: T;
+  send(a: unknown): void;
+  isHost: boolean;
+  onClose(): void;
+}) {
+  const { Button, Panel } = kit;
+  const [page, setPage] = useState(view.tvRules ?? 0);
+  const onTv = isHost && view.tvRules !== null;
+  useEffect(() => {
+    if (onTv) send({ type: 'tvRules', page });
+  }, [page]);
+  const r = RULES[page]!;
+  const last = page === RULES.length - 1;
+  return (
+    <div className="sg-sheet" role="dialog" aria-modal="true" aria-label={t(L.rules)}>
+      <Panel className="sg-rules">
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h3>{t(r.title)}</h3>
+        {last && CREDITS && <p>{rich(t(CREDITS))}</p>}
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        <div className="sg-row2">
+          <Button small variant="ghost" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            ‹ {t(L.prev)}
+          </Button>
+          <Button small variant="ghost" disabled={last} onClick={() => setPage(page + 1)}>
+            {t(L.next)} ›
+          </Button>
+        </div>
+        {isHost && (
+          <Button small onClick={() => send({ type: 'tvRules', page: onTv ? null : page })}>
+            📺 {t(onTv ? L.hideFromTv : L.showOnTv)}
+          </Button>
+        )}
+        <Button
+          small
+          variant="ghost"
+          onClick={() => {
+            if (onTv) send({ type: 'tvRules', page: null });
+            onClose();
+          }}
+        >
+          {t(L.close)}
+        </Button>
+      </Panel>
+    </div>
+  );
+}
+
+/** The Host's controls for the tutorial; everyone else is pointed at the TV. */
+function IntroControls({
+  view,
+  kit,
+  t,
+  send,
+  isHost,
+}: {
+  view: PlayerView;
+  kit: PlayerProps['kit'];
+  t: T;
+  send(a: unknown): void;
+  isHost: boolean;
+}) {
+  const { Button, Panel } = kit;
+  const last = view.slide === view.slides - 1;
+  return (
+    <>
+      <Panel className="stack" style={{ textAlign: 'center' }}>
+        <span className="mp-eyebrow">
+          {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+        </span>
+        <h3 style={{ margin: 0 }}>{t(SLIDES[view.slide]!.title)}</h3>
+        {!isHost && <p className="sg-note">{t(L.followTv)}</p>}
+      </Panel>
+      {isHost && (
+        <>
+          <div className="sg-row2">
+            <Button variant="ghost" disabled={view.slide === 0} onClick={() => send({ type: 'intro', dir: -1 })}>
+              ‹ {t(L.prev)}
+            </Button>
+            <Button onClick={() => send({ type: 'intro', dir: 1 })}>{last ? t(L.start) : `${t(L.next)} ›`}</Button>
+          </div>
+          {!last && (
+            <Button block small variant="ghost" onClick={() => send({ type: 'intro', dir: 'skip' })}>
+              {t(L.skip)}
+            </Button>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
 /** Big MM:SS round clock; holds its value while the room is paused. */
 function Clock({ deadline, paused, useRoomNow }: { deadline: number | null; paused: boolean; useRoomNow: () => number }) {
   const now = useRoomNow();
@@ -213,7 +566,7 @@ function Clock({ deadline, paused, useRoomNow }: { deadline: number | null; paus
   );
 }
 
-function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
+function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
   const { Avatar, Countdown } = kit;
   const players = platform.players.filter((p) => !p.spectator);
   const name = (id: string | null) => who(players, id)?.name ?? '?';
@@ -266,6 +619,11 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
             {eyebrow}
             <h1 className="sg-h1">{t(L.roundTitle)}</h1>
             <p className="sg-sub">{t(L.roundSub)}</p>
+            {view.hint && (
+              <span className="sg-hint mp-enter" key={view.hint}>
+                {t(view.hint === 'touch' ? L.hintTouch : view.hint === 'idle' ? L.hintIdle : L.hintCure)}
+              </span>
+            )}
           </div>
         </header>
         <div className="sg-board">
@@ -432,7 +790,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
 
 // ───────────────────────────────── Player (phone) ─────────────────────────────────
 
-function Player({ view, kit, t, send, platform }: PlayerProps<PlayerView>) {
+function Controls({ view, kit, t, send, platform }: PlayerProps<PlayerView>) {
   const { Button, Countdown, Panel, Avatar, TextInput } = kit;
   const now = kit.useRoomNow();
   const [screen, setScreen] = useState<'main' | 'cure' | 'give'>('main');
@@ -740,6 +1098,42 @@ function Dealer({ view, t }: DealerProps<DealerView>) {
       <h1 className={`sg-role ${z ? 'sg-z' : 'sg-h'}`}>{t(z ? L.zombie : L.human)}</h1>
       <p>{t(z ? L.dealerZombie : L.dealerHuman)}</p>
       <p style={{ color: 'var(--gold)' }}>{t(L.secret)}</p>
+    </div>
+  );
+}
+
+// ───────────────────────────────── Screens ─────────────────────────────────
+
+function Display(props: DisplayProps<PublicView>) {
+  const { view, kit, t } = props;
+  if (!view) return null;
+  return (
+    <>
+      <Styles />
+      {view.phase === 'intro' ? <TutorialSlide view={view} kit={kit} t={t} /> : <Board {...props} />}
+      {view.tvRules !== null && <TvRules page={view.tvRules} kit={kit} t={t} />}
+    </>
+  );
+}
+
+function Player(props: PlayerProps<PlayerView>) {
+  const { view, kit, t, send, you } = props;
+  const [rules, setRules] = useState(false);
+  if (!view) return null;
+  const isHost = you.isAdmin;
+  return (
+    <div className="stack">
+      <Styles />
+      {view.phase === 'intro' ? (
+        <IntroControls view={view} kit={kit} t={t} send={send} isHost={isHost} />
+      ) : (
+        <Controls {...props} />
+      )}
+      {/* The rules are one tap away in every phase. */}
+      <kit.Button block small variant="ghost" onClick={() => setRules(true)}>
+        📖 {t(L.rules)}
+      </kit.Button>
+      {rules && <RulesReader view={view} kit={kit} t={t} send={send} isHost={isHost} onClose={() => setRules(false)} />}
     </div>
   );
 }

@@ -9,7 +9,7 @@ const phone = (room: Room, id: string) => room.playerView(id) as PlayerView;
 const MIN = 60_000;
 
 function phoneRoom(players: number, config: Record<string, unknown> = {}, seed = 3) {
-  const room = createTestRoom<State>(game, { players, seed, config: { roleReveal: 'phone', ...config } });
+  const room = createTestRoom<State>(game, { players, seed, config: { tutorial: false, roleReveal: 'phone', ...config } });
   for (const id of room.ids) room.act(id, { type: 'seen' });
   return room;
 }
@@ -50,7 +50,7 @@ describe('Surto', () => {
   });
 
   it('plays a full match at the maximum player count, roles at the Dealer', () => {
-    const room = createTestRoom<State>(game, { players: 12, seed: 5, config: { rounds: 1 } });
+    const room = createTestRoom<State>(game, { players: 12, seed: 5, config: { tutorial: false, rounds: 1 } });
     expect(pub(room).phase).toBe('roles');
     for (const id of room.ids) room.visitDealer(id);
     expect(pub(room).phase).toBe('round');
@@ -63,7 +63,7 @@ describe('Surto', () => {
   });
 
   it('timers alone carry the match to the end (nobody touches → everyone turns)', () => {
-    const room = createTestRoom<State>(game, { players: 6, config: { rounds: 3 } });
+    const room = createTestRoom<State>(game, { players: 6, config: { tutorial: false, rounds: 3 } });
     room.advance(30_000 + 20_000 * 6);
     expect(pub(room).phase).toBe('round');
     room.advance(8 * MIN);
@@ -75,7 +75,7 @@ describe('Surto', () => {
   });
 
   it('roles end early once everyone has seen theirs', () => {
-    const room = createTestRoom<State>(game, { players: 5, config: { roleReveal: 'phone' } });
+    const room = createTestRoom<State>(game, { players: 5, config: { tutorial: false, roleReveal: 'phone' } });
     for (const id of room.ids.slice(0, 4)) room.act(id, { type: 'seen' });
     expect(pub(room).phase).toBe('roles');
     room.act('p5', { type: 'seen' });
@@ -305,7 +305,7 @@ describe('Surto', () => {
   });
 
   it('shows the role only to its owner: on the phone during roles, or at the Dealer', () => {
-    const room = createTestRoom<State>(game, { players: 6, seed: 9, config: { roleReveal: 'phone' } });
+    const room = createTestRoom<State>(game, { players: 6, seed: 9, config: { tutorial: false, roleReveal: 'phone' } });
     const initial = room.state().initial;
     for (const id of room.ids) {
       expect(phone(room, id).role).toBe(initial.includes(id) ? 'zombie' : 'human');
@@ -313,7 +313,7 @@ describe('Surto', () => {
     }
     expect(room.publicJson()).not.toContain('"role"');
 
-    const dealer = createTestRoom<State>(game, { players: 6, seed: 9, remote: ['p6'] });
+    const dealer = createTestRoom<State>(game, { players: 6, seed: 9, remote: ['p6'], config: { tutorial: false } });
     expect(phone(dealer, 'p1').role).toBeNull();
     expect(dealer.playerFrame('p1')?.platform.canRequestDealer).toBe(true);
     const seen = dealer.visitDealer('p1') as DealerView;
@@ -363,7 +363,7 @@ describe('Surto', () => {
   });
 
   it('a player who drops during roles counts as having seen theirs', () => {
-    const room = createTestRoom<State>(game, { players: 5, config: { roleReveal: 'phone' } });
+    const room = createTestRoom<State>(game, { players: 5, config: { tutorial: false, roleReveal: 'phone' } });
     for (const id of room.ids.slice(0, 4)) room.act(id, { type: 'seen' });
     room.disconnect('p5');
     room.advance(20_001);
