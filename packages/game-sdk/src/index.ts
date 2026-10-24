@@ -23,6 +23,8 @@ export interface GameManifest {
   description: I18nText;
   minPlayers: number;
   maxPlayers: number;
+  /** Player counts go up in steps of this size from `minPlayers` (2 = 4, 6, 8…). Default 1. */
+  playerStep?: number;
   usesDealer: boolean;
   estimatedMinutes: number;
   /** Accent colour for lobby cards. */
@@ -259,6 +261,12 @@ export function createRng(getState: () => number, setState: (s: number) => void)
       return out;
     },
   };
+}
+
+/** Whether a match of this game may start with `count` players (range and `playerStep`). */
+export function fitsPlayerCount(manifest: GameManifest, count: number): boolean {
+  const step = Math.max(1, manifest.playerStep ?? 1);
+  return count >= manifest.minPlayers && count <= manifest.maxPlayers && (count - manifest.minPlayers) % step === 0;
 }
 
 export function configDefaults(manifest: GameManifest): Record<string, unknown> {

@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react';
 import type { ConfigField, GameLogic, GameManifest } from '@mp/game-sdk';
-import { configDefaults } from '@mp/game-sdk';
+import { configDefaults, fitsPlayerCount } from '@mp/game-sdk';
 import type { Lang } from '@mp/protocol';
 import logic from '@game/src/logic.ts';
 import manifestJson from '@game/manifest.json';
@@ -8,7 +8,9 @@ import { PlaygroundHost } from './host.ts';
 import { installAgentHelpers } from './agent.ts';
 
 const manifest = manifestJson as GameManifest;
-const initialPlayers = Math.max(manifest.minPlayers, Math.min(4, manifest.maxPlayers));
+const initialPlayers =
+  Array.from({ length: manifest.maxPlayers }, (_, i) => i + 1).find((n) => n >= Math.min(4, manifest.maxPlayers) && fitsPlayerCount(manifest, n)) ??
+  manifest.minPlayers;
 
 // One engine per control room, created outside React so StrictMode's double render can't fork it,
 // and lazily so the device iframes (which load this module too) never start one.
@@ -110,7 +112,7 @@ export function ControlRoom() {
           Jogadores
           <select value={players} onChange={(e) => restart({ players: Number(e.target.value) })}>
             {Array.from({ length: Math.max(1, manifest.maxPlayers) }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n} disabled={n < manifest.minPlayers}>
+              <option key={n} value={n} disabled={!fitsPlayerCount(manifest, n)}>
                 {n}
               </option>
             ))}

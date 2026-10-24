@@ -23,7 +23,7 @@ What exists around a game, so the game only does what is unique to it.
 - **lobby** — the platform shows the join code, QR, players and the chosen game; the Host
   configures it. Not your code.
 - **loading** — every device downloads your bundle; the match starts when all report ready
-  (or after 15 s). The platform refuses to start outside `minPlayers..maxPlayers`.
+  (or after 15 s). The platform refuses to start outside `minPlayers..maxPlayers` (and off `playerStep`, when the manifest sets one).
 - **playing** — your game. `setup(ctx)` runs once; `ctx.players` is the fixed list of
   participants for the whole match (late joiners become spectators and are not in it).
 - **results** — after `ctx.end({ scores })` the platform shows the ranking on TVs and phones and

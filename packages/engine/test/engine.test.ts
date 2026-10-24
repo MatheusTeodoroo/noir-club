@@ -60,6 +60,20 @@ describe('platform lifecycle', () => {
     expect(e.state.phase).toBe('lobby');
   });
 
+  it('refuses a player count off the game step', () => {
+    const even = { ...demo, manifest: { ...demo.manifest, minPlayers: 2, maxPlayers: 6, playerStep: 2 } };
+    const start = (names: string[]) => {
+      const e = new Engine(initialState(1));
+      e.presence(names.map((n, i) => client(n, 'player', { isAdmin: i === 0 })), 0);
+      e.action(names[0]!, { type: 'selectGame', game: GAME }, 0);
+      e.setLogic(even, 0);
+      e.action(names[0]!, { type: 'start' }, 0);
+      return e.state.phase;
+    };
+    expect(start(['host', 'ana', 'bia'])).toBe('lobby');
+    expect(start(['host', 'ana', 'bia', 'caio'])).toBe('loading');
+  });
+
   it('only the admin can configure and start', () => {
     const e = new Engine(initialState(1));
     e.presence([client('host', 'player', { isAdmin: true }), client('ana', 'player')], 0);

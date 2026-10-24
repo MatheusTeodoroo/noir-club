@@ -11,6 +11,7 @@ Types: `.noir/sdk/game-sdk/index.ts`. Worked examples: the starter `src/logic.ts
 | `version` | semver; bump on every change once released (bundles are cached per version) |
 | `name`, `description` | `{ "pt-BR": "...", "en": "..." }`; the description is the TV lobby pitch |
 | `minPlayers`, `maxPlayers` | enforced by the platform at start; the starter's `2` suits duels and races — bluffing and deduction games usually need at least 3, and check the TV board still fits at the maximum |
+| `playerStep` | optional; counts go up from `minPlayers` in steps of this size — `2` with `minPlayers: 4` allows 4, 6, 8… (team games that need equal sides). The platform refuses other counts and the lobby says so |
 | `usesDealer` | enables the Dealer queue and `dealerView` |
 | `estimatedMinutes` | shown in the lobby |
 | `accent` | hex colour for the lobby card glow; stay within gold / crimson / deep jewel tones |

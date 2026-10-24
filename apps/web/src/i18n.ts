@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { Lang } from '@mp/protocol';
-import type { I18nText } from '@mp/game-sdk';
+import type { GameManifest, I18nText } from '@mp/game-sdk';
 
 const pt = {
   'brand.name': 'Noir Club',
@@ -23,6 +23,8 @@ const pt = {
   'lobby.scan': 'ou aponte a câmera',
   'lobby.chosen': 'Jogo escolhido',
   'lobby.need': 'Precisa de {min} a {max} jogadores',
+  'lobby.needStep': 'Precisa de {min} a {max} jogadores, de {step} em {step}',
+  'lobby.even': 'pares',
   'admin.title': 'Mesa do Host',
   'admin.games': 'Jogos',
   'admin.game': 'Jogo',
@@ -109,6 +111,8 @@ const en: Record<Key, string> = {
   'lobby.scan': 'or scan',
   'lobby.chosen': 'Chosen game',
   'lobby.need': 'Needs {min} to {max} players',
+  'lobby.needStep': 'Needs {min} to {max} players, in steps of {step}',
+  'lobby.even': 'even',
   'admin.title': "Host's table",
   'admin.games': 'Games',
   'admin.game': 'Game',
@@ -216,4 +220,12 @@ export function useSetLang() {
 export function useT() {
   const lang = useContext(LangContext);
   return { t: makeT(lang), lang, tg: (text: I18nText) => text[lang] ?? text['pt-BR'] };
+}
+
+/** "4–12", or "4–12 · pares" when the game only starts with every second count. */
+export function playerRange(m: Pick<GameManifest, 'minPlayers' | 'maxPlayers' | 'playerStep'>, t: T) {
+  const range = `${m.minPlayers}–${m.maxPlayers}`;
+  const step = m.playerStep ?? 1;
+  if (step <= 1) return range;
+  return step === 2 && m.minPlayers % 2 === 0 ? `${range} · ${t('lobby.even')}` : `${range} · +${step}`;
 }

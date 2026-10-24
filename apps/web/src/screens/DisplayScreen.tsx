@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import type { PublicFrame } from '@mp/protocol';
 import { Avatar, RiveView, RoomTimeContext, Stage } from '@mp/ui';
-import { LangContext, makeT, useT } from '../i18n.ts';
+import { LangContext, makeT, playerRange, useT } from '../i18n.ts';
 import { listGames, type RegistryEntry } from '../games/loader.ts';
 import { GameBoundary, kit, Logo, Scoreboard, StatusOverlay, useGameUI } from '../room/common.tsx';
 import { useSession, type Session } from '../room/session.ts';
@@ -139,7 +139,7 @@ function Lobby({ frame, code }: { frame: PublicFrame; code: string }) {
             <p className="mp-subtitle tv-game-desc">{tg(game.description)}</p>
             <div className="row wrap tv-game-meta">
               <span className="mp-chip">
-                👥 {game.minPlayers}–{game.maxPlayers}
+                👥 {playerRange(game, t)}
               </span>
               <span className="mp-chip">⏱ ~{game.estimatedMinutes} min</span>
               {game.usesDealer && <span className="mp-chip mp-chip--crimson">🃏 Dealer</span>}

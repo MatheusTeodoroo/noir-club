@@ -16,6 +16,7 @@ import {
 import {
   configDefaults,
   createRng,
+  fitsPlayerCount,
   sanitizeConfig,
   type GameCtx,
   type GameLogic,
@@ -313,7 +314,7 @@ export class Engine {
     if (s.phase !== 'lobby' || !s.game) return;
     const count = this.activePlayers().length;
     const m = this.logic?.manifest;
-    if (m && (count < m.minPlayers || count > m.maxPlayers)) return;
+    if (m && !fitsPlayerCount(m, count)) return;
     s.phase = 'loading';
     s.results = null;
     s.loading = { ready: [], logicReady: !!m && m.id === s.game.id };
@@ -333,7 +334,7 @@ export class Engine {
 
     const participants = this.activePlayers().map((p) => p.id);
     const m = this.logic.manifest;
-    if (participants.length < m.minPlayers || participants.length > m.maxPlayers) {
+    if (!fitsPlayerCount(m, participants.length)) {
       // Someone left during loading; abort back to lobby rather than start an invalid match.
       this.toLobby();
       return;

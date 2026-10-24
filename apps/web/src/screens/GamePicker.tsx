@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { GameManifest } from '@mp/game-sdk';
+import { fitsPlayerCount, type GameManifest } from '@mp/game-sdk';
 import { Button, Toggle } from '@mp/ui';
-import { useT } from '../i18n.ts';
+import { playerRange, useT } from '../i18n.ts';
 
 /** Accent- and case-insensitive text for search. */
 const fold = (s: string) =>
@@ -47,7 +47,7 @@ export function GamePicker({
     };
   }, [onClose]);
 
-  const fits = (m: GameManifest) => players >= m.minPlayers && players <= m.maxPlayers;
+  const fits = (m: GameManifest) => fitsPlayerCount(m, players);
   const shown = useMemo(() => {
     const q = fold(query.trim());
     return games
@@ -99,7 +99,7 @@ export function GamePicker({
               <p>{tg(m.description)}</p>
               <div className="row wrap" style={{ gap: 6 }}>
                 <span className={`mp-chip ${fits(m) ? '' : 'mp-chip--crimson'}`}>
-                  👥 {m.minPlayers}–{m.maxPlayers}
+                  👥 {playerRange(m, t)}
                 </span>
                 <span className="mp-chip">⏱ ~{m.estimatedMinutes} min</span>
                 {m.usesDealer && <span className="mp-chip mp-chip--crimson">🃏 Dealer</span>}

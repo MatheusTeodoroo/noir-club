@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { PublicFrame } from '@mp/protocol';
 import { normalizeRoomCode } from '@mp/protocol';
-import { configDefaults, type ConfigField } from '@mp/game-sdk';
+import { configDefaults, fitsPlayerCount, type ConfigField } from '@mp/game-sdk';
 import { Avatar, Button, Panel, Stepper, Toggle } from '@mp/ui';
-import { useT } from '../i18n.ts';
+import { playerRange, useT } from '../i18n.ts';
 import { listGames, type RegistryEntry } from '../games/loader.ts';
 import { useSession, type Session } from '../room/session.ts';
 import { GamePicker } from './GamePicker.tsx';
@@ -22,7 +22,7 @@ export function AdminPanel({ session, frame }: { session: Session; frame: Public
 
   const selected = games.find((g) => g.manifest.id === pub.game?.id)?.manifest ?? null;
   const active = pub.players.filter((p) => p.connected && !p.spectator).length;
-  const inRange = !!selected && active >= selected.minPlayers && active <= selected.maxPlayers;
+  const inRange = !!selected && fitsPlayerCount(selected, active);
   const config = selected ? { ...configDefaults(selected), ...pub.gameConfig } : {};
 
   return (
@@ -39,7 +39,7 @@ export function AdminPanel({ session, frame }: { session: Session; frame: Public
             <p>{tg(selected.description)}</p>
             <div className="row wrap" style={{ gap: 6 }}>
               <span className={`mp-chip ${inRange ? '' : 'mp-chip--crimson'}`}>
-                👥 {selected.minPlayers}–{selected.maxPlayers}
+                👥 {playerRange(selected, t)}
               </span>
               <span className="mp-chip">⏱ ~{selected.estimatedMinutes} min</span>
               {selected.usesDealer && <span className="mp-chip mp-chip--crimson">🃏 Dealer</span>}
@@ -127,7 +127,7 @@ export function AdminPanel({ session, frame }: { session: Session; frame: Public
       <div className="sticky-bottom stack" style={{ gap: 6 }}>
         {selected && !inRange && (
           <span style={{ textAlign: 'center', color: 'var(--crimson-hi)', fontSize: '0.85rem' }}>
-            {t('lobby.need', { min: selected.minPlayers, max: selected.maxPlayers })}
+            {t((selected.playerStep ?? 1) > 1 ? 'lobby.needStep' : 'lobby.need', { min: selected.minPlayers, max: selected.maxPlayers, step: selected.playerStep ?? 1 })}
           </span>
         )}
         <Button block variant="crimson" disabled={!inRange} onClick={() => session.send({ type: 'start' })}>

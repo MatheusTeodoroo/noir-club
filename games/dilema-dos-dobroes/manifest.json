@@ -1,0 +1,52 @@
+{
+  "id": "dilema-dos-dobroes",
+  "version": "0.1.0",
+  "name": {
+    "pt-BR": "O Dilema dos Dobrões",
+    "en": "The Doubloon Dilemma"
+  },
+  "description": {
+    "pt-BR": "Dois times, dez dobrões cada um, um pote que tudo engole: ajude seu time a vencer sem esvaziar o próprio bolso.",
+    "en": "Two teams, ten doubloons each, a pot that swallows everything: help your team win without emptying your own pocket."
+  },
+  "minPlayers": 4,
+  "maxPlayers": 12,
+  "playerStep": 2,
+  "usesDealer": true,
+  "estimatedMinutes": 40,
+  "accent": "#c9a227",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
+      "key": "roundMinutes",
+      "type": "number",
+      "label": {
+        "pt-BR": "Duração da rodada (min)",
+        "en": "Round length (min)"
+      },
+      "min": 5,
+      "max": 20,
+      "default": 15
+    },
+    {
+      "key": "visitSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Tempo de visita ao Dealer (s)",
+        "en": "Dealer visit time (s)"
+      },
+      "min": 15,
+      "max": 60,
+      "step": 5,
+      "default": 30
+    }
+  ]
+}
