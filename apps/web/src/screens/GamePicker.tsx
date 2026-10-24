@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { GameManifest } from '@mp/game-sdk';
 import { Button, Toggle } from '@mp/ui';
 import { useT } from '../i18n.ts';
@@ -55,7 +56,10 @@ export function GamePicker({
       .sort((a, b) => Number(fits(b)) - Number(fits(a)) || tg(a.name).localeCompare(tg(b.name)));
   }, [games, query, fitsOnly, players]);
 
-  return (
+  // Rendered into <body>: an ancestor with a transform or backdrop-filter (panels, entry
+  // animations) would otherwise become the containing block of `position: fixed`, making the sheet
+  // taller than the screen and its end unreachable.
+  return createPortal(
     <div className="picker" role="dialog" aria-modal="true" aria-label={t('admin.pickGame')}>
       <div className="picker-sheet" ref={panel} tabIndex={-1}>
         <header className="picker-head">
@@ -104,6 +108,7 @@ export function GamePicker({
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -97,6 +97,11 @@ serif), `mp-eyebrow` (small spaced caps), `mp-panel`, `mp-chip` (+ `mp-chip--cri
 - Typed answers: use `kit.TextInput` (it already handles Enter, trimming, no autocorrect). Check
   limits on the phone for instant feedback (the engine ignores invalid actions silently) and
   show what was sent ("Sua pista: PINTOR").
+- Full-screen sheets (rules, menus): `position: fixed; inset: 0; overflow-y: auto` rendered at your
+  component's root. Any ancestor with a lasting `transform`, `filter` or `backdrop-filter` traps
+  `fixed` inside it — so never wrap a sheet in a `kit.Panel`, and give entry animations that move
+  things `animation-fill-mode: backwards` (not `both`) on elements that contain sheets. Check in
+  the playground that the sheet is exactly the screen's height and scrolls to its end.
 - Give buttons whose content is not plain text an `aria-label` (e.g. an avatar + name candidate:
   `aria-label={c.name}`) — screen readers and test tooling find them by name.
 

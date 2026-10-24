@@ -504,8 +504,10 @@ select {
   padding: 24px;
 }
 
+/* `backwards`, not `both`: a transform kept after the animation would become the containing block
+ * of every position: fixed descendant (menus, rules sheets), trapping them inside this element. */
 .mp-enter {
-  animation: mp-rise 600ms var(--ease-out) both;
+  animation: mp-rise 600ms var(--ease-out) backwards;
 }
 
 .mp-spinner {
