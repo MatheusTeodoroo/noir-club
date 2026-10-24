@@ -1,0 +1,94 @@
+{
+  "id": "ficha-explosiva",
+  "version": "0.2.0",
+  "name": { "pt-BR": "Ficha Explosiva", "en": "Loaded Chip" },
+  "description": {
+    "pt-BR": "Dois salões, duas famílias e uma ficha explosiva: mantenha o Chefão longe do Assassino enquanto os líderes trocam reféns.",
+    "en": "Two halls, two families and one loaded chip: keep the Boss away from the Hitman while the leaders trade hostages."
+  },
+  "minPlayers": 6,
+  "maxPlayers": 30,
+  "usesDealer": true,
+  "estimatedMinutes": 15,
+  "accent": "#b3122e",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": { "pt-BR": "Tutorial (como jogar antes de montar o baralho)", "en": "Tutorial (how to play before the deck is built)" },
+      "default": true
+    },
+    {
+      "key": "preset",
+      "type": "select",
+      "label": { "pt-BR": "Baralho inicial", "en": "Starting deck" },
+      "options": [
+        { "value": "basico", "label": { "pt-BR": "Básico", "en": "Basic" } },
+        { "value": "classico", "label": { "pt-BR": "Clássico", "en": "Classic" } },
+        { "value": "caos", "label": { "pt-BR": "Caos", "en": "Chaos" } }
+      ],
+      "default": "classico"
+    },
+    {
+      "key": "rounds",
+      "type": "select",
+      "label": { "pt-BR": "Rodadas", "en": "Rounds" },
+      "options": [
+        { "value": "3", "label": { "pt-BR": "3 rodadas", "en": "3 rounds" } },
+        { "value": "5", "label": { "pt-BR": "5 rodadas (11+ jogadores)", "en": "5 rounds (11+ players)" } }
+      ],
+      "default": "3"
+    },
+    {
+      "key": "timing",
+      "type": "select",
+      "label": { "pt-BR": "Tempo das rodadas", "en": "Round timing" },
+      "options": [
+        { "value": "padrao", "label": { "pt-BR": "Decrescente (3·2·1 min)", "en": "Shrinking (3·2·1 min)" } },
+        { "value": "tres", "label": { "pt-BR": "Todas de 3 min", "en": "All 3 min" } },
+        { "value": "sem", "label": { "pt-BR": "Sem cronômetro", "en": "No clock" } }
+      ],
+      "default": "padrao"
+    },
+    {
+      "key": "briefing",
+      "type": "select",
+      "label": { "pt-BR": "Ver a carta", "en": "See your card" },
+      "options": [
+        { "value": "phone", "label": { "pt-BR": "No celular", "en": "On the phone" } },
+        { "value": "dealer", "label": { "pt-BR": "No Dealer", "en": "At the Dealer" } }
+      ],
+      "default": "phone"
+    },
+    {
+      "key": "buryEven",
+      "type": "boolean",
+      "label": { "pt-BR": "Enterrar carta também com nº par", "en": "Allow burying with an even count" },
+      "default": false
+    },
+    {
+      "key": "prematureLoss",
+      "type": "boolean",
+      "label": { "pt-BR": "Derrota prematura vira Apostador", "en": "Early losers become Gamblers" },
+      "default": false
+    },
+    {
+      "key": "exchangeSeconds",
+      "type": "number",
+      "label": { "pt-BR": "Troca de reféns (s)", "en": "Hostage exchange (s)" },
+      "min": 15,
+      "max": 90,
+      "step": 5,
+      "default": 30
+    },
+    {
+      "key": "briefingSeconds",
+      "type": "number",
+      "label": { "pt-BR": "Tempo para ver a carta (s)", "en": "Time to see your card (s)" },
+      "min": 30,
+      "max": 300,
+      "step": 15,
+      "default": 90
+    }
+  ]
+}

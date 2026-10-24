@@ -1,0 +1,7 @@
+{
+  "name": "@mp/game-ficha-explosiva",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@mp/game-sdk": "*" },
+  "devDependencies": { "@mp/engine": "*" }
+}
