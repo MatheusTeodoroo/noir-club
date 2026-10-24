@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { defineGameUI, type DisplayProps, type I18nText, type PlayerProps } from '@mp/game-sdk';
 import type { Guess, PlayerView, PublicView } from './logic.ts';
 import { LEAD_MS, MAX_GUESS } from './shared.ts';
+import { CREDITS, RULES, SLIDES, type Demo } from './texts.ts';
 
-// Only `react`, `@mp/game-sdk` and the secret-free `shared.ts` are imported here. Platform
+// Only `react`, `@mp/game-sdk` and the secret-free `shared.ts` and `texts.ts` are imported here. Platform
 // components come in through `kit`, text goes through `t()`, and styles use the `dg-` prefix.
 
 const L = {
@@ -69,7 +70,46 @@ const L = {
   safe: { 'pt-BR': 'Você escapou desta', en: 'You got away with it' },
   yourCards: { 'pt-BR': 'Suas cartas', en: 'Your cards' },
   yourChips: { 'pt-BR': 'Fichas Dobrei', en: 'Doubled chips' },
+  // first-round hints (tutorial on)
+  hintCategory: {
+    'pt-BR': 'Dica: quem abre toca numa categoria no celular — escolha uma que você conhece.',
+    en: 'Tip: the opener taps a category on their phone — pick one you know.',
+  },
+  hintOpen: {
+    'pt-BR': 'Dica: abra com um número que você tem certeza que não passa da resposta.',
+    en: 'Tip: open with a number you are sure is not over the answer.',
+  },
+  hintRaise: {
+    'pt-BR': 'Dica: acha que já passou da resposta? DUVIDO! Senão, palpite um número maior.',
+    en: 'Tip: think it is already over the answer? I DOUBT IT! Otherwise, guess higher.',
+  },
+  // tutorial and rules
+  tutorial: { 'pt-BR': 'Tutorial', en: 'Tutorial' },
+  hostAdvances: { 'pt-BR': 'O Host avança pelo celular', en: 'The Host moves on from their phone' },
+  followTv: { 'pt-BR': 'Acompanhe o tutorial na TV.', en: 'Follow the tutorial on the TV.' },
+  prev: { 'pt-BR': 'Anterior', en: 'Back' },
+  next: { 'pt-BR': 'Próximo', en: 'Next' },
+  start: { 'pt-BR': 'Começar', en: 'Start' },
+  skip: { 'pt-BR': 'Pular tutorial', en: 'Skip tutorial' },
+  rules: { 'pt-BR': 'Regras', en: 'Rules' },
+  showOnTv: { 'pt-BR': 'Mostrar na TV', en: 'Show on TV' },
+  hideFromTv: { 'pt-BR': 'Tirar da TV', en: 'Hide from TV' },
+  close: { 'pt-BR': 'Fechar', en: 'Close' },
+  credits: { 'pt-BR': 'Créditos', en: 'Credits' },
+  demoQuestion: { 'pt-BR': 'Ano de lançamento de Tetris', en: 'Year Tetris was released' },
+  demoUnit: { 'pt-BR': 'ano', en: 'year' },
 } satisfies Record<string, I18nText>;
+
+type T = (text: I18nText) => string;
+
+/** Category names for the tutorial demo (the real bank lives in the logic only). */
+const DEMO_CATEGORIES: I18nText[] = [
+  { 'pt-BR': 'Filmes', en: 'Movies' },
+  { 'pt-BR': 'Natureza', en: 'Nature' },
+  { 'pt-BR': 'Futebol', en: 'Soccer' },
+  { 'pt-BR': 'Música', en: 'Music' },
+  { 'pt-BR': 'Videogames', en: 'Video games' },
+];
 
 const fill = (s: string, vars: Record<string, string | number>) =>
   s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
@@ -120,6 +160,32 @@ const CSS = `
 .dg-seat small .lost{color:var(--crimson-hi)}
 .dg-seat .dg-said{font-style:normal;font-family:var(--font-display);color:var(--gold)}
 .dg-tv.many .dg-h1{font-size:3em}
+.dg-hintbar{margin:0 0 .4em;padding:.35em 1em;border-radius:999px;font-size:1.15em;color:var(--gold-hi);background:rgba(212,175,55,.08);box-shadow:0 0 0 1px var(--gold-lo) inset}
+.dg-opt.pick{color:#1a0f05;background:linear-gradient(180deg,#e2c35a,var(--gold) 50%,#a88520)}
+/* Tutorial slide (TV) */
+.dg-slide{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:4em;padding:4em 5em 5.5em}
+.dg-slide p{font-size:1.6em;line-height:1.45;margin:0 0 .7em;color:var(--text)}
+.dg-slide b,.dg-rules b,.dg-tvrules b{color:var(--gold-hi);font-weight:600}
+.dg-credit{font-family:var(--font-serif);font-style:italic;color:var(--text-dim)}
+.dg-slide .dg-credit{font-size:1.2em}
+.dg-cardicon{color:var(--crimson-hi)}
+.dg-dots{display:flex;gap:.6em;margin-top:1.5em}
+.dg-dots span{width:.8em;height:.8em;border-radius:50%;background:var(--line-strong)}
+.dg-dots span[data-on='true']{background:var(--gold)}
+.dg-demo{display:grid;justify-items:center;gap:.6em;text-align:center}
+.dg-demostrip{display:flex;align-items:flex-end;justify-content:center;gap:1em;font-size:1.5em}
+.dg-demoarrow{align-self:center;font-size:1.6em;color:var(--gold-lo)}
+/* Rules overlay (TV) and reader (phone) */
+.dg-tvrules{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(5,3,7,.9)}
+.dg-tvrules .mp-panel{width:min(62em,90vw);padding:2.2em 3em}
+.dg-tvrules h2{font-family:var(--font-display);font-size:2.6em;margin:.2em 0 .5em;color:var(--gold-hi)}
+.dg-tvrules p{font-size:1.45em;line-height:1.45;margin:0 0 .6em}
+.dg-sheet{position:fixed;inset:0;z-index:40;background:rgba(5,3,7,.94);overflow-y:auto;padding:16px}
+.dg-rules{max-width:480px;margin:0 auto;display:grid;gap:12px}
+.dg-rules h3{font-family:var(--font-display);font-size:1.4rem;margin:0;color:var(--gold-hi)}
+.dg-rules p{margin:0;line-height:1.5}
+.dg-row{display:flex;gap:8px}
+.dg-row > *{flex:1}
 @keyframes dg-pop{from{opacity:0;transform:scale(.5)}}
 @keyframes dg-fade{from{opacity:0}}
 @keyframes dg-rise{from{opacity:0;transform:translateY(.6em)}}
@@ -171,6 +237,284 @@ function useWho(platform: DisplayProps['platform']): Who {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Tutorial and rules (every game has both)
+// ---------------------------------------------------------------------------
+
+/** Renders **bold** and the {card} token inside a translated string. */
+function rich(text: string): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*|\{card\})/g).map((part, i) => {
+    if (part === '{card}')
+      return (
+        <span key={i} className="dg-cardicon" aria-hidden>
+          🂠
+        </span>
+      );
+    if (part.startsWith('**') && part.endsWith('**')) return <b key={i}>{part.slice(2, -2)}</b>;
+    return part;
+  });
+}
+
+type Kit = DisplayProps['kit'];
+
+/** A seat as the turn strip draws it, for the tutorial demos. */
+function DemoSeat({
+  kit,
+  emoji,
+  name,
+  big,
+  on,
+  lost,
+  said,
+  cards,
+}: {
+  kit: Kit;
+  emoji: string;
+  name: string;
+  big?: boolean;
+  on?: boolean;
+  lost?: boolean;
+  said?: string;
+  cards?: number;
+}) {
+  return (
+    <div className={`dg-seat ${on ? 'on' : ''}`}>
+      <kit.Avatar emoji={emoji} size={big ? '4.6em' : '3.2em'} active={on} crimson={lost} />
+      <b>{name}</b>
+      <small>
+        {said && <em className="dg-said">{said}</em>}
+        {cards !== undefined && <span className={lost ? 'lost' : ''}>🂠 {cards}</span>}
+      </small>
+    </div>
+  );
+}
+
+/** Live illustrations next to each slide, drawn with the game's real pieces. */
+function SlideDemo({ demo, kit, t }: { demo: Demo; kit: Kit; t: T }) {
+  if (demo === 'question') {
+    return (
+      <div className="dg-demo">
+        <h2 className="dg-q" style={{ fontSize: '2em' }}>
+          {t(L.demoQuestion)}
+        </h2>
+        <p className="dg-in">{fill(t(L.answerIn), { unit: t(L.demoUnit) })}</p>
+        <span className="dg-num" style={{ opacity: 0.4 }}>
+          ?
+        </span>
+      </div>
+    );
+  }
+  if (demo === 'category') {
+    return (
+      <div className="dg-demo">
+        <div className="dg-opts" style={{ marginTop: 0 }}>
+          {DEMO_CATEGORIES.map((c, i) => (
+            <div key={i} className={`dg-opt ${i === 1 ? 'pick' : ''}`} style={{ animationDelay: `${i * 90}ms` }}>
+              {t(c)}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (demo === 'raise') {
+    return (
+      <div className="dg-demo dg-demostrip">
+        <DemoSeat kit={kit} emoji="🎩" name="Ana" said="12" />
+        <span className="dg-demoarrow">➜</span>
+        <DemoSeat kit={kit} emoji="🦊" name="Beto" said="30" />
+        <span className="dg-demoarrow">➜</span>
+        <DemoSeat kit={kit} emoji="🌙" name="Caio" big on />
+        <span className="dg-demoarrow">↺</span>
+      </div>
+    );
+  }
+  if (demo === 'doubt') {
+    return (
+      <div className="dg-demo">
+        <span className="dg-label">{t(L.answer)}</span>
+        <span className="dg-num" style={{ fontSize: '5em' }}>
+          64
+        </span>
+        <div className="dg-verdict" style={{ marginTop: '.4em' }}>
+          <p>{fill(t(L.overshot), { n: 75 })}</p>
+          <h3>
+            <kit.Avatar emoji="🦊" size="1.3em" crimson />
+            {fill(t(L.takes), { name: 'Beto' })}
+          </h3>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="dg-demo dg-demostrip">
+      <DemoSeat kit={kit} emoji="🎩" name="Ana" cards={0} />
+      <DemoSeat kit={kit} emoji="🌙" name="Caio" cards={1} />
+      <DemoSeat kit={kit} emoji="🦊" name="Beto" cards={3} lost big />
+    </div>
+  );
+}
+
+function TutorialSlide({ view, kit, t }: { view: PublicView; kit: Kit; t: T }) {
+  const s = SLIDES[view.slide]!;
+  return (
+    <div className="dg-slide mp-enter" key={view.slide}>
+      <div>
+        <span className="mp-eyebrow" style={{ fontSize: '1.2em' }}>
+          {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+        </span>
+        <h1 className="dg-h1" style={{ fontSize: '3.6em', margin: '.2em 0 .5em' }}>
+          {t(s.title)}
+        </h1>
+        {s.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        {view.slide === 0 && CREDITS && <p className="dg-credit">{rich(t(CREDITS))}</p>}
+        <div className="dg-dots" aria-hidden>
+          {Array.from({ length: view.slides }, (_, i) => (
+            <span key={i} data-on={i === view.slide} />
+          ))}
+        </div>
+        <p className="dg-sub" style={{ fontSize: '1.1em', marginTop: '1em' }}>
+          {t(L.hostAdvances)}
+        </p>
+      </div>
+      <SlideDemo demo={s.demo} kit={kit} t={t} />
+    </div>
+  );
+}
+
+/** A rules page on the TV, while the Host shows it from their phone. */
+function TvRules({ page, kit, t }: { page: number; kit: Kit; t: T }) {
+  const r = RULES[page]!;
+  const last = page === RULES.length - 1;
+  return (
+    <div className="dg-tvrules">
+      <kit.Panel className="mp-enter" key={page}>
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h2>{t(r.title)}</h2>
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        {last && CREDITS && <p className="dg-credit">{rich(t(CREDITS))}</p>}
+      </kit.Panel>
+    </div>
+  );
+}
+
+/** Full rules on the phone: anyone can read them; the Host can mirror the page on the TV. */
+function RulesReader({
+  view,
+  kit,
+  t,
+  send,
+  isHost,
+  onClose,
+}: {
+  view: PlayerView;
+  kit: PlayerProps['kit'];
+  t: T;
+  send(a: unknown): void;
+  isHost: boolean;
+  onClose(): void;
+}) {
+  const { Button, Panel } = kit;
+  const [page, setPage] = useState(view.tvRules ?? 0);
+  const onTv = isHost && view.tvRules !== null;
+  useEffect(() => {
+    if (onTv) send({ type: 'tvRules', page });
+  }, [page]);
+  const r = RULES[page]!;
+  const last = page === RULES.length - 1;
+  return (
+    <div className="dg-sheet" role="dialog" aria-modal="true" aria-label={t(L.rules)}>
+      <Panel className="dg-rules">
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h3>{t(r.title)}</h3>
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        {last && CREDITS && (
+          <p>
+            <b>{t(L.credits)}</b> — {rich(t(CREDITS))}
+          </p>
+        )}
+        <div className="dg-row">
+          <Button small variant="ghost" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            ‹ {t(L.prev)}
+          </Button>
+          <Button small variant="ghost" disabled={last} onClick={() => setPage(page + 1)}>
+            {t(L.next)} ›
+          </Button>
+        </div>
+        {isHost && (
+          <Button small onClick={() => send({ type: 'tvRules', page: onTv ? null : page })}>
+            📺 {t(onTv ? L.hideFromTv : L.showOnTv)}
+          </Button>
+        )}
+        <Button
+          small
+          variant="ghost"
+          onClick={() => {
+            if (onTv) send({ type: 'tvRules', page: null });
+            onClose();
+          }}
+        >
+          {t(L.close)}
+        </Button>
+      </Panel>
+    </div>
+  );
+}
+
+/** The Host's controls for the tutorial; everyone else is pointed at the TV. */
+function IntroControls({
+  view,
+  kit,
+  t,
+  send,
+  isHost,
+}: {
+  view: PlayerView;
+  kit: PlayerProps['kit'];
+  t: T;
+  send(a: unknown): void;
+  isHost: boolean;
+}) {
+  const { Button, Panel } = kit;
+  const last = view.slide === view.slides - 1;
+  return (
+    <>
+      <Panel className="stack" style={{ textAlign: 'center' }}>
+        <span className="mp-eyebrow">
+          {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+        </span>
+        <h3 style={{ margin: 0 }}>{t(SLIDES[view.slide]!.title)}</h3>
+        {!isHost && <p className="dg-note">{t(L.followTv)}</p>}
+      </Panel>
+      {isHost && (
+        <>
+          <div className="dg-row">
+            <Button variant="ghost" disabled={view.slide === 0} onClick={() => send({ type: 'intro', dir: -1 })}>
+              ‹ {t(L.prev)}
+            </Button>
+            <Button onClick={() => send({ type: 'intro', dir: 1 })}>{last ? t(L.start) : `${t(L.next)} ›`}</Button>
+          </div>
+          {!last && (
+            <Button block small variant="ghost" onClick={() => send({ type: 'intro', dir: 'skip' })}>
+              {t(L.skip)}
+            </Button>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
 const CELL_EM = 9;
 
 /** Position on the endless turn tape: grows by the seats advanced, so slots slide forward and wrap. */
@@ -220,6 +564,25 @@ function Display({ view, kit, t, lang, platform }: DisplayProps<PublicView>) {
   else if (r) sub = fill(t(r.auto ? L.revealAuto : L.revealSub), { a: who(r.doubter).name, b: who(r.guesser).name });
 
   const unit = view.question ? t(view.question.unit) : '';
+  const rulesOverlay = view.tvRules !== null && <TvRules page={view.tvRules} kit={kit} t={t} />;
+  const hintText =
+    view.hint === 'category'
+      ? L.hintCategory
+      : view.hint === 'open'
+        ? L.hintOpen
+        : view.hint === 'raise'
+          ? L.hintRaise
+          : null;
+
+  if (view.phase === 'intro') {
+    return (
+      <>
+        <Styles />
+        <TutorialSlide view={view} kit={kit} t={t} />
+        {rulesOverlay}
+      </>
+    );
+  }
 
   return (
     <div className={`dg-tv ${many ? 'many' : ''}`}>
@@ -248,6 +611,11 @@ function Display({ view, kit, t, lang, platform }: DisplayProps<PublicView>) {
 
       <main className="dg-main">
         <div className="dg-fit">
+          {hintText && (
+            <p className="dg-hintbar mp-enter" key={view.hint}>
+              {t(hintText)}
+            </p>
+          )}
           {view.phase === 'category' && (
             <>
               <h2 className="dg-q">{t(L.categoryTitle)}</h2>
@@ -347,6 +715,7 @@ function Display({ view, kit, t, lang, platform }: DisplayProps<PublicView>) {
           );
         })}
       </div>
+      {rulesOverlay}
     </div>
   );
 }
@@ -354,8 +723,31 @@ function Display({ view, kit, t, lang, platform }: DisplayProps<PublicView>) {
 function Player({ view, kit, t, lang, send, platform, you }: PlayerProps<PlayerView>) {
   const who = useWho(platform);
   const now = kit.useRoomNow();
+  const [rules, setRules] = useState(false);
   if (!view) return null;
   const myId = you.you;
+  const isHost = you.isAdmin;
+  // The rules are one tap away in every phase.
+  const rulesButton = (
+    <kit.Button block small variant="ghost" onClick={() => setRules(true)}>
+      📖 {t(L.rules)}
+    </kit.Button>
+  );
+  const reader = rules && (
+    <RulesReader view={view} kit={kit} t={t} send={send} isHost={isHost} onClose={() => setRules(false)} />
+  );
+
+  if (view.phase === 'intro') {
+    return (
+      <div className="dg-ph">
+        <Styles />
+        <IntroControls view={view} kit={kit} t={t} send={send} isHost={isHost} />
+        {rulesButton}
+        {reader}
+      </div>
+    );
+  }
+
   const last = view.guesses.at(-1) ?? null;
   const r = view.result;
   const landed = !r || view.deadline === null || view.total === null || now >= view.deadline - view.total + LEAD_MS;
@@ -424,6 +816,8 @@ function Player({ view, kit, t, lang, send, platform, you }: PlayerProps<PlayerV
           </span>
         )}
       </div>
+      {rulesButton}
+      {reader}
     </div>
   );
 }

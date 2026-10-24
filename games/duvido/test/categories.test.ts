@@ -19,11 +19,14 @@ vi.mock('../src/questions/index.ts', () => ({
 const { default: game } = await import('../src/logic.ts');
 
 type Room = ReturnType<typeof createTestRoom<State>>;
+/** Gameplay tests start past the tutorial (covered in tutorial.test.ts). */
+const newRoom = (opts: NonNullable<Parameters<typeof createTestRoom<State>>[1]>) =>
+  createTestRoom<State>(game, { ...opts, config: { tutorial: false, ...opts.config } });
 const pub = (room: Room) => room.publicView() as PublicView;
 
 describe('category choice', () => {
   it('the starter picks one of the drawn categories', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = newRoom({ players: 3 });
     const view = pub(room);
     expect(view.phase).toBe('category');
     expect(view.options).toHaveLength(5);
@@ -49,7 +52,7 @@ describe('category choice', () => {
   });
 
   it('honours the number of choices set by the Host', () => {
-    const room = createTestRoom<State>(game, {
+    const room = newRoom({
       players: 3,
       config: { categoryChoices: 3 },
     });
@@ -57,7 +60,7 @@ describe('category choice', () => {
   });
 
   it('a turn timeout picks a category for the starter', () => {
-    const room = createTestRoom<State>(game, {
+    const room = newRoom({
       players: 3,
       config: { turnSeconds: 15 },
     });
@@ -67,7 +70,7 @@ describe('category choice', () => {
   });
 
   it('offers only categories with unused questions and ends when the bank runs dry', () => {
-    const room = createTestRoom<State>(game, {
+    const room = newRoom({
       players: 3,
       config: { rounds: 30 },
     });

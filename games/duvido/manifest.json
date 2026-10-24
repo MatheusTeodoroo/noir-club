@@ -1,6 +1,6 @@
 {
   "id": "duvido",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": { "pt-BR": "Duvido!", "en": "I Doubt It!" },
   "description": {
     "pt-BR": "Uma pergunta com resposta em número e palpites cada vez maiores. Quando alguém exagerar, grite DUVIDO! — quem errar leva a carta, e quem juntar mais cartas perde.",
@@ -12,6 +12,12 @@
   "estimatedMinutes": 15,
   "accent": "#d4af37",
   "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": { "pt-BR": "Tutorial antes de começar", "en": "Tutorial before starting" },
+      "default": true
+    },
     {
       "key": "endMode",
       "type": "select",

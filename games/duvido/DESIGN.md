@@ -19,6 +19,7 @@ Feedback leaks: none. Invalid actions are ignored silently; refusing a guess nev
 ## Phases
 | Phase | Ends by timer (config key, default) | Ends early when | TV shows | Phone does | Dealer shows |
 |---|---|---|---|---|---|
+| intro (only with `tutorial`) | 5 min safety net | the Host taps Start on the last slide, or Skip; or the Host leaves | tutorial slide with a live demo drawn from the game's pieces | Host: Back / Next / Skip; others: slide title | — |
 | category | `turnSeconds` 0 = none; if set, a category is drawn for the starter | the starter picks | the drawn categories, who picks | starter: pick 1 of up to `categoryChoices`; others wait | — |
 | guess | `turnSeconds` 0 = none; if set: opening guess becomes 1, later turns doubt | someone doubts | question, "answer in {unit}", the last guess huge, the turn tape | player on turn: keypad + Guess, or DUVIDO!; others see the last guess | — |
 | reveal | `revealSeconds` 7 + 2.3 s drumroll | — | the answer after the drumroll, who takes the card, Dobrei chips | after the drumroll: the answer and own result | — |
@@ -31,6 +32,8 @@ Skipped phase: with only one category with unused questions left, it is picked a
 | `category {index}` | starter | category phase, index in options | draws an unused question from it → guess |
 | `guess {value}` | player on turn | guess phase, integer 0…999 999 999 999, above the last guess | records it (Dobrei flag), turn passes to the next connected seat |
 | `doubt` | player on turn | guess phase, at least one guess | reveal: guess > answer → guesser takes the card, else the doubter |
+| `intro {dir: 1 \| -1 \| 'skip'}` | Host | intro phase | next / previous slide; next on the last slide or skip starts round 1 |
+| `tvRules {page \| null}` | Host | any phase, page within `RULES` | shows that rules page over the TV, or clears it |
 
 ## Scoring and end
 - Each card is −1 point; with Dobrei! each chip cancels one card (score never above 0). Ties stay ties.
@@ -43,6 +46,7 @@ Skipped phase: with only one category with unused questions left, it is picked a
 ## Config (Host settings)
 | key | type | default | range/options |
 |---|---|---|---|
+| tutorial | boolean | true | tutorial slides before round 1 + first-round hints |
 | endMode | select | rounds | rounds, cards |
 | cardLimit | number | 3 | 1–20 (cards mode) |
 | rounds | number | 10 | 1–30 (rounds mode) |
@@ -51,10 +55,21 @@ Skipped phase: with only one category with unused questions left, it is picked a
 | dobrei | boolean | false | |
 | revealSeconds | number | 7 | 4–20 |
 
+## Tutorial and rules
+Texts in `src/texts.ts` (PT-BR + EN). Tutorial, 5 slides, each with a live demo: How to play
+(question + "?") → The category (drawn categories, one picked) → Guesses (turn strip with rising
+guesses, looping) → I DOUBT IT! (answer, verdict, who takes the card) → Who loses (card counts).
+Rules, 7 pages: Overview → Order and category → Guess → I DOUBT IT! → Doubled! (optional) → Time
+and absences → Scoring and end, plus credits. 📖 Rules on every phone screen; the Host can show a
+page on the TV over any phase. Hints during round 1 (tutorial on), derived from state: category,
+open, raise. Credits: inspired by Nem a Pato! (Rodrigo Rego, Grok Games) — line on the first slide,
+the last rules page, CREDITS.md.
+
 ## Dealer
 Not used: nothing is private to one player.
 
 ## Disconnects
+- Intro: if the Host times out, round 1 starts; an opener who dropped hands the opening to the next seat.
 - A dropped player keeps their cards and is skipped in the turn order (seat order checks `connected`).
 - If it was their turn: the next connected seat takes it; if no guess had been made yet, that player
   becomes the starter.

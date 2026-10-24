@@ -5,6 +5,9 @@ import { CATEGORIES } from '../src/questions/index.ts';
 import { LEAD_MS } from '../src/shared.ts';
 
 type Room = ReturnType<typeof createTestRoom<State>>;
+/** Gameplay tests start past the tutorial (covered in tutorial.test.ts). */
+const newRoom = (opts: NonNullable<Parameters<typeof createTestRoom<State>>[1]>) =>
+  createTestRoom<State>(game, { ...opts, config: { tutorial: false, ...opts.config } });
 const pub = (room: Room) => room.publicView() as PublicView;
 const me = (room: Room, id: string) => room.playerView(id) as PlayerView;
 const REVEAL_MS = LEAD_MS + 7_000;
@@ -42,7 +45,7 @@ function doubt(room: Room) {
 
 describe(game.manifest.name['pt-BR'], () => {
   it('plays a full match at the minimum player count, in seat order', () => {
-    const room = createTestRoom<State>(game, {
+    const room = newRoom({
       players: 3,
       config: { rounds: 10 },
     });
@@ -78,7 +81,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('plays a full match at the maximum player count', () => {
-    const room = createTestRoom<State>(game, {
+    const room = newRoom({
       players: 16,
       config: { rounds: 2 },
     });
@@ -94,7 +97,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('gives the card to a guesser who overshot', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = newRoom({ players: 3 });
     guess(room, 0);
     const greedy = guess(room, answer(room) + 1);
     const doubter = doubt(room);
@@ -108,14 +111,14 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('a guess equal to the answer survives the doubt', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = newRoom({ players: 3 });
     const exact = guess(room, answer(room));
     const doubter = doubt(room);
     expect(pub(room).result).toMatchObject({ guesser: exact, loser: doubter });
   });
 
   it('keeps the answer out of every view until the reveal', () => {
-    const room = createTestRoom<State>(game, { players: 4 });
+    const room = newRoom({ players: 4 });
     guess(room, 1);
     guess(room, 2);
     expect(room.publicJson()).not.toContain('"answer"');
@@ -127,7 +130,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('shows each phone its own controls', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = newRoom({ players: 3 });
     const first = turn(room);
     expect(me(room, first)).toMatchObject({
       isTurn: true,
@@ -148,7 +151,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('without a turn limit, nothing moves until someone acts', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = newRoom({ players: 3 });
     expect(pub(room).deadline).toBeNull();
     room.advance(3_600_000);
     expect(pub(room)).toMatchObject({ phase: 'category', round: 1 });
@@ -158,7 +161,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('with a turn limit, timers alone play the match to the end', () => {
-    const room = createTestRoom<State>(game, {
+    const room = newRoom({
       players: 3,
       config: { rounds: 2, turnSeconds: 10 },
     });
@@ -181,7 +184,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('ignores invalid actions', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = newRoom({ players: 3 });
     const first = turn(room);
     const other = room.ids.find((id) => id !== first)!;
     let before = room.snapshot();
@@ -206,7 +209,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('skips a player who dropped on their turn', () => {
-    const room = createTestRoom<State>(game, { players: 4 });
+    const room = newRoom({ players: 4 });
     const seats = pub(room).seats;
     const opener = guess(room, 1);
     const gone = turn(room);
@@ -224,7 +227,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('a starter who drops hands the opening to the next player', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = newRoom({ players: 3 });
     const seats = pub(room).seats;
     const starter = pub(room).starter;
     room.disconnect(starter);
@@ -234,7 +237,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('ends the match when fewer than two players remain', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = newRoom({ players: 3 });
     const [a, b] = pub(room).seats;
     room.disconnect(a!);
     room.advance(20_001);
@@ -244,7 +247,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('Dobrei! pays a chip for a doubled guess that holds', () => {
-    const room = createTestRoom<State>(game, {
+    const room = newRoom({
       players: 3,
       config: { dobrei: true },
     });
@@ -269,7 +272,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('Dobrei! pays nothing when the doubled guess is doubted and wrong', () => {
-    const room = createTestRoom<State>(game, {
+    const room = newRoom({
       players: 3,
       config: { dobrei: true },
     });
@@ -282,7 +285,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('Dobrei! is off by default', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = newRoom({ players: 3 });
     guess(room, 1);
     guess(room, 100);
     expect(pub(room).guesses.at(-1)!.doubled).toBe(false);
@@ -291,7 +294,7 @@ describe(game.manifest.name['pt-BR'], () => {
   it('scores -1 per card, chips cancel cards, and ties stay ties', () => {
     expect(matchScore(3, 1)).toBe(-2);
     expect(matchScore(1, 4)).toBe(0);
-    const room = createTestRoom<State>(game, {
+    const room = newRoom({
       players: 3,
       config: { rounds: 2 },
     });
@@ -313,7 +316,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('ends by cards once a player holds the limit', () => {
-    const room = createTestRoom<State>(game, { players: 3, config: { endMode: 'cards', cardLimit: 2, rounds: 1 } });
+    const room = newRoom({ players: 3, config: { endMode: 'cards', cardLimit: 2, rounds: 1 } });
     expect(pub(room)).toMatchObject({ rounds: null, cardLimit: 2 });
     let rounds = 0;
     while (room.phase() === 'playing' && rounds < 20) {
@@ -330,7 +333,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('never repeats a question within a match', () => {
-    const room = createTestRoom<State>(game, {
+    const room = newRoom({
       players: 3,
       config: { rounds: 30 },
     });
