@@ -34,7 +34,7 @@ describe('Middle Race', () => {
   });
 
   it('only the Host configures, and values are clamped', () => {
-    const room = createTestRoom<State>(game, { players: 11 });
+    const room = createTestRoom<State>(game, { players: 11, config: { tutorial: false } });
     room.act('p2', { type: 'setup', patch: { columns: 20 } });
     expect(pub(room).setup.columns).toBe(32);
     room.act('p1', { type: 'setup', patch: { columns: 999, readOn: false, turnSec: 17 } });

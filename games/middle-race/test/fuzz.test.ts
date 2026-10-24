@@ -64,6 +64,7 @@ function randomActions(r: () => number, view: PlayerView, ids: string[]) {
     out.push(a);
   }
   if (race?.prompt && r() < 0.8) out.push({ type: 'answer', value: pick(race.prompt.options) });
+  if (view.isHost && r() < 0.02) out.push({ type: 'tvRules', page: r() < 0.5 ? null : Math.floor(r() * 16) });
   // Junk now and then: the engine must shrug it off.
   if (r() < 0.05) out.push({ type: pick(['turn', 'answer', 'vote', 'pick', 'ready']), card: 7, value: 99, target: pick(ids), cls: 0 });
   return out;
@@ -73,7 +74,13 @@ describe('Middle Race — fuzz', () => {
   it('random matches never throw and always end', () => {
     for (let seed = 1; seed <= 12; seed++) {
       const r = rng(seed);
-      const room = createTestRoom<State>(game, { players: 11, seed });
+      const room = createTestRoom<State>(game, { players: 11, seed, config: { tutorial: seed % 2 === 0 } });
+      for (let i = 0; i < 40 && (room.publicView() as PublicView).phase === 'intro'; i++) {
+        room.act(room.ids[Math.floor(r() * 3)]!, { type: 'intro', dir: r() < 0.25 ? -1 : 1 });
+        room.act('p1', { type: 'tvRules', page: r() < 0.5 ? null : Math.floor(r() * 20) });
+        if (i % 4 === 0) render(room);
+      }
+      room.act('p1', { type: 'intro', dir: 'skip' });
       room.act('p1', {
         type: 'setup',
         patch: {

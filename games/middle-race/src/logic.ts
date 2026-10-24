@@ -9,13 +9,17 @@ import {
   answer, beginTurn, newRace, nextTurn, playTurn, pump, randomTurn, runner, standings, turnOptions, validAnswer,
   validTurn, type LogEntry, type Prompt, type PromptKind, type Race, type TurnChoice, type TurnOptions,
 } from './race.ts';
+import { RULES, SLIDES, type Hint } from './texts.ts';
 
 export const manifest = manifestJson as GameManifest;
 
-export type Config = Record<string, never>;
+export interface Config {
+  tutorial: boolean;
+}
 type Ctx = GameCtx<Config>;
 
 export type Phase =
+  | 'intro' // tutorial slides on the TV, advanced by the Host
   | 'setup' // Host sets timers and the board, everyone reads the guide
   | 'read' // timed reading of rules and classes
   | 'vote' // inverted vote for the picking order (one group at a time)
@@ -48,6 +52,10 @@ export interface State {
   /** SECRET (Swift only). */
   fastBack: number[] | null;
   race: Race | null;
+  /** Tutorial slide shown on the TV. */
+  slide: number;
+  /** Rules page the Host is showing on the TV, or null. */
+  tvRules: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,10 +109,18 @@ export interface PublicView {
   owner: Record<string, string>;
   fastChosen: boolean;
   race: RaceView | null;
+  slide: number;
+  slides: number;
+  tvRules: number | null;
+  /** First round with the tutorial on: a one-line tip for the TV. */
+  hint: Hint | null;
 }
 
 export interface PlayerView {
   phase: Phase;
+  slide: number;
+  slides: number;
+  tvRules: number | null;
   deadline: number | null;
   total: number | null;
   isHost: boolean;
@@ -134,6 +150,8 @@ export interface PlayerView {
 }
 
 export type Action =
+  | { type: 'intro'; dir: 1 | -1 | 'skip' }
+  | { type: 'tvRules'; page: number | null }
   | { type: 'setup'; patch: Partial<Setup> }
   | { type: 'start' }
   | { type: 'ready' }
@@ -365,8 +383,8 @@ function autoAnswer(s: State, ctx: Ctx) {
 export default defineGame<State, Config>({
   manifest,
 
-  setup(): State {
-    return {
+  setup(ctx): State {
+    const s: State = {
       phase: 'setup',
       setup: { ...DEFAULT_SETUP },
       ready: [],
@@ -380,7 +398,14 @@ export default defineGame<State, Config>({
       owner: {},
       fastBack: null,
       race: null,
+      slide: 0,
+      tvRules: null,
     };
+    if (ctx.config.tutorial) {
+      s.phase = 'intro';
+      ctx.setTimer('intro', INTRO_MAX_MS);
+    }
+    return s;
   },
 
   onAction(s, pid, raw, ctx) {
@@ -389,6 +414,21 @@ export default defineGame<State, Config>({
     const isHost = pid === hostId(ctx);
 
     switch (a.type) {
+      case 'intro': {
+        if (s.phase !== 'intro' || !isHost) return;
+        const last = s.slide === SLIDES.length - 1;
+        if (a.dir === 'skip' || (a.dir === 1 && last)) endIntro(s, ctx);
+        else if (a.dir === 1) s.slide += 1;
+        else if (a.dir === -1 && s.slide > 0) s.slide -= 1;
+        return;
+      }
+      case 'tvRules': {
+        // Shared screens follow the Host only.
+        const p = a.page;
+        if (!isHost || !(p === null || (Number.isInteger(p) && p >= 0 && p < RULES.length))) return;
+        s.tvRules = p;
+        return;
+      }
       case 'setup': {
         if (s.phase !== 'setup' || !isHost) return;
         const next = patchSetup(s.setup, a.patch);
@@ -459,6 +499,10 @@ export default defineGame<State, Config>({
 
   onTimer(s, key, ctx) {
     const race = s.race;
+    if (key === 'intro') {
+      if (s.phase === 'intro') endIntro(s, ctx);
+      return;
+    }
     if (key === 'beat') {
       if (s.phase === 'race' && race) drive(s, ctx);
       return;
@@ -501,6 +545,11 @@ export default defineGame<State, Config>({
 
   onPlayerTimeout(s, pid, ctx) {
     const race = s.race;
+    // The Host left during the tutorial: nobody else can advance it.
+    if (s.phase === 'intro') {
+      if (!ctx.players.some((p) => p.isHost && p.connected)) endIntro(s, ctx);
+      return;
+    }
     switch (s.phase) {
       case 'pick':
         if (s.order[s.pickAt] === pid) pickClass(s, ctx, ctx.rng.pick(freeClasses(s)));
@@ -547,6 +596,10 @@ export default defineGame<State, Config>({
       owner: s.owner,
       fastChosen: !!s.fastBack,
       race: s.race ? raceView(s, s.race) : null,
+      slide: s.slide,
+      slides: SLIDES.length,
+      tvRules: s.tvRules,
+      hint: hintFor(s, ctx),
     };
   },
 
@@ -559,6 +612,9 @@ export default defineGame<State, Config>({
       phase: s.phase,
       deadline: key ? ctx.timerDeadline(key) : null,
       total: key ? ctx.timerTotal(key) : null,
+      slide: s.slide,
+      slides: SLIDES.length,
+      tvRules: s.tvRules,
       isHost: pid === hostId(ctx),
       setup: s.setup,
       ready: s.ready.includes(pid),
@@ -589,6 +645,24 @@ export default defineGame<State, Config>({
     };
   },
 });
+
+/** Safety net: a tutorial nobody advances (the Host left) gives way to the setup. */
+const INTRO_MAX_MS = 5 * 60_000;
+
+function endIntro(s: State, ctx: Ctx) {
+  ctx.clearTimer('intro');
+  s.phase = 'setup';
+  s.slide = 0;
+}
+
+/** Tips for the first round of the race, derived from what is happening right now. */
+function hintFor(s: State, ctx: Ctx): Hint | null {
+  const race = s.race;
+  if (!ctx.config.tutorial || s.phase !== 'race' || !race || race.round > 1) return null;
+  if (race.prompt) return 'react';
+  if (race.awaitingTurn) return 'turn';
+  return 'cascade';
+}
 
 function timerKey(s: State): string | null {
   if (s.phase !== 'race') return 'phase';

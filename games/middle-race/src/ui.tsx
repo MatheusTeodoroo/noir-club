@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { defineGameUI, type DisplayProps, type I18nText, type PlayerProps, type UIKit } from '@mp/game-sdk';
 import type { PlayerView, PublicView, RaceView } from './logic.ts';
 import type { LogEntry } from './race.ts';
+import { CREDITS, HINTS, RULES, SLIDES, type SlideDemo as SlideDemoKind } from './texts.ts';
 import {
   BOOL_KEYS, CLASSES, FAST, GRAVITY, JUMP, MIDDLE, SETUP_LIMITS, SILENCE, classInfo, gameRank, pointsFor,
   type NumKey, type Setup,
@@ -15,6 +16,19 @@ type Names = (pid: string | null | undefined) => string;
 
 const L = {
   game: { 'pt-BR': 'Middle Race', en: 'Middle Race' },
+  tutorial: { 'pt-BR': 'Tutorial', en: 'Tutorial' },
+  hostAdvances: { 'pt-BR': 'O Host avança pelo celular.', en: 'The Host moves on from their phone.' },
+  followTv: { 'pt-BR': 'Acompanhe o tutorial na TV.', en: 'Follow the tutorial on the TV.' },
+  toSetup: { 'pt-BR': 'Configurar partida', en: 'Set up the match' },
+  skipTutorial: { 'pt-BR': 'Pular tutorial', en: 'Skip tutorial' },
+  rules: { 'pt-BR': 'Regras', en: 'Rules' },
+  prev: { 'pt-BR': 'Voltar', en: 'Back' },
+  next: { 'pt-BR': 'Avançar', en: 'Next' },
+  close: { 'pt-BR': 'Fechar', en: 'Close' },
+  showOnTv: { 'pt-BR': 'Mostrar na TV', en: 'Show on TV' },
+  hideFromTv: { 'pt-BR': 'Tirar da TV', en: 'Remove from TV' },
+  credits: { 'pt-BR': 'Créditos', en: 'Credits' },
+  raceStep: { 'pt-BR': 'Corrida', en: 'Race' },
   setupTitle: { 'pt-BR': 'Preparação', en: 'Setup' },
   setupSub: { 'pt-BR': 'O host está ajustando a partida. Leiam as classes!', en: 'The host is setting up the match. Read the classes!' },
   readTitle: { 'pt-BR': 'Regras e classes', en: 'Rules and classes' },
@@ -266,6 +280,37 @@ const CSS = `
 .mrg-final .mrg-rk small{font-size:1.2em}
 .mrg-final .mrg-rk.mid{transform:scale(1.12)}
 
+/* tutorial and rules */
+.mrg-slide{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:3.5em;padding:3em 4.5em 5em}
+.mrg-slide p{font-size:1.55em;line-height:1.45;margin:0 0 .7em;color:var(--text)}
+.mrg-slide b,.mrg-tvrules b,.mrg-reader b{color:var(--gold-hi);font-weight:600}
+.mrg-dots{display:flex;gap:.6em;margin-top:1.2em}
+.mrg-dots span{width:.8em;height:.8em;border-radius:50%;background:var(--line-strong)}
+.mrg-dots span[data-on=true]{background:var(--gold)}
+.mrg-demo-rank{grid-template-columns:repeat(6,1fr)}
+.mrg-demo-rank .mrg-rk{padding:.6em .2em}
+.mrg-demo-rank .mrg-rk em{font-size:1.5em}
+.mrg-demo-board{height:16em;grid-template-rows:auto repeat(4,1fr)}
+.mrg-demo-board .mrg-row,.mrg-demo-board .mrg-cols{grid-template-columns:10em 1fr}
+.mrg-demo-phone{display:grid;gap:1em;width:20em;justify-self:center;padding:1.4em;border-radius:1.6em;background:var(--ink-1);box-shadow:0 0 0 1px var(--line-strong) inset;font-size:1.3em}
+.mrg-demo-phone .mrg-card{font-size:2em;display:grid;place-items:center}
+.mrg-demo-phone .mrg-mini{font-size:.8em}
+.mrg-demo-flow{display:grid;gap:1em}
+.mrg-flow{display:flex;align-items:center;flex-wrap:wrap;gap:.6em 1em;padding:.8em 1.2em;border-radius:var(--radius);background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01));box-shadow:0 0 0 1px var(--line) inset;font-size:1.4em}
+.mrg-flow em{font-style:normal;font-family:var(--font-display);font-size:1.6em;color:var(--gold-hi);width:1.4em;text-align:center}
+.mrg-flow i{font-style:normal;color:var(--gold)}
+.mrg-hint{font-family:var(--font-serif);font-style:italic;font-size:1.3em;color:var(--gold);margin:0}
+.mrg-tvrules{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(5,3,7,.9)}
+.mrg-tvrules .mp-panel{width:min(62em,90vw);padding:2.2em 3em}
+.mrg-tvrules h2{font-family:var(--font-display);font-size:2.5em;margin:.2em 0 .6em;color:var(--gold-hi)}
+.mrg-tvrules p{font-size:1.45em;line-height:1.45;margin:0 0 .6em}
+.mrg-sheet{position:fixed;inset:0;z-index:40;background:rgba(5,3,7,.95);overflow-y:auto;padding:16px}
+.mrg-reader{max-width:480px;margin:0 auto;display:grid;gap:12px}
+.mrg-reader h3{font-family:var(--font-display);font-size:1.4rem;margin:0;color:var(--gold-hi)}
+.mrg-reader p{margin:0;line-height:1.5}
+.mrg-row2{display:flex;gap:8px}
+.mrg-row2 > *{flex:1}
+
 /* phone */
 .mrg-ph{display:grid;gap:14px}
 .mrg-note{font-family:var(--font-serif);font-style:italic;font-size:1.2rem;color:var(--text-dim);text-align:center;margin:0}
@@ -396,7 +441,25 @@ function Header({ title, sub, view, kit, platform, extra, small }: { title: stri
   );
 }
 
-function Display({ view, kit, t, platform, lang }: DisplayProps<PublicView>) {
+function Display(props: DisplayProps<PublicView>) {
+  const { view, kit, t } = props;
+  if (!view) return null;
+  return (
+    <>
+      {view.phase === 'intro' ? (
+        <>
+          <Styles />
+          <TutorialSlide view={view} kit={kit} t={t} />
+        </>
+      ) : (
+        <Screen {...props} />
+      )}
+      {view.tvRules !== null && <TvRules page={view.tvRules} kit={kit} t={t} />}
+    </>
+  );
+}
+
+function Screen({ view, kit, t, platform, lang }: DisplayProps<PublicView>) {
   if (!view) return null;
   const names = namesFrom(platform);
   const avatar = avatarFrom(platform);
@@ -548,6 +611,7 @@ function RaceScreen({ view, kit, t, platform }: DisplayProps<PublicView>) {
       )}
 
       <div className="mrg-feed">
+        {view.hint && <p className="mrg-hint">{t(HINTS[view.hint])}</p>}
         {!final && !paused &&
           latest.map((e, i) => (
             <p key={e.n} className={i === latest.length - 1 ? 'last' : ''}>
@@ -915,8 +979,254 @@ function PromptPanel({ view, t, send, names }: { view: PlayerView; t: T; send: (
   );
 }
 
+// ---------------------------------------------------------------------------
+// Tutorial and rules
+// ---------------------------------------------------------------------------
+
+/** Renders **bold** inside a translated string. */
+function rich(text: string): ReactNode[] {
+  return text
+    .split(/(\*\*[^*]+\*\*)/g)
+    .map((part, i) => (part.startsWith('**') && part.endsWith('**') ? <b key={i}>{part.slice(2, -2)}</b> : part));
+}
+
+const DEMO_AVATARS = ['🎩', '🃏', '🎲', '🍷', '💎', '👑', '🌙', '🦊', '🦉', '🐺', '🎭'];
+
+/** Live illustrations next to each slide, drawn with the game's real pieces. */
+function SlideDemo({ demo, kit, t }: { demo: SlideDemoKind; kit: UIKit; t: T }) {
+  if (demo === 'goal') {
+    return (
+      <div className="mrg-final mrg-demo-rank">
+        {DEMO_AVATARS.map((a, i) => (
+          <div key={i} className={`mrg-rk ${i + 1 === MIDDLE ? 'mid' : ''}`} style={{ animationDelay: `${300 + i * 90}ms` }}>
+            <em>{i + 1}º</em>
+            <kit.Avatar emoji={a} size="2.4em" active={i + 1 === MIDDLE} badge={i + 1 === MIDDLE ? '♛' : undefined} />
+            <small>+{pointsFor(i + 1)}</small>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (demo === 'board') {
+    const rows = [
+      { cls: 1, pos: 6, discard: [1, 4] },
+      { cls: 6, pos: 9, discard: [3] },
+      { cls: 9, pos: 13, discard: [0, 2, 4] },
+      { cls: 11, pos: 4, discard: [] as number[] },
+    ];
+    return (
+      <div className="mrg-board mrg-demo-board" style={{ ['--cols' as string]: 16 }}>
+        <div className="mrg-cols">
+          <div />
+          <div>
+            <b>{t(L.start)}</b>
+            <b>{t(L.finishCol)}</b>
+          </div>
+        </div>
+        {rows.map((r, i) => (
+          <div key={r.cls} className={`mrg-row ${i === 0 ? 'turn' : ''}`}>
+            <div className="mrg-lab">
+              <i>{classInfo(r.cls).icon}</i>
+              <b>{t(classInfo(r.cls).name)}</b>
+              <span />
+              <small>{r.discard.join(' ')}</small>
+            </div>
+            <div className="mrg-track">
+              <div className="mrg-tok" style={{ left: `calc(${r.pos - 1} * 100% / var(--cols))` }}>
+                <span>{DEMO_AVATARS[i]}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (demo === 'turn') {
+    return (
+      <div className="mrg-demo-phone">
+        <span className="mrg-h4">{t(L.yourTurn)}</span>
+        <div className="mrg-cards" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+          {[2, 3].map((c) => (
+            <div key={c} className="mrg-card" aria-pressed={c === 3}>
+              {c}
+            </div>
+          ))}
+        </div>
+        <div className="mrg-mini">
+          {t(L.discarded)}: <span>1</span> <span>4</span>
+        </div>
+      </div>
+    );
+  }
+  if (demo === 'reactions') {
+    const flows: [string, number[]][] = [
+      ['A', [7]],
+      ['B', [2, 4, 8]],
+      ['C', [3, 5, 6]],
+    ];
+    return (
+      <div className="mrg-demo-flow">
+        {flows.map(([f, classes], i) => (
+          <div key={f} className="mrg-flow mrg-rise" style={{ animationDelay: `${300 + i * 350}ms` }}>
+            <em>{f}</em>
+            {classes.map((c) => (
+              <span key={c}>
+                <i>{classInfo(c).icon}</i> {t(classInfo(c).name)}
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  const steps = [L.voteTitle, L.pickTitle, L.stratTitle, L.raceStep];
+  return (
+    <div className="mrg-demo-flow">
+      {steps.map((s, i) => (
+        <div key={i} className="mrg-flow mrg-rise" style={{ animationDelay: `${300 + i * 250}ms` }}>
+          <em>{i + 1}</em>
+          <span>{t(s)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TutorialSlide({ view, kit, t }: { view: PublicView; kit: UIKit; t: T }) {
+  const s = SLIDES[view.slide]!;
+  return (
+    <div className="mrg-slide mp-enter" key={view.slide}>
+      <div>
+        <span className="mp-eyebrow" style={{ fontSize: '1.2em' }}>
+          {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+        </span>
+        <h1 className="mrg-h1" style={{ fontSize: '3.6em', margin: '.2em 0 .5em' }}>
+          {t(s.title)}
+        </h1>
+        {s.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        {view.slide === 0 && CREDITS && <p className="mrg-sub">{t(CREDITS)}</p>}
+        <div className="mrg-dots" aria-hidden>
+          {Array.from({ length: view.slides }, (_, i) => (
+            <span key={i} data-on={i === view.slide} />
+          ))}
+        </div>
+        <p className="mrg-sub" style={{ fontSize: '1.2em', marginTop: '1em' }}>
+          {t(L.hostAdvances)}
+        </p>
+      </div>
+      <SlideDemo demo={s.demo} kit={kit} t={t} />
+    </div>
+  );
+}
+
+/** A rules page on the TV, while the Host shows it from their phone. */
+function TvRules({ page, kit, t }: { page: number; kit: UIKit; t: T }) {
+  const r = RULES[page]!;
+  return (
+    <div className="mrg-tvrules">
+      <kit.Panel className="mp-enter" key={page}>
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h2>{t(r.title)}</h2>
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+      </kit.Panel>
+    </div>
+  );
+}
+
+/** Full rules on the phone, paged; the Host can mirror a page on the TV. */
+function RulesReader({ view, kit, t, send, onClose }: { view: PlayerView; kit: UIKit; t: T; send(a: unknown): void; onClose(): void }) {
+  const { Button, Panel } = kit;
+  const [page, setPage] = useState(view.tvRules ?? 0);
+  const onTv = view.isHost && view.tvRules !== null;
+  useEffect(() => {
+    if (onTv) send({ type: 'tvRules', page });
+  }, [page]);
+  const r = RULES[page]!;
+  const last = page === RULES.length - 1;
+  return (
+    <div className="mrg-sheet" role="dialog" aria-modal="true" aria-label={t(L.rules)}>
+      <Panel className="mrg-reader">
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h3>{t(r.title)}</h3>
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        {last && CREDITS && (
+          <p>
+            <b>{t(L.credits)}</b> — {t(CREDITS)}
+          </p>
+        )}
+        <div className="mrg-row2">
+          <Button small variant="ghost" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            ‹ {t(L.prev)}
+          </Button>
+          <Button small variant="ghost" disabled={last} onClick={() => setPage(page + 1)}>
+            {t(L.next)} ›
+          </Button>
+        </div>
+        {view.isHost && (
+          <Button small onClick={() => send({ type: 'tvRules', page: onTv ? null : page })}>
+            📺 {t(onTv ? L.hideFromTv : L.showOnTv)}
+          </Button>
+        )}
+        <Button
+          small
+          variant="ghost"
+          onClick={() => {
+            if (onTv) send({ type: 'tvRules', page: null });
+            onClose();
+          }}
+        >
+          {t(L.close)}
+        </Button>
+      </Panel>
+    </div>
+  );
+}
+
+/** The Host drives the tutorial from their phone; everyone else follows the TV. */
+function IntroPane({ view, kit, t, send }: { view: PlayerView; kit: UIKit; t: T; send(a: unknown): void }) {
+  const { Panel, Button } = kit;
+  const last = view.slide === view.slides - 1;
+  return (
+    <div className="mrg-ph">
+      <Panel className="stack" style={{ textAlign: 'center' }}>
+        <span className="mp-eyebrow">
+          {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+        </span>
+        <h3 style={{ margin: 0 }}>{t(SLIDES[view.slide]!.title)}</h3>
+        {!view.isHost && <p className="mrg-note">{t(L.followTv)}</p>}
+      </Panel>
+      {view.isHost && (
+        <>
+          <div className="mrg-row2">
+            <Button variant="ghost" disabled={view.slide === 0} onClick={() => send({ type: 'intro', dir: -1 })}>
+              ‹ {t(L.prev)}
+            </Button>
+            <Button onClick={() => send({ type: 'intro', dir: 1 })}>{last ? t(L.toSetup) : `${t(L.next)} ›`}</Button>
+          </div>
+          {!last && (
+            <Button block small variant="ghost" onClick={() => send({ type: 'intro', dir: 'skip' })}>
+              {t(L.skipTutorial)}
+            </Button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function Player({ view, kit, t, send, platform }: PlayerProps<PlayerView>) {
   const [sent, setSent] = useState<string | null>(null);
+  const [rules, setRules] = useState(false);
   useEffect(() => setSent(null), [view?.phase, view?.vote?.myVote, view?.pick?.chooser]);
   if (!view) return null;
   const names = namesFrom(platform);
@@ -927,14 +1237,21 @@ function Player({ view, kit, t, send, platform }: PlayerProps<PlayerView>) {
       <kit.Countdown deadline={view.deadline} total={view.total ?? 0} size={64} paused={!!platform.paused} />
     </div>
   ) : null;
+  // The rules are one tap away in every phase.
   const wrap = (children: ReactNode) => (
     <div className="mrg-ph">
       <Styles />
       {children}
+      <kit.Button block small variant="ghost" onClick={() => setRules(true)}>
+        📖 {t(L.rules)}
+      </kit.Button>
+      {rules && <RulesReader view={view} kit={kit} t={t} send={send} onClose={() => setRules(false)} />}
     </div>
   );
 
   switch (view.phase) {
+    case 'intro':
+      return wrap(<IntroPane view={view} kit={kit} t={t} send={send} />);
     case 'setup':
       return wrap(view.isHost ? <SetupForm view={view} t={t} send={send} kit={kit} /> : (
         <>

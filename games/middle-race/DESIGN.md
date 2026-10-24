@@ -23,6 +23,7 @@ which only use what that player already knows.
 ## Phases
 | Phase | Ends by timer (setup key, default) | Ends early when | TV shows | Phone does | Dealer shows |
 |---|---|---|---|---|---|
+| intro | 5 min safety timer | Host taps through or skips; Host leaves | tutorial slide with a live demo | Host: Back / Next / Skip; others: follow the TV | — |
 | setup | none | Host taps Start | rules + class guide | Host: settings; others: guide | — |
 | read | readSec 90 (readOn) | every connected player tapped Ready | rules + class guide, ready count | guide + Ready | — |
 | vote | voteSec 45 | every connected player voted | candidates (centre), voted ✓, picking order (bottom) | vote among candidates (self allowed) | — |
@@ -37,6 +38,8 @@ which only use what that player already knows.
 ## Actions
 | Action payload | Sent from | Valid when | Effect |
 |---|---|---|---|
+| `intro {dir: 1 | -1 | "skip"}` | Host | intro | turns slides; past the last (or skip) → setup |
+| `tvRules {page | null}` | Host | any phase; page < RULES.length | shows / hides a rules page on every TV |
 | `setup {patch}` | Host | setup | changes settings (clamped) |
 | `start` | Host | setup | read (or vote) |
 | `ready` | anyone | read, strategy (Swift after choosing), pause | marks ready; all ready ends the phase |
@@ -52,7 +55,7 @@ The race ends when at most one runner is left (it takes the last place). Points 
 `ctx.end` runs after the 8 s final screen.
 
 ## Config (Host settings)
-In-game setup phase (`config: []` in the manifest).
+Lobby (manifest): `tutorial` boolean, default on. Everything else in the in-game setup phase.
 
 | key | type | default | range/options |
 |---|---|---|---|
@@ -64,6 +67,11 @@ In-game setup phase (`config: []` in the manifest).
 | turnSec | number | 30 | 10–120 step 5 |
 | reactSec | number | 15 | 5–60 step 5 |
 | pauseOn / pauseEvery / pauseSec | bool / number / number | on / 5 / 60 | 1–20; 15–900 step 15 |
+
+## Tutorial and rules
+- **Tutorial** (lobby option `tutorial`, on by default): five slides before the Host's setup — how to play (ranking demo with 6th highlighted), the board (mini board), your turn (phone cards), chain reactions (A/B/C with the real classes), the match step by step. Host advances or skips; a 5-minute timer or the Host leaving moves on to the setup.
+- **Rules reader**: 📖 Regras on every phone in every phase, 13 pages in `src/texts.ts` (overview, setup, vote, pick, cards, turn, reactions, start/finish/targets, classes 1–4/5–8/9–11, rounds/breaks/absences, scoring). The Host can show any page on the TV.
+- **Hints**: during round 1 with the tutorial on, one line above the narration: whose turn, who is deciding, or the reaction order.
 
 ## Dealer
 Not used: hands are casual private information kept on the phone.

@@ -8,7 +8,7 @@ export const pub = (room: Room) => room.publicView() as PublicView;
 export const pv = (room: Room, id: string) => room.playerView(id) as PlayerView;
 
 export function newRoom(setup: Partial<Setup> = {}, seed = 7): Room {
-  const room = createTestRoom<State>(game, { players: 11, seed });
+  const room = createTestRoom<State>(game, { players: 11, seed, config: { tutorial: false } });
   if (Object.keys(setup).length) room.act('p1', { type: 'setup', patch: setup });
   room.act('p1', { type: 'start' });
   return room;
