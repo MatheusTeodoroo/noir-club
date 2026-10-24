@@ -1,6 +1,7 @@
 import { defineGame, type GameCtx, type GameManifest, type I18nText } from '@mp/game-sdk';
 import manifestJson from '../manifest.json';
 import { CLUE_MAX, DECK_SIZE, EXTREME_MAX, PERFECT_BONUS, THEME_MAX, THEME_OPTIONS } from './shared.ts';
+import { RULES, SLIDES } from './texts.ts';
 import { THEMES, type Theme } from './themes.ts';
 
 // Escala: each round has a theme that runs from 1 to 100. Every player gets secret cards from a
@@ -14,6 +15,7 @@ export type Mode = 'coop' | 'versus';
 export type ThemeSource = 'draw' | 'write';
 
 export interface Config {
+  tutorial: boolean;
   mode: Mode;
   themeSource: ThemeSource;
   cardsPerPlayer: number;
@@ -22,7 +24,10 @@ export interface Config {
   sortSeconds: number;
 }
 
-export type Phase = 'theme' | 'clues' | 'sort' | 'reveal';
+export type Phase = 'intro' | 'theme' | 'clues' | 'sort' | 'reveal';
+
+/** First-round "what to do now" line on the TV while the tutorial option is on. */
+export type Hint = 'theme' | 'clues' | 'hurry' | 'sort' | 'ready' | null;
 
 interface Card {
   id: string;
@@ -54,6 +59,10 @@ export interface RoundResult {
 export interface State {
   round: number;
   phase: Phase;
+  /** Tutorial slide on screen during the intro. */
+  slide: number;
+  /** Rules page the Host is showing on the TV, or null. */
+  tvRules: number | null;
   master: string;
   /** Index in ctx.players where the next master search starts. */
   cursor: number;
@@ -87,6 +96,10 @@ export interface PublicView {
   round: number;
   rounds: number;
   phase: Phase;
+  slide: number;
+  slides: number;
+  tvRules: number | null;
+  hint: Hint;
   mode: Mode;
   source: ThemeSource;
   master: string;
@@ -119,6 +132,9 @@ export interface PlayerView {
   round: number;
   rounds: number;
   phase: Phase;
+  slide: number;
+  slides: number;
+  tvRules: number | null;
   mode: Mode;
   source: ThemeSource;
   master: string;
@@ -144,10 +160,14 @@ export type Action =
   | { type: 'writeTheme'; title: string; low?: string; high?: string }
   | { type: 'clue'; cardId: string; text: string }
   | { type: 'move'; cardId: string; to: number }
-  | { type: 'ready'; value: boolean };
+  | { type: 'ready'; value: boolean }
+  | { type: 'intro'; dir: 1 | -1 | 'skip' }
+  | { type: 'tvRules'; page: number | null };
 
 type Ctx = GameCtx<Config>;
 
+/** Safety net: if the Host never advances the tutorial (left the room), the game starts anyway. */
+const INTRO_MAX_MS = 5 * 60_000;
 export const LEAD_MS = 2_500;
 export const COOP_HOLD_MS = 7_000;
 export const VERSUS_HOLD_MS = 10_000;
@@ -161,6 +181,7 @@ export function revealStep(cards: number): number {
 }
 
 const connected = (ctx: Ctx) => ctx.players.filter((p) => p.connected);
+const isHost = (ctx: Ctx, playerId: string) => ctx.players.some((p) => p.id === playerId && p.isHost);
 
 function cleanText(raw: unknown, max: number): string | null {
   if (typeof raw !== 'string') return null;
@@ -310,6 +331,20 @@ function reveal(state: State, ctx: Ctx) {
   ctx.emit('fx', 'reveal', flips);
 }
 
+function endIntro(state: State, ctx: Ctx) {
+  ctx.clearTimer('intro');
+  state.tvRules = null;
+  startRound(state, ctx);
+}
+
+function hint(state: State, ctx: Ctx): Hint {
+  if (!ctx.config.tutorial || state.round !== 1) return null;
+  if (state.phase === 'theme') return 'theme';
+  if (state.phase === 'clues') return state.clueTimer ? 'hurry' : 'clues';
+  if (state.phase === 'sort') return Object.keys(state.ready).length ? 'ready' : 'sort';
+  return null;
+}
+
 function finish(state: State, ctx: Ctx) {
   if (ctx.config.mode === 'coop') {
     const list = state.accuracies;
@@ -336,7 +371,9 @@ export default defineGame<State, Config>({
   setup(ctx) {
     const state: State = {
       round: 1,
-      phase: 'theme',
+      phase: 'intro',
+      slide: 0,
+      tvRules: null,
       master: ctx.players[0]!.id,
       cursor: 0,
       options: [],
@@ -352,13 +389,30 @@ export default defineGame<State, Config>({
       scores: Object.fromEntries(ctx.players.map((p) => [p.id, 0])),
       accuracies: [],
     };
-    startRound(state, ctx);
+    if (ctx.config.tutorial) ctx.setTimer('intro', INTRO_MAX_MS);
+    else startRound(state, ctx);
     return state;
   },
 
   onAction(state, playerId, raw, ctx) {
     if (!raw || typeof raw !== 'object') return;
     const action = raw as Action;
+
+    // Shared screens (tutorial slides, rules on the TV) follow the Host only.
+    if (action.type === 'tvRules') {
+      const ok =
+        action.page === null || (Number.isInteger(action.page) && action.page >= 0 && action.page < RULES.length);
+      if (ok && isHost(ctx, playerId) && state.tvRules !== action.page) state.tvRules = action.page;
+      return;
+    }
+    if (action.type === 'intro') {
+      if (state.phase !== 'intro' || !isHost(ctx, playerId)) return;
+      const last = state.slide === SLIDES.length - 1;
+      if (action.dir === 'skip' || (action.dir === 1 && last)) endIntro(state, ctx);
+      else if (action.dir === 1) state.slide += 1;
+      else if (action.dir === -1 && state.slide > 0) state.slide -= 1;
+      return;
+    }
 
     switch (action.type) {
       case 'pickTheme': {
@@ -418,6 +472,10 @@ export default defineGame<State, Config>({
   },
 
   onTimer(state, key, ctx) {
+    if (key === 'intro') {
+      if (state.phase === 'intro') endIntro(state, ctx);
+      return;
+    }
     if (key === 'clues') {
       if (state.phase === 'clues') startSort(state, ctx);
       return;
@@ -435,6 +493,11 @@ export default defineGame<State, Config>({
   },
 
   onPlayerTimeout(state, playerId, ctx) {
+    // The Host left during the tutorial: nobody else can advance it, so start playing.
+    if (state.phase === 'intro') {
+      if (isHost(ctx, playerId)) endIntro(state, ctx);
+      return;
+    }
     if (state.phase === 'theme' && playerId === state.master) autoTheme(state, ctx);
     if (state.phase === 'clues') checkClues(state, ctx);
     else if (state.phase === 'sort') checkReady(state, ctx);
@@ -447,6 +510,10 @@ export default defineGame<State, Config>({
       round: state.round,
       rounds: ctx.config.rounds,
       phase: state.phase,
+      slide: state.slide,
+      slides: SLIDES.length,
+      tvRules: state.tvRules,
+      hint: hint(state, ctx),
       mode: ctx.config.mode,
       source: ctx.config.themeSource,
       master: state.master,
@@ -485,6 +552,9 @@ export default defineGame<State, Config>({
       round: state.round,
       rounds: ctx.config.rounds,
       phase: state.phase,
+      slide: state.slide,
+      slides: SLIDES.length,
+      tvRules: state.tvRules,
       mode: ctx.config.mode,
       source: ctx.config.themeSource,
       master: state.master,

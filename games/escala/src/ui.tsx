@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { defineGameUI, type DisplayProps, type I18nText, type PlayerProps } from '@mp/game-sdk';
 import type { PlayerView, PublicCard, PublicView, RoundResult, Theme, VersusPoints } from './logic.ts';
 import { CLUE_MAX, EXTREME_MAX, THEME_MAX } from './shared.ts';
+import { CREDITS, RULES, SLIDES } from './texts.ts';
 
-// Only `react`, `@mp/game-sdk` and the secret-free `shared.ts` are imported here. Platform
+// Only `react`, `@mp/game-sdk` and the secret-free `shared.ts` / `texts.ts` are imported here. Platform
 // components come in through `kit`, text goes through `t()`, and styles use the `eg-` prefix.
 
 const L = {
@@ -79,6 +80,51 @@ const L = {
   youPerfect: { 'pt-BR': 'Bônus ordem perfeita', en: 'Perfect order bonus' },
   youBonus: { 'pt-BR': 'Bônus pelas suas dicas', en: 'Bonus for your clues' },
   teamAcc: { 'pt-BR': 'Precisão do grupo', en: 'Team accuracy' },
+  // tutorial and rules
+  tutorial: { 'pt-BR': 'Tutorial', en: 'Tutorial' },
+  hostAdvances: { 'pt-BR': 'O Host avança pelo celular', en: 'The Host moves on from their phone' },
+  followTv: { 'pt-BR': 'Acompanhe o tutorial na TV.', en: 'Follow the tutorial on the TV.' },
+  prev: { 'pt-BR': 'Anterior', en: 'Back' },
+  next: { 'pt-BR': 'Próximo', en: 'Next' },
+  start: { 'pt-BR': 'Começar', en: 'Start' },
+  skip: { 'pt-BR': 'Pular tutorial', en: 'Skip tutorial' },
+  rules: { 'pt-BR': 'Regras', en: 'Rules' },
+  showOnTv: { 'pt-BR': 'Mostrar na TV', en: 'Show on TV' },
+  hideFromTv: { 'pt-BR': 'Tirar da TV', en: 'Hide from TV' },
+  close: { 'pt-BR': 'Fechar', en: 'Close' },
+  onlyYou: { 'pt-BR': 'só você vê', en: 'only you see' },
+  demoTheme: { 'pt-BR': 'Tamanho de animais', en: 'Animal size' },
+  demoLow: { 'pt-BR': 'minúsculo', en: 'tiny' },
+  demoHigh: { 'pt-BR': 'gigante', en: 'huge' },
+  demoOpt2: { 'pt-BR': 'Coisas que dão medo', en: 'Scary things' },
+  demoOpt3: { 'pt-BR': 'Preço de coisas', en: 'Price of things' },
+  demoSpider: { 'pt-BR': 'aranha', en: 'spider' },
+  demoDog: { 'pt-BR': 'cachorro', en: 'dog' },
+  demoWhale: { 'pt-BR': 'baleia', en: 'whale' },
+  hint_theme: {
+    'pt-BR': 'Mestre: escolha o tema no celular. Os outros aguardam.',
+    en: 'Master: pick the theme on your phone. Everyone else waits.',
+  },
+  hint_clues: {
+    'pt-BR': 'No celular, escreva uma dica para cada carta, sem números.',
+    en: 'On your phone, write one clue per card, no numbers.',
+  },
+  hint_hurry: {
+    'pt-BR': 'Metade já terminou: escrevam antes que o relógio acabe.',
+    en: 'Half are done: finish before the clock runs out.',
+  },
+  hint_sortCoop: {
+    'pt-BR': 'Conversem e movam as cartas: cada um defende onde a sua deve ficar.',
+    en: 'Talk and move the cards: everyone argues where theirs belongs.',
+  },
+  hint_sortVersus: {
+    'pt-BR': 'Monte a sua fila no celular. Pergunte sobre as dicas em voz alta!',
+    en: 'Build your row on your phone. Ask about the clues out loud!',
+  },
+  hint_ready: {
+    'pt-BR': 'Concorda com a fila? Toque Pronto! no celular.',
+    en: 'Happy with the row? Tap Ready! on your phone.',
+  },
 } satisfies Record<string, I18nText>;
 
 type T = (text: I18nText) => string;
@@ -145,6 +191,35 @@ const CSS = `
 .eg-chip.hit{background:rgba(90,200,120,.25);color:var(--text)}
 .eg-chip.slim{height:1.2em}
 .eg-label{font-family:var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-size:1.1em;margin:0}
+
+.eg-hint{display:inline-block;margin:.6em 0 0;padding:.3em .9em;border-radius:999px;font-size:1.25em;color:var(--gold-hi);
+  background:rgba(212,175,55,.1);box-shadow:0 0 0 1px var(--line-strong) inset}
+/* tutorial slide (TV) */
+.eg-slide{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:3.5em;padding:3.5em 4.5em 5.5em}
+.eg-slide p{font-size:1.55em;line-height:1.45;margin:0 0 .7em;color:var(--text)}
+.eg-slide b,.eg-rules b,.eg-tvrules b{color:var(--gold-hi);font-weight:600}
+.eg-dots{display:flex;gap:.6em;margin-top:1.4em}
+.eg-dots span{width:.8em;height:.8em;border-radius:50%;background:var(--line-strong)}
+.eg-dots span[data-on=true]{background:var(--gold)}
+.eg-demo{display:grid;gap:1.2em;align-content:center;justify-items:center}
+.eg-demo .eg-opts{gap:1em}
+.eg-demo .eg-opt{width:12em;padding:1em}
+.eg-demo .eg-opt b{font-size:1.2em}
+.eg-dnum{display:grid;justify-items:center;gap:.4em}
+.eg-dnum b{display:grid;place-items:center;width:3.4em;height:4.4em;border-radius:.5em;font-family:var(--font-display);font-weight:900;font-size:1.8em;color:#1a0f05;
+  background:linear-gradient(180deg,#e2c35a,var(--gold) 50%,#a88520);animation:eg-rise .6s var(--ease-out) both}
+.eg-dnum span{font-size:1em;color:var(--text-mute);letter-spacing:.1em;text-transform:uppercase}
+/* rules overlay (TV) and reader (phone) */
+.eg-tvrules{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(5,3,7,.88)}
+.eg-tvrules .mp-panel{width:min(62em,90vw);padding:2.4em 3em}
+.eg-tvrules h2{font-family:var(--font-display);font-size:2.6em;margin:.2em 0 .6em;color:var(--gold-hi)}
+.eg-tvrules p{font-size:1.45em;line-height:1.45;margin:0 0 .6em}
+.eg-sheet{position:fixed;inset:0;z-index:40;background:rgba(5,3,7,.94);overflow-y:auto;padding:16px}
+.eg-rules{max-width:480px;margin:0 auto;display:grid;gap:12px}
+.eg-rules h3{font-family:var(--font-display);font-size:1.4rem;margin:0;color:var(--gold-hi)}
+.eg-rules p{margin:0;line-height:1.5}
+.eg-btns{display:flex;gap:8px}
+.eg-btns > *{flex:1}
 
 /* phone */
 .eg-ph{display:grid;gap:14px}
@@ -224,14 +299,242 @@ function ThemeBar({ theme, t }: { theme: Theme; t: T }) {
   );
 }
 
+/** Renders **bold** inside a translated string. */
+function rich(text: string): ReactNode[] {
+  return text
+    .split(/(\*\*[^*]+\*\*)/g)
+    .map((part, i) => (part.startsWith('**') && part.endsWith('**') ? <b key={i}>{part.slice(2, -2)}</b> : part));
+}
+
+// ---------------------------------------------------------------- Tutorial and rules
+
+/** Live illustrations beside each slide, drawn with the game's real board pieces. */
+function SlideDemo({ demo, t, kit }: { demo: (typeof SLIDES)[number]['demo']; t: T; kit: DisplayProps['kit'] }) {
+  const theme: Theme = { title: L.demoTheme, low: L.demoLow, high: L.demoHigh };
+  const ana: Who = { name: 'Ana', avatar: '🎩' };
+  const bia: Who = { name: 'Bia', avatar: '🦊' };
+  const caio: Who = { name: 'Caio', avatar: '🌙' };
+  const spider = { card: { id: 'a', owner: 'a', clue: t(L.demoSpider) }, who: ana, value: 4 };
+  const dog = { card: { id: 'b', owner: 'b', clue: t(L.demoDog) }, who: bia, value: 40 };
+  const whale = { card: { id: 'c', owner: 'c', clue: t(L.demoWhale) }, who: caio, value: 97 };
+  const row = (cards: (typeof spider)[], opts: { values?: boolean; states?: ('hit' | 'miss')[] } = {}) => (
+    <div className="eg-row" style={{ ['--cw' as string]: 11, ['--fs' as string]: 1.3, width: '100%' }}>
+      {cards.map((c, i) => (
+        <TvCard
+          key={c.card.id}
+          card={c.card}
+          pos={i + 1}
+          who={c.who}
+          value={opts.values ? c.value : undefined}
+          state={opts.states?.[i]}
+        />
+      ))}
+    </div>
+  );
+
+  if (demo === 'deal') {
+    return (
+      <div className="eg-demo">
+        <ThemeBar theme={theme} t={t} />
+        <div className="row" style={{ gap: '1.4em' }}>
+          {[4, 40, 97].map((n, i) => (
+            <div key={n} className="eg-dnum">
+              <b style={{ animationDelay: `${i * 200}ms` }}>{n}</b>
+              <span>{t(L.onlyYou)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (demo === 'round') {
+    return (
+      <div className="eg-demo">
+        <kit.Avatar emoji={ana.avatar} size="5em" active />
+        <div className="eg-opts">
+          {[theme.title, L.demoOpt2, L.demoOpt3].map((title, i) => (
+            <div key={i} className="eg-opt" style={{ animationDelay: `${i * 120}ms` }}>
+              <b>{t(title)}</b>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (demo === 'clue') {
+    return (
+      <div className="eg-demo">
+        <ThemeBar theme={theme} t={t} />
+        {row([spider, dog, whale], { values: true })}
+      </div>
+    );
+  }
+  if (demo === 'sort') {
+    return (
+      <div className="eg-demo">
+        <ThemeBar theme={theme} t={t} />
+        {row([whale, spider, dog])}
+        <div className="row" style={{ gap: '.6em' }}>
+          <kit.Avatar emoji={ana.avatar} size="2.6em" active badge="✓" />
+          <kit.Avatar emoji={bia.avatar} size="2.6em" />
+          <kit.Avatar emoji={caio.avatar} size="2.6em" active badge="✓" />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="eg-demo">
+      <ThemeBar theme={theme} t={t} />
+      {row([spider, whale, dog], { values: true, states: ['hit', 'miss', 'miss'] })}
+      <div className="eg-score">
+        <p className="eg-big">33%</p>
+        <div className="eg-scoretext">
+          <span>{t(L.accuracy)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TutorialSlide({ view, kit, t }: { view: PublicView; kit: DisplayProps['kit']; t: T }) {
+  const s = SLIDES[view.slide]!;
+  return (
+    <div className="eg-slide mp-enter" key={view.slide}>
+      <div>
+        <span className="mp-eyebrow" style={{ fontSize: '1.2em' }}>
+          {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+        </span>
+        <h1 className="eg-h1" style={{ fontSize: '3.8em', margin: '.2em 0 .5em' }}>
+          {t(s.title)}
+        </h1>
+        {s.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        {view.slide === 0 && CREDITS && (
+          <p className="eg-sub" style={{ fontSize: '1.2em' }}>
+            {rich(t(CREDITS))}
+          </p>
+        )}
+        <div className="eg-dots" aria-hidden>
+          {Array.from({ length: view.slides }, (_, i) => (
+            <span key={i} data-on={i === view.slide} />
+          ))}
+        </div>
+        <p className="eg-sub" style={{ fontSize: '1.1em', marginTop: '1em' }}>
+          {t(L.hostAdvances)}
+        </p>
+      </div>
+      <SlideDemo demo={s.demo} t={t} kit={kit} />
+    </div>
+  );
+}
+
+/** A rules page on the TV, while the Host shows it from their phone. */
+function TvRules({ page, kit, t }: { page: number; kit: DisplayProps['kit']; t: T }) {
+  const r = RULES[page]!;
+  return (
+    <div className="eg-tvrules">
+      <kit.Panel className="mp-enter" key={page}>
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h2>{t(r.title)}</h2>
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+      </kit.Panel>
+    </div>
+  );
+}
+
+/** Full rules on the phone: anyone can read them; the Host can mirror the page on the TV. */
+function RulesReader({
+  view,
+  kit,
+  t,
+  send,
+  isHost,
+  onClose,
+}: {
+  view: PlayerView;
+  kit: PlayerProps['kit'];
+  t: T;
+  send(a: unknown): void;
+  isHost: boolean;
+  onClose(): void;
+}) {
+  const { Button, Panel } = kit;
+  const [page, setPage] = useState(view.tvRules ?? 0);
+  const onTv = isHost && view.tvRules !== null;
+  useEffect(() => {
+    if (onTv) send({ type: 'tvRules', page });
+  }, [page]);
+  const r = RULES[page]!;
+  const last = page === RULES.length - 1;
+  return (
+    <div className="eg-sheet" role="dialog" aria-modal="true" aria-label={t(L.rules)}>
+      <Panel className="eg-rules">
+        <span className="mp-eyebrow">
+          {t(L.rules)} · {page + 1}/{RULES.length}
+        </span>
+        <h3>{t(r.title)}</h3>
+        {r.body.map((b, i) => (
+          <p key={i}>{rich(t(b))}</p>
+        ))}
+        <div className="eg-btns">
+          <Button small variant="ghost" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            ‹ {t(L.prev)}
+          </Button>
+          <Button small variant="ghost" disabled={last} onClick={() => setPage(page + 1)}>
+            {t(L.next)} ›
+          </Button>
+        </div>
+        {isHost && (
+          <Button small onClick={() => send({ type: 'tvRules', page: onTv ? null : page })}>
+            📺 {t(onTv ? L.hideFromTv : L.showOnTv)}
+          </Button>
+        )}
+        <Button
+          small
+          variant="ghost"
+          onClick={() => {
+            if (onTv) send({ type: 'tvRules', page: null });
+            onClose();
+          }}
+        >
+          {t(L.close)}
+        </Button>
+      </Panel>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- Display
 
 function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
   const { Avatar, Countdown } = kit;
   const who = useWho(platform);
   if (!view) return null;
+  const rulesOverlay = view.tvRules !== null && <TvRules page={view.tvRules} kit={kit} t={t} />;
+  if (view.phase === 'intro') {
+    return (
+      <>
+        <Styles />
+        <TutorialSlide view={view} kit={kit} t={t} />
+        {rulesOverlay}
+      </>
+    );
+  }
   const players = platform.players.filter((p) => !p.spectator);
   const master = who(view.master);
+  const hint =
+    view.hint === null
+      ? null
+      : view.hint === 'sort'
+        ? view.mode === 'coop'
+          ? L.hint_sortCoop
+          : L.hint_sortVersus
+        : L[`hint_${view.hint}`];
   const modeName = t(view.mode === 'coop' ? L.coop : L.versus);
 
   let title = t(L.themeTitle);
@@ -257,6 +560,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
           </span>
           <h1 className="eg-h1">{title}</h1>
           <p className="eg-sub">{sub}</p>
+          {hint && <p className="eg-hint">💡 {t(hint)}</p>}
           {view.cut && view.phase === 'clues' && <p className="eg-warn">{fill(t(L.cut), { n: view.cardsPer })}</p>}
         </div>
         {view.deadline !== null && view.phase !== 'reveal' && (
@@ -318,6 +622,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
       {view.phase === 'reveal' && view.result && (
         <RevealBoard view={view} result={view.result} t={t} kit={kit} platform={platform} />
       )}
+      {rulesOverlay}
     </div>
   );
 }
@@ -514,9 +819,56 @@ function RevealBoard({
 
 // ---------------------------------------------------------------- Player
 
-function Player({ view, kit, t, send, platform }: PlayerProps<PlayerView>) {
+function Player({ view, kit, t, send, platform, you }: PlayerProps<PlayerView>) {
   const who = useWho(platform);
+  const [rules, setRules] = useState(false);
   if (!view) return null;
+  const isHost = you.isAdmin;
+  // The rules are one tap away in every phase.
+  const rulesButton = (
+    <kit.Button block small variant="ghost" onClick={() => setRules(true)}>
+      📖 {t(L.rules)}
+    </kit.Button>
+  );
+  const reader = rules && (
+    <RulesReader view={view} kit={kit} t={t} send={send} isHost={isHost} onClose={() => setRules(false)} />
+  );
+
+  if (view.phase === 'intro') {
+    const last = view.slide === view.slides - 1;
+    return (
+      <div className="eg-ph">
+        <Styles />
+        <kit.Panel className="stack" style={{ textAlign: 'center' }}>
+          <span className="mp-eyebrow">
+            {t(L.tutorial)} · {view.slide + 1}/{view.slides}
+          </span>
+          <h3 style={{ margin: 0 }}>{t(SLIDES[view.slide]!.title)}</h3>
+          {!isHost && <p className="eg-note">{t(L.followTv)}</p>}
+        </kit.Panel>
+        {isHost && (
+          <>
+            <div className="eg-btns">
+              <kit.Button variant="ghost" disabled={view.slide === 0} onClick={() => send({ type: 'intro', dir: -1 })}>
+                ‹ {t(L.prev)}
+              </kit.Button>
+              <kit.Button onClick={() => send({ type: 'intro', dir: 1 })}>
+                {last ? t(L.start) : `${t(L.next)} ›`}
+              </kit.Button>
+            </div>
+            {!last && (
+              <kit.Button block small variant="ghost" onClick={() => send({ type: 'intro', dir: 'skip' })}>
+                {t(L.skip)}
+              </kit.Button>
+            )}
+          </>
+        )}
+        {rulesButton}
+        {reader}
+      </div>
+    );
+  }
+
   const header = view.theme && (
     <div className="eg-pth">
       <span className="mp-eyebrow">
@@ -544,6 +896,8 @@ function Player({ view, kit, t, send, platform }: PlayerProps<PlayerView>) {
       {view.phase === 'clues' && <CluePanel view={view} t={t} send={send} kit={kit} platform={platform} />}
       {view.phase === 'sort' && <SortPanel view={view} t={t} send={send} kit={kit} platform={platform} />}
       {view.phase === 'reveal' && <ResultPanel view={view} t={t} kit={kit} />}
+      {rulesButton}
+      {reader}
     </div>
   );
 }

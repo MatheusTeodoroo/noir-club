@@ -1,6 +1,6 @@
 {
   "id": "escala",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": { "pt-BR": "Escala", "en": "Scale" },
   "description": {
     "pt-BR": "Cartas secretas de 1 a 100 e um tema na mesa. Descreva seus números com palavras e coloque tudo em ordem, juntos ou um contra o outro.",
@@ -12,6 +12,12 @@
   "estimatedMinutes": 20,
   "accent": "#d4af37",
   "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": { "pt-BR": "Tutorial (como jogar antes da 1ª rodada)", "en": "Tutorial (how to play before round 1)" },
+      "default": true
+    },
     {
       "key": "mode",
       "type": "select",

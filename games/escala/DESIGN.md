@@ -24,6 +24,7 @@ refused or explained.
 ## Phases
 | Phase | Ends by timer (config key, default) | Ends early when | TV shows | Phone does | Dealer shows |
 |---|---|---|---|---|---|
+| intro (only with `tutorial`) | 5 min (safety net) | Host taps Start on the last slide or Skip; or the Host leaves | tutorial slide with a live demo beside it | Host: Back / Next / Skip; others: slide title | — |
 | theme | none (no limit, as requested) | master picks/writes | master, the 3 drawn options (draw) | master: pick 1 of 3 or write title + optional extremes; others wait | — |
 | clues | `clueSeconds` 60, **started only once at least half the connected players have clued all their cards** | every connected player clued all cards | theme + scale, seats with x/n progress | one clue per card (≤ 30 chars), editable until the phase ends | — |
 | sort | `sortSeconds` 180 | every connected player is Ready | coop: the shared row live; versus: all cards grouped by owner; ready avatars | reorder (tap-then-tap, ↑↓, drag handle), Ready toggle | — |
@@ -32,6 +33,8 @@ refused or explained.
 ## Actions
 | Action payload | Sent from | Valid when | Effect |
 |---|---|---|---|
+| `intro {dir: 1 | -1 | skip}` | Host | intro | turns the slide; Next on the last slide or Skip starts round 1 |
+| `tvRules {page | null}` | Host | any phase, page < RULES.length | shows a rules page over the TV, or clears it |
 | `pickTheme {index}` | master | theme, draw mode, 0–2 | sets theme, deals cards → clues |
 | `writeTheme {title, low?, high?}` | master | theme, write mode, title 1–60, extremes ≤ 24 | sets theme, deals cards → clues |
 | `clue {cardId, text}` | card owner | clues, 1–30 chars | sets/edits the clue; may start the half-table timer or end the phase |
@@ -49,12 +52,24 @@ refused or explained.
 ## Config (Host settings)
 | key | type | default | range/options |
 |---|---|---|---|
+| tutorial | boolean | true | slides before round 1 + "what to do now" hints in round 1 |
 | mode | select | coop | coop, versus |
 | themeSource | select | draw | draw (master picks 1 of 3), write (master writes it) |
 | cardsPerPlayer | number | 1 | 1–50; capped at floor(100 / players), the TV says so |
 | rounds | number | 5 | 1–25 |
 | clueSeconds | number | 60 | 15–300 step 15 |
 | sortSeconds | number | 180 | 30–900 step 30 |
+
+## Tutorial and rules
+Texts in `src/texts.ts` (PT-BR + EN). Tutorial, 5 slides with a live demo drawn from the real board
+pieces: How to play (theme bar + three secret numbers) → The round (master + three theme options) →
+The clues (spider 4 / dog 40 / whale 97) → Sorting (an unsorted row + ready avatars) → Reveal and
+points (green/red cards + accuracy). Rules, 9 pages: Overview → The theme and the master → Cards and
+clues → Sorting · Cooperative → Sorting · Competitive → The reveal → Scoring and end → Special
+situations → Credits. 📖 Rules on every phone screen; the Host can show a page over any TV phase.
+Round-1 hints (tutorial on), derived from state: `theme`, `clues`, `hurry` (half-table timer
+running), `sort` (mode-specific line), `ready` (someone is ready). Credits: inspired by the card
+game ito — line on the first slide, last rules page, `CREDITS.md`.
 
 ## Dealer
 Not used: numbers live on the phone.

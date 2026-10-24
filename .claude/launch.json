@@ -3,7 +3,7 @@
   "configurations": [
     { "name": "relay", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:relay"], "port": 8787 },
     { "name": "web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "-w", "@mp/web"], "port": 5173 },
-    { "name": "escala-play", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "../escala", "run", "play"], "port": 5180 },
+    { "name": "escala-play", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "../escala", "run", "play", "--", "--port", "5183", "--strictPort"], "port": 5183 },
     { "name": "surto-play", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "../surto", "run", "play"], "port": 5180 },
     { "name": "duvido-play", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "../duvido", "run", "play"], "port": 5180 },
     { "name": "ronda-noturna-play", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "../ronda-noturna", "run", "play"], "port": 5180 }

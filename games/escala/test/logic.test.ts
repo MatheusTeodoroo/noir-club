@@ -10,6 +10,7 @@ import game, {
   type State,
 } from '../src/logic.ts';
 import { PERFECT_BONUS } from '../src/shared.ts';
+import { RULES, SLIDES } from '../src/texts.ts';
 
 type Room = ReturnType<typeof createTestRoom<State>>;
 const pub = (room: Room) => room.publicView() as PublicView;
@@ -45,7 +46,10 @@ function readyAll(room: Room) {
 
 describe(game.manifest.name['pt-BR'], () => {
   it('plays a full coop match at the minimum player count', () => {
-    const room = createTestRoom<State>(game, { players: 2, config: { rounds: 2, mode: 'coop', cardsPerPlayer: 2 } });
+    const room = createTestRoom<State>(game, {
+      players: 2,
+      config: { tutorial: false, rounds: 2, mode: 'coop', cardsPerPlayer: 2 },
+    });
     for (let round = 1; round <= 2; round++) {
       expect(pub(room)).toMatchObject({ phase: 'theme', round });
       expect(pub(room).options).toHaveLength(3);
@@ -70,7 +74,10 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('plays a full versus match at the maximum player count', () => {
-    const room = createTestRoom<State>(game, { players: 16, config: { rounds: 2, mode: 'versus', cardsPerPlayer: 6 } });
+    const room = createTestRoom<State>(game, {
+      players: 16,
+      config: { tutorial: false, rounds: 2, mode: 'versus', cardsPerPlayer: 6 },
+    });
     for (let round = 1; round <= 2; round++) {
       pickTheme(room);
       writeClues(room);
@@ -84,7 +91,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('caps cards per player at what the 100-card deck allows', () => {
-    const room = createTestRoom<State>(game, { players: 16, config: { cardsPerPlayer: 50 } });
+    const room = createTestRoom<State>(game, { players: 16, config: { tutorial: false, cardsPerPlayer: 50 } });
     expect(pub(room)).toMatchObject({ cardsPer: 6, cut: true });
     pickTheme(room);
     expect(me(room, 'p3').mine).toHaveLength(6);
@@ -94,7 +101,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('rotates the theme master each round', () => {
-    const room = createTestRoom<State>(game, { players: 3, config: { rounds: 4 } });
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false, rounds: 4 } });
     const masters: string[] = [];
     for (let round = 1; round <= 4; round++) {
       masters.push(pub(room).master);
@@ -108,7 +115,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('only the master sees theme options on the phone, and only the master may choose', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false } });
     expect(me(room, 'p1').options).toHaveLength(3);
     expect(me(room, 'p2').options).toHaveLength(0);
     const before = room.snapshot();
@@ -117,7 +124,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('lets the master write the theme in write mode', () => {
-    const room = createTestRoom<State>(game, { players: 3, config: { themeSource: 'write' } });
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false, themeSource: 'write' } });
     expect(pub(room).options).toHaveLength(0);
     const before = room.snapshot();
     room.act('p1', { type: 'pickTheme', index: 0 });
@@ -136,7 +143,10 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('keeps card values secret from the TV and from other phones', () => {
-    const room = createTestRoom<State>(game, { players: 4, config: { cardsPerPlayer: 3, mode: 'versus' } });
+    const room = createTestRoom<State>(game, {
+      players: 4,
+      config: { tutorial: false, cardsPerPlayer: 3, mode: 'versus' },
+    });
     pickTheme(room);
     const cards = room.state().cards;
     const valueOf = (id: string) => cards.find((c) => c.id === id)!.value;
@@ -169,7 +179,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('hides clues on the TV until everyone is done writing', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false } });
     pickTheme(room);
     writeClues(room, ['p1']);
     expect(pub(room).cards).toEqual([]);
@@ -178,7 +188,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('starts the clue timer once half the table is done, then moves on', () => {
-    const room = createTestRoom<State>(game, { players: 4, config: { clueSeconds: 30 } });
+    const room = createTestRoom<State>(game, { players: 4, config: { tutorial: false, clueSeconds: 30 } });
     pickTheme(room);
     writeClues(room, ['p1']);
     expect(pub(room).deadline).toBeNull();
@@ -193,7 +203,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('lets a player edit a clue until the phase ends', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false } });
     pickTheme(room);
     const card = me(room, 'p1').mine[0]!;
     room.act('p1', { type: 'clue', cardId: card.id, text: 'gato' });
@@ -202,7 +212,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('timers drive the sort and reveal phases when nobody acts', () => {
-    const room = createTestRoom<State>(game, { players: 3, config: { rounds: 1, sortSeconds: 60 } });
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false, rounds: 1, sortSeconds: 60 } });
     pickTheme(room);
     writeClues(room);
     room.advance(60_000);
@@ -212,7 +222,10 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('coop: any move clears everyone’s ready', () => {
-    const room = createTestRoom<State>(game, { players: 3, config: { mode: 'coop', cardsPerPlayer: 2 } });
+    const room = createTestRoom<State>(game, {
+      players: 3,
+      config: { tutorial: false, mode: 'coop', cardsPerPlayer: 2 },
+    });
     pickTheme(room);
     writeClues(room);
     room.act('p1', { type: 'ready', value: true });
@@ -226,7 +239,10 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('versus: moving only clears your own ready', () => {
-    const room = createTestRoom<State>(game, { players: 3, config: { mode: 'versus', cardsPerPlayer: 2 } });
+    const room = createTestRoom<State>(game, {
+      players: 3,
+      config: { tutorial: false, mode: 'versus', cardsPerPlayer: 2 },
+    });
     pickTheme(room);
     writeClues(room);
     room.act('p1', { type: 'ready', value: true });
@@ -236,7 +252,10 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('scores coop by exact positions', () => {
-    const room = createTestRoom<State>(game, { players: 2, config: { mode: 'coop', cardsPerPlayer: 2, rounds: 1 } });
+    const room = createTestRoom<State>(game, {
+      players: 2,
+      config: { tutorial: false, mode: 'coop', cardsPerPlayer: 2, rounds: 1 },
+    });
     pickTheme(room);
     writeClues(room);
     const [a, b, c, d] = correctOrder(room) as [string, string, string, string];
@@ -253,7 +272,10 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('scores versus: exact positions, perfect bonus and the clue owner bonus, with a tie', () => {
-    const room = createTestRoom<State>(game, { players: 3, config: { mode: 'versus', cardsPerPlayer: 1, rounds: 1 } });
+    const room = createTestRoom<State>(game, {
+      players: 3,
+      config: { tutorial: false, mode: 'versus', cardsPerPlayer: 1, rounds: 1 },
+    });
     pickTheme(room);
     writeClues(room);
     const correct = correctOrder(room) as [string, string, string];
@@ -281,7 +303,10 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('versus tie: equal play gives equal scores', () => {
-    const room = createTestRoom<State>(game, { players: 2, config: { mode: 'versus', cardsPerPlayer: 2, rounds: 1 } });
+    const room = createTestRoom<State>(game, {
+      players: 2,
+      config: { tutorial: false, mode: 'versus', cardsPerPlayer: 2, rounds: 1 },
+    });
     pickTheme(room);
     writeClues(room);
     const correct = correctOrder(room);
@@ -295,7 +320,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('ignores invalid actions', () => {
-    const room = createTestRoom<State>(game, { players: 3, config: { cardsPerPlayer: 2 } });
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false, cardsPerPlayer: 2 } });
     let before = room.snapshot();
     room.act('p1', null);
     room.act('p1', { type: 'nonsense' });
@@ -330,7 +355,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('auto-picks a theme when the master drops', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false } });
     room.disconnect('p1');
     expect(room.publicPlatform().paused).toBeTruthy();
     room.advance(20_001);
@@ -339,7 +364,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('does not wait for a player who dropped while writing or sorting', () => {
-    const room = createTestRoom<State>(game, { players: 3 });
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false } });
     pickTheme(room);
     writeClues(room, ['p1', 'p2']);
     room.disconnect('p3');
@@ -353,7 +378,7 @@ describe(game.manifest.name['pt-BR'], () => {
   });
 
   it('skips a disconnected player when choosing the next master', () => {
-    const room = createTestRoom<State>(game, { players: 3, config: { rounds: 2 } });
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false, rounds: 2 } });
     pickTheme(room);
     writeClues(room);
     room.disconnect('p2');
@@ -361,5 +386,82 @@ describe(game.manifest.name['pt-BR'], () => {
     readyAll(room);
     room.advance(revealMs(room));
     expect(pub(room)).toMatchObject({ round: 2, master: 'p3' });
+  });
+});
+
+describe('tutorial and rules', () => {
+  it('opens with the tutorial, which only the Host advances', () => {
+    const room = createTestRoom<State>(game, { players: 3 });
+    expect(pub(room)).toMatchObject({ phase: 'intro', slide: 0, slides: SLIDES.length });
+    room.act('p2', { type: 'intro', dir: 1 });
+    expect(pub(room).slide).toBe(0);
+    room.act('p1', { type: 'intro', dir: 1 });
+    room.act('p1', { type: 'intro', dir: -1 });
+    expect(pub(room).slide).toBe(0);
+    for (let i = 0; i < SLIDES.length; i++) room.act('p1', { type: 'intro', dir: 1 });
+    expect(pub(room)).toMatchObject({ phase: 'theme', round: 1, master: 'p1' });
+  });
+
+  it('lets the Host skip the tutorial', () => {
+    const room = createTestRoom<State>(game, { players: 2 });
+    room.act('p1', { type: 'intro', dir: 'skip' });
+    expect(pub(room).phase).toBe('theme');
+  });
+
+  it('starts without the Host if they leave during the tutorial', () => {
+    const room = createTestRoom<State>(game, { players: 3 });
+    room.disconnect('p1');
+    room.advance(20_001);
+    expect(pub(room).phase).toBe('theme');
+    expect(pub(room).master).toBe('p2');
+  });
+
+  it('starts on its own if nobody advances the tutorial', () => {
+    const room = createTestRoom<State>(game, { players: 3 });
+    room.advance(5 * 60_000);
+    expect(pub(room).phase).toBe('theme');
+  });
+
+  it('shows a rules page on the TV only when the Host asks, and only real pages', () => {
+    const room = createTestRoom<State>(game, { players: 2 });
+    room.act('p2', { type: 'tvRules', page: 0 });
+    expect(pub(room).tvRules).toBeNull();
+    room.act('p1', { type: 'tvRules', page: RULES.length });
+    room.act('p1', { type: 'tvRules', page: 1.5 });
+    expect(pub(room).tvRules).toBeNull();
+    room.act('p1', { type: 'tvRules', page: 1 });
+    expect(pub(room).tvRules).toBe(1);
+    expect(me(room, 'p2').tvRules).toBe(1);
+    room.act('p1', { type: 'tvRules', page: null });
+    expect(pub(room).tvRules).toBeNull();
+  });
+
+  it('gives first-round hints only while the tutorial option is on', () => {
+    const room = createTestRoom<State>(game, { players: 2, config: { rounds: 2, cardsPerPlayer: 1 } });
+    room.act('p1', { type: 'intro', dir: 'skip' });
+    expect(pub(room).hint).toBe('theme');
+    pickTheme(room);
+    expect(pub(room).hint).toBe('clues');
+    writeClues(room, ['p1']);
+    expect(pub(room).hint).toBe('hurry');
+    writeClues(room, ['p2']);
+    expect(pub(room).hint).toBe('sort');
+    room.act('p1', { type: 'ready', value: true });
+    expect(pub(room).hint).toBe('ready');
+    room.act('p2', { type: 'ready', value: true });
+    room.advance(revealMs(room));
+    expect(pub(room)).toMatchObject({ round: 2, hint: null });
+
+    const plain = createTestRoom<State>(game, { players: 2, config: { tutorial: false } });
+    expect(pub(plain).hint).toBeNull();
+  });
+
+  it('has the tutorial and every rules page in both languages', () => {
+    for (const page of [...SLIDES, ...RULES]) {
+      for (const text of [page.title, ...page.body]) {
+        expect(text['pt-BR'].trim()).not.toBe('');
+        expect(text.en.trim()).not.toBe('');
+      }
+    }
   });
 });
