@@ -1,0 +1,60 @@
+{
+  "id": "pega-ladrao",
+  "version": "0.1.0",
+  "name": {
+    "pt-BR": "Pega Ladrão",
+    "en": "Catch the Burglar"
+  },
+  "description": {
+    "pt-BR": "Dois salões, um ladrão escondido. Cada noite um exilado de cada lado — e quem dorme com o ladrão acorda mais pobre.",
+    "en": "Two salons, one hidden burglar. Each night each side exiles someone — and whoever sleeps beside the burglar wakes up poorer."
+  },
+  "minPlayers": 7,
+  "maxPlayers": 12,
+  "usesDealer": false,
+  "estimatedMinutes": 40,
+  "accent": "#b8862b",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
+      "key": "rounds",
+      "type": "select",
+      "label": { "pt-BR": "Rodadas", "en": "Rounds" },
+      "options": [
+        { "value": "6", "label": { "pt-BR": "6", "en": "6" } },
+        { "value": "8", "label": { "pt-BR": "8", "en": "8" } },
+        { "value": "10", "label": { "pt-BR": "10 (original)", "en": "10 (original)" } }
+      ],
+      "default": "10"
+    },
+    {
+      "key": "dayMinutes",
+      "type": "select",
+      "label": { "pt-BR": "Duração do dia", "en": "Day length" },
+      "options": [
+        { "value": "2", "label": { "pt-BR": "2 min", "en": "2 min" } },
+        { "value": "3", "label": { "pt-BR": "3 min", "en": "3 min" } },
+        { "value": "5", "label": { "pt-BR": "5 min", "en": "5 min" } },
+        { "value": "10", "label": { "pt-BR": "10 min (original)", "en": "10 min (original)" } }
+      ],
+      "default": "3"
+    },
+    {
+      "key": "nightSeconds",
+      "type": "number",
+      "label": { "pt-BR": "Noite no Terraço (s)", "en": "Night on the Terrace (s)" },
+      "min": 30,
+      "max": 180,
+      "step": 15,
+      "default": 60
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@mp/game-pega-ladrao",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@mp/game-sdk": "*" },
+  "devDependencies": { "@mp/engine": "*" }
+}
