@@ -97,7 +97,9 @@ describe('Ficha Explosiva — flow', () => {
       for (const preset of ['basico', 'classico', 'caos']) {
         const room = newRoom(n, { preset });
         expect(pub(room).mesa!.errors).toEqual([]);
-        expect(pub(room).mesa!.preview).toHaveLength(n);
+        // The Bêbado brings one extra card: the one set aside until the last round.
+        const extra = pub(room).mesa!.units.includes('bebado') ? 1 : 0;
+        expect(pub(room).mesa!.preview).toHaveLength(n + extra);
       }
     }
   });

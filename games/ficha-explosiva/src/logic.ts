@@ -12,6 +12,9 @@ import {
   type PowerKind,
   type Room,
   type Team,
+  type CondKind,
+  PSYCH,
+  SPOKEN_POWERS,
 } from './shared.ts';
 import { RULES, SLIDES } from './texts.ts';
 
@@ -36,7 +39,7 @@ export interface Config {
 
 export type Phase = 'intro' | 'mesa' | 'briefing' | 'round' | 'exchange' | 'pause' | 'reveal';
 export type ShareKind = 'card' | 'color';
-export type Condition = { k: 'love' | 'hate'; with: string } | { k: 'foolish' };
+export type Condition = { k: 'love' | 'hate'; with: string } | { k: Exclude<CondKind, 'love' | 'hate'> };
 
 /** Something a player learned about another player's card. */
 export interface Seen {
@@ -63,10 +66,15 @@ export interface Notice {
     | 'swapped' // you swapped cards with who (Ficha Quente)
     | 'cured' // a Boticário (who) cleared your conditions
     | 'leader' // you are now the leader
-    | 'lostLead'; // you are no longer the leader
+    | 'lostLead' // you are no longer the leader
+    | 'condition' // a card share with who gave you cond (or cancelled it out, when cancelled is set)
+    | 'healed' // the Terapeuta (who) cured your psych conditions
+    | 'sober'; // the Bêbado sobered up: you now hold the set-aside card
   who?: string;
   who2?: string;
   room?: Room;
+  cond?: CondKind;
+  cancelled?: boolean;
 }
 
 interface Request {
@@ -74,6 +82,8 @@ interface Request {
   from: string;
   to: string;
   kind: ShareKind;
+  /** The Terapeuta's offer: a card share that cures, open even to shy/coy/paranoid players. */
+  psych?: boolean;
 }
 
 interface ShareRecord {
@@ -101,6 +111,8 @@ export interface Result {
   engineerOk: boolean | null;
   boom: State['boom'];
   tyrant: boolean;
+  /** The infected won (everyone still standing was infected). */
+  zombies: boolean;
 }
 
 export interface Announcement {
@@ -172,6 +184,12 @@ export interface State {
   pauseChoices: Record<string, string>;
   announcements: Announcement[];
   gamblerAlt: string[];
+  /** Voluntary card shares made while paranoid (the condition allows one). */
+  paranoidUsed: Record<string, number>;
+  /** Everyone who has held the Trevo (nobody may hold it twice). */
+  everClover: string[];
+  /** The card set aside for the Bêbado until the last round — SECRET. */
+  sober: CharId | null;
 
   boom: null | { kind: 'dinamite' | 'guardaCostas'; room: Room; by: string };
   result: Result | null;
@@ -185,7 +203,7 @@ export interface State {
 /** First-round hint on the TV while the tutorial option is on. */
 export type Hint = 'nominate' | 'share' | 'lock' | null;
 
-export type MesaError = 'tooMany' | 'needBury' | 'fewPlayers';
+export type MesaError = 'tooMany' | 'needBury' | 'fewPlayers' | 'zombieImmune';
 
 export interface MesaView {
   units: string[];
@@ -266,7 +284,9 @@ export interface PlayerView {
   need: number;
   eligible: string[];
   tackled: string[];
-  requestsIn: { id: string; from: string; kind: ShareKind }[];
+  requestsIn: { id: string; from: string; kind: ShareKind; psych: boolean; canAccept: boolean }[];
+  /** What this player's own conditions let them do right now. */
+  allowed: { cardShare: boolean; colorShare: boolean; show: boolean };
   requestOut: { id: string; to: string; kind: ShareKind } | null;
   seen: Seen[];
   notices: Notice[];
@@ -376,13 +396,19 @@ function specials(s: State): CharId[] {
   return unitCards(s.bury && !s.units.includes('reservas') ? [...s.units, 'reservas'] : s.units);
 }
 
+/** Cards in the deck: one per player, plus the buried card, plus the Bêbado's set-aside card. */
+function deckSize(s: State, ctx: Ctx): number {
+  return ctx.players.length + (s.bury ? 1 : 0) + (s.units.includes('bebado') ? 1 : 0);
+}
+
 function mesaErrors(s: State, ctx: Ctx): MesaError[] {
   const errors: MesaError[] = [];
-  const size = ctx.players.length + (s.bury ? 1 : 0);
   const cards = specials(s);
-  if (cards.length + 2 > size) errors.push('tooMany');
+  if (cards.length + 2 > deckSize(s, ctx)) errors.push('tooMany');
   if (s.units.includes('investigador') && !s.bury) errors.push('needBury');
   if (ctx.players.length - cards.filter(isEnvoyCard).length < 6) errors.push('fewPlayers');
+  // The guide: the Contagiado cannot be played with the Intocável.
+  if (s.units.includes('contagiado') && s.units.includes('intocavel')) errors.push('zombieImmune');
   return errors;
 }
 
@@ -415,7 +441,7 @@ function sortDeck(deck: CharId[]): CharId[] {
 }
 
 function mesaView(s: State, ctx: Ctx): MesaView {
-  const size = ctx.players.length + (s.bury ? 1 : 0);
+  const size = deckSize(s, ctx);
   const cards: CharId[] = ['chefao', 'assassino', ...specials(s)];
   return {
     units: s.units,
@@ -444,21 +470,29 @@ function applyPreset(s: State, ctx: Ctx, id: string) {
 
 function deal(s: State, ctx: Ctx) {
   const ids = ctx.players.map((p) => p.id);
-  const size = ids.length + (s.bury ? 1 : 0);
+  const size = deckSize(s, ctx);
   if (s.bury && !s.units.includes('reservas')) s.units = [...s.units, 'reservas'];
   let deck = fillDeck(['chefao', 'assassino', ...specials(s)], size, () => ctx.rng.next() < 0.5);
   s.deck = sortDeck(deck);
+  // Linked cards, Envoys and the Bêbado are never set aside or buried.
+  const loose = () => deck.filter((c) => !CATALOG[c].linked && !isEnvoyCard(c) && c !== 'bebado');
+  s.sober = null;
+  if (deck.includes('bebado')) {
+    const pick = ctx.rng.pick(loose());
+    s.sober = pick;
+    deck.splice(deck.indexOf(pick), 1);
+  }
   s.buried = null;
   if (s.bury) {
-    // Linked cards and Envoys are never buried.
-    const pick = ctx.rng.pick(deck.filter((c) => !CATALOG[c].linked && !isEnvoyCard(c)));
+    const pick = ctx.rng.pick(loose());
     s.buried = pick;
     deck.splice(deck.indexOf(pick), 1);
   }
   deck = ctx.rng.shuffle(deck);
   ids.forEach((id, i) => {
     s.card[id] = deck[i]!;
-    s.conditions[id] = deck[i] === 'tirano' ? [{ k: 'foolish' }] : [];
+    s.conditions[id] = cleanConditions(deck[i]!);
+    if (deck[i] === 'trevo') s.everClover.push(id);
     s.seen[id] = [];
     s.notices[id] = [];
     s.hostageCount[id] = 0;
@@ -491,7 +525,8 @@ function deal(s: State, ctx: Ctx) {
 
 const members = (s: State, r: Room) => Object.keys(s.room).filter((id) => s.room[id] === r);
 const isEnvoy = (s: State, id: string) => s.room[id] === null;
-const immune = (s: State, id: string) => isEnvoyCard(s.card[id]);
+/** Envoys and the Intocável: no power or condition touches them. */
+const immune = (s: State, id: string) => !!s.card[id] && !!CATALOG[s.card[id]!].immune;
 
 function holderOf(s: State, card: CharId): string | null {
   return Object.keys(s.card).find((id) => s.card[id] === card) ?? null;
@@ -619,9 +654,46 @@ function leaveRoom(s: State, ctx: Ctx, id: string, r: Room) {
 
 // ---------------------------------------------------------------- sharing
 
+/** The conditions a card starts with; a card that changes hands comes back clean, with these. */
 function cleanConditions(c: CharId): Condition[] {
-  return c === 'tirano' ? [{ k: 'foolish' }] : [];
+  return (CATALOG[c].starts ?? []).map((k) => ({ k }) as Condition);
 }
+
+/** Conditions that cancel each other out: whoever has one and gets the other ends with neither. */
+const OPPOSITES: [CondKind, CondKind][] = [
+  ['honest', 'liar'],
+  ['foolish', 'shy'],
+  ['foolish', 'coy'],
+  ['foolish', 'paranoid'],
+];
+
+/** Gives condition k (not love/hate) unless the player is immune; returns whether it cancelled out. */
+function addCondition(s: State, id: string, k: Exclude<CondKind, 'love' | 'hate'>): boolean {
+  if (immune(s, id) || hasCondition(s, id, k)) return false;
+  const opposite = OPPOSITES.find(([x, y]) => x === k || y === k);
+  const other = opposite && (opposite[0] === k ? opposite[1] : opposite[0]);
+  if (other && hasCondition(s, id, other)) {
+    s.conditions[id] = s.conditions[id]!.filter((c) => c.k !== other);
+    return true;
+  }
+  s.conditions[id] = [...(s.conditions[id] ?? []), { k }];
+  return false;
+}
+
+// What a player's conditions let them do with their own card, by choice (powers that force a share
+// ignore all of this).
+function mayCardShare(s: State, id: string): boolean {
+  if (hasCondition(s, id, 'shy') || hasCondition(s, id, 'coy')) return false;
+  return !hasCondition(s, id, 'paranoid') || (s.paranoidUsed[id] ?? 0) < 1;
+}
+function mayColorShare(s: State, id: string): boolean {
+  return !['shy', 'paranoid', 'savvy'].some((k) => hasCondition(s, id, k as CondKind));
+}
+function mayShowCard(s: State, id: string): boolean {
+  return !['shy', 'coy', 'paranoid', 'savvy'].some((k) => hasCondition(s, id, k as CondKind));
+}
+const mayShare = (s: State, id: string, kind: ShareKind) =>
+  kind === 'card' ? mayCardShare(s, id) : mayColorShare(s, id);
 
 function swapCards(s: State, a: string, b: string) {
   const ca = s.card[a]!;
@@ -630,17 +702,29 @@ function swapCards(s: State, a: string, b: string) {
   // A new card is a clean card.
   s.conditions[a] = cleanConditions(s.card[a]);
   s.conditions[b] = cleanConditions(s.card[b]);
+  for (const id of [a, b]) if (s.card[id] === 'trevo' && !s.everClover.includes(id)) s.everClover.push(id);
   notify(s, a, { k: 'swapped', who: b });
   notify(s, b, { k: 'swapped', who: a });
 }
 
-function share(s: State, ctx: Ctx, a: string, b: string, kind: ShareKind, how?: Seen['how']) {
+/**
+ * A share between a and b. `forced`: a power made it happen (it ignores conditions and does not use
+ * up the paranoid's one share).
+ */
+function share(s: State, ctx: Ctx, a: string, b: string, kind: ShareKind, how?: Seen['how'], forced = false) {
+  // Golpista: an accepted colour share turns into two private reveals of the whole card.
+  if (kind === 'color' && pairs(a, b).some(([x, y]) => s.card[x]?.startsWith('golpista') && !immune(s, y))) {
+    learn(s, a, b, 'shown', true);
+    learn(s, b, a, 'shown', true);
+    return;
+  }
   const whole = kind === 'card';
   learn(s, a, b, how ?? (whole ? 'cardShare' : 'colorShare'), whole);
   learn(s, b, a, how ?? (whole ? 'cardShare' : 'colorShare'), whole);
   s.shares.push({ a, b, kind, aCard: s.card[a]!, bCard: s.card[b]!, round: s.round });
   for (const [x, y] of pairs(a, b)) {
     if ((s.card[x] === 'sombra' || s.card[x] === 'sabotador') && s.firstShare[x] === undefined) s.firstShare[x] = y;
+    if (whole && !forced && hasCondition(s, x, 'paranoid')) s.paranoidUsed[x] = (s.paranoidUsed[x] ?? 0) + 1;
   }
 
   if (whole) {
@@ -650,6 +734,13 @@ function share(s: State, ctx: Ctx, a: string, b: string, kind: ShareKind, how?: 
         s.conditions[y] = [];
       }
     }
+    // Chantagista, Trapaceiro, Capanga, Mordaça: a card share leaves a condition behind.
+    for (const [x, y] of pairs(a, b)) {
+      const gives = CATALOG[s.card[x]!].gives;
+      if (!gives || gives === 'love' || gives === 'hate' || immune(s, y) || hasCondition(s, y, gives)) continue;
+      const cancelled = addCondition(s, y, gives);
+      notify(s, y, { k: 'condition', who: x, cond: gives, cancelled });
+    }
     for (const [x, y] of pairs(a, b)) {
       const r = s.room[x];
       if (!r) continue;
@@ -658,11 +749,26 @@ function share(s: State, ctx: Ctx, a: string, b: string, kind: ShareKind, how?: 
     }
   }
 
+  // The infection spreads through any share, card or colour.
   for (const [x, y] of pairs(a, b)) {
-    if (s.card[x] === 'fichaQuente' && !immune(s, y)) {
+    if (hasCondition(s, x, 'zombie') && !hasCondition(s, y, 'zombie') && !immune(s, y)) {
+      addCondition(s, y, 'zombie');
+      notify(s, y, { k: 'condition', who: x, cond: 'zombie' });
+    }
+  }
+
+  for (const [x, y] of pairs(a, b)) {
+    if (immune(s, y)) continue;
+    if (s.card[x] === 'fichaQuente' || (s.card[x] === 'trevo' && !s.everClover.includes(y))) {
       swapCards(s, x, y);
       break;
     }
+  }
+
+  // An offer its sender may no longer make (a paranoid's share used up, a new condition) is
+  // withdrawn — to the target it looks like any withdrawal.
+  for (const q of s.requests.filter((q) => !q.psych && (q.from === a || q.from === b) && !mayShare(s, q.from, q.kind))) {
+    dropRequest(s, ctx, q.id);
   }
 }
 
@@ -685,7 +791,10 @@ function powerReady(s: State, id: string): boolean {
   const kind = powerOf(s, id);
   const r = s.room[id];
   if (!kind || s.phase !== 'round' || !r) return false;
+  if (SPOKEN_POWERS.includes(kind) && hasCondition(s, id, 'cursed')) return false;
   switch (kind) {
+    case 'terapeuta':
+      return true;
     case 'federal':
     case 'cobrador':
       return s.usedRound[id] !== s.round;
@@ -715,7 +824,19 @@ function usePower(s: State, ctx: Ctx, id: string, targets: string[]) {
       if (targets.length !== 1 || !valid(t1)) return;
       s.usedRound[id] = s.round;
       notify(s, t1, { k: 'forced', who: id });
-      share(s, ctx, id, t1, 'card', 'power');
+      share(s, ctx, id, t1, 'card', 'power', true);
+      return;
+    }
+    case 'terapeuta': {
+      if (targets.length !== 1 || !valid(t1)) return;
+      learn(s, t1, id, 'power', true);
+      // Only someone with a psych condition gets the offer; anyone else just saw the card.
+      if (!PSYCH.some((k) => hasCondition(s, t1, k))) return;
+      for (const q of s.requests.filter((q) => q.psych && q.to === t1)) dropRequest(s, ctx, q.id);
+      s.seq += 1;
+      const rid = `r${s.seq}`;
+      s.requests.push({ id: rid, from: id, to: t1, kind: 'card', psych: true });
+      ctx.setTimer(`req:${rid}`, REQUEST_MS);
       return;
     }
     case 'cobrador': {
@@ -725,7 +846,7 @@ function usePower(s: State, ctx: Ctx, id: string, targets: string[]) {
       learn(s, t2, id, 'power', true);
       notify(s, t1, { k: 'enforced', who: id, who2: t2 });
       notify(s, t2, { k: 'enforced', who: id, who2: t1 });
-      share(s, ctx, t1, t2, 'card');
+      share(s, ctx, t1, t2, 'card', undefined, true);
       return;
     }
     case 'casamenteira':
@@ -798,10 +919,23 @@ function startRound(s: State, ctx: Ctx) {
   s.exchange = null;
   s.arrived = [];
   for (const id of Object.keys(s.points)) s.points[id] = null;
+  if (s.round === s.rounds && s.sober) soberUp(s);
   if (s.round === s.rounds && ctx.config.prematureLoss) markPrematureLosers(s);
   if (ctx.config.timing === 'sem') ctx.clearTimer('phase');
   else ctx.setTimer('phase', (s.minutes[s.round - 1] ?? 1) * 60_000);
   ctx.emit('sound', 'round');
+}
+
+/** Start of the last round: whoever holds the Bêbado trades it for the set-aside card, clean. */
+function soberUp(s: State) {
+  const drunk = holderOf(s, 'bebado');
+  if (drunk) {
+    s.card[drunk] = s.sober!;
+    s.conditions[drunk] = cleanConditions(s.sober!);
+    if (s.sober === 'trevo') s.everClover.push(drunk);
+    notify(s, drunk, { k: 'sober' });
+  }
+  s.sober = null;
 }
 
 /** Variant: grey players whose goal is already out of reach play the last round as Apostadores. */
@@ -960,6 +1094,10 @@ export function resolve(s: State): Result {
   const same = (a: string | null, b: string | null) => !!a && !!b && !!roomOf(a) && roomOf(a) === roomOf(b);
   const holder = (c: CharId) => holderOf(s, c);
   const goal = majority(s.rounds);
+  // The infected win if everyone still standing (Envoys aside) is infected.
+  const standing = ids.filter((id) => !dead.includes(id) && roomOf(id));
+  const zombiesWin =
+    ids.some((id) => hasCondition(s, id, 'zombie')) && standing.every((id) => hasCondition(s, id, 'zombie'));
 
   const wins: Record<string, boolean | undefined> = {};
   for (const id of ids) {
@@ -1056,6 +1194,15 @@ export function resolve(s: State): Result {
         case 'lacaio':
           ok = !s.minionFail[id];
           break;
+        case 'trevo':
+          ok = true; // whoever holds it at the end
+          break;
+        case 'contagiado':
+          ok = false; // the infection decides, below
+          break;
+        case 'bebado':
+          ok = false; // the match ended before the last round: never sobered up
+          break;
         default:
           ok = undefined; // Sombra / Sabotador: resolved below
       }
@@ -1065,6 +1212,8 @@ export function resolve(s: State): Result {
       if (cond.k === 'love') ok = same(id, cond.with);
       if (cond.k === 'hate') ok = !!roomOf(id) && !!roomOf(cond.with) && !same(id, cond.with);
     }
+    // So does the infection.
+    if (hasCondition(s, id, 'zombie')) ok = zombiesWin;
     wins[id] = ok;
   }
 
@@ -1094,6 +1243,7 @@ export function resolve(s: State): Result {
     engineerOk,
     boom: s.boom,
     tyrant: tyrants.length > 0,
+    zombies: zombiesWin,
   };
 }
 
@@ -1171,9 +1321,12 @@ function onRoundAction(s: State, ctx: Ctx, me: string, a: Action) {
     case 'request': {
       if (!isPlayer(ctx, a.to) || !reachable(s, me, a.to)) return;
       if ((a.kind !== 'card' && a.kind !== 'color') || (a.kind === 'color' && !s.big)) return;
-      if (s.requests.some((q) => q.from === me || (q.from === a.to && q.to === me))) return;
+      // A Terapeuta's cure offer is private to its target and never blocks the Terapeuta.
+      if (s.requests.some((q) => !q.psych && (q.from === me || (q.from === a.to && q.to === me)))) return;
       // "Tolo": can never turn down a card share.
-      if (a.kind === 'card' && hasCondition(s, a.to, 'foolish')) return share(s, ctx, me, a.to, 'card');
+      if (!mayShare(s, me, a.kind)) return;
+      // "Tolo": can never turn down a share their conditions allow.
+      if (hasCondition(s, a.to, 'foolish') && mayShare(s, a.to, a.kind)) return share(s, ctx, me, a.to, a.kind);
       s.seq += 1;
       const id = `r${s.seq}`;
       s.requests.push({ id, from: me, to: a.to, kind: a.kind });
@@ -1183,25 +1336,31 @@ function onRoundAction(s: State, ctx: Ctx, me: string, a: Action) {
     case 'answer': {
       const q = s.requests.find((x) => x.id === a.id && x.to === me);
       if (!q || typeof a.accept !== 'boolean') return;
+      if (a.accept && !q.psych && !(mayShare(s, me, q.kind) && mayShare(s, q.from, q.kind))) return;
       dropRequest(s, ctx, q.id);
       if (!reachable(s, q.from, q.to)) return;
-      if (a.accept) share(s, ctx, q.from, q.to, q.kind);
-      else notify(s, q.from, { k: 'declined', who: me });
+      if (!a.accept) return q.psych ? undefined : notify(s, q.from, { k: 'declined', who: me });
+      if (!q.psych) return share(s, ctx, q.from, q.to, q.kind);
+      // The Terapeuta's cure: a card share that sheds every psych condition.
+      share(s, ctx, q.from, q.to, 'card', undefined, true);
+      s.conditions[me] = (s.conditions[me] ?? []).filter((c) => !PSYCH.includes(c.k));
+      notify(s, me, { k: 'healed', who: q.from });
       return;
     }
     case 'cancel': {
-      const q = s.requests.find((x) => x.from === me);
+      const q = s.requests.find((x) => x.from === me && !x.psych);
       if (q) dropRequest(s, ctx, q.id);
       return;
     }
     case 'show': {
       if (!isPlayer(ctx, a.to) || !reachable(s, me, a.to)) return;
       if ((a.kind !== 'card' && a.kind !== 'color') || (a.kind === 'color' && !s.big)) return;
+      if (!mayShowCard(s, me)) return;
       learn(s, a.to, me, a.kind === 'card' ? 'shown' : 'colorShown', a.kind === 'card');
       return;
     }
     case 'showRoom': {
-      if (!r) return;
+      if (!r || !mayShowCard(s, me)) return;
       for (const m of members(s, r)) if (m !== me) learn(s, m, me, 'public', true);
       return;
     }
@@ -1264,6 +1423,9 @@ export default defineGame<State, Config>({
       pauseChoices: {},
       announcements: [],
       gamblerAlt: [],
+      paranoidUsed: {},
+      everClover: [],
+      sober: null,
       boom: null,
       result: null,
       slide: 0,
@@ -1345,7 +1507,7 @@ export default defineGame<State, Config>({
       const q = s.requests.find((x) => `req:${x.id}` === key);
       if (q) {
         s.requests = s.requests.filter((x) => x.id !== q.id);
-        notify(s, q.from, { k: 'expired', who: q.to });
+        if (!q.psych) notify(s, q.from, { k: 'expired', who: q.to });
       }
       return;
     }
@@ -1427,7 +1589,7 @@ export default defineGame<State, Config>({
     const dealt = s.card[id] !== undefined;
     const mayLook = dealt && !(s.phase === 'briefing' && ctx.config.briefing === 'dealer' && !s.visited.includes(id));
     const isLeader = !!r && s.leader[r] === id;
-    const out = s.requests.find((q) => q.from === id);
+    const out = s.requests.find((q) => q.from === id && !q.psych);
     const step = s.phase === 'pause' ? s.pauseStep : null;
     const kind = mayLook ? powerOf(s, id) : null;
     let hostage: Room | null = null;
@@ -1459,7 +1621,12 @@ export default defineGame<State, Config>({
       need: r && s.phase === 'round' ? need(s, r) : 0,
       eligible: r && isLeader ? eligible(s, r) : [],
       tackled: s.phase === 'round' ? s.tackled : [],
-      requestsIn: s.requests.filter((q) => q.to === id).map((q) => ({ id: q.id, from: q.from, kind: q.kind })),
+      requestsIn: s.requests
+        .filter((q) => q.to === id)
+        .map((q) => ({ id: q.id, from: q.from, kind: q.kind, psych: !!q.psych, canAccept: !!q.psych || mayShare(s, id, q.kind) })),
+      allowed: dealt
+        ? { cardShare: mayCardShare(s, id), colorShare: s.big && mayColorShare(s, id), show: mayShowCard(s, id) }
+        : { cardShare: false, colorShare: false, show: false },
       requestOut: out ? { id: out.id, to: out.to, kind: out.kind } : null,
       seen: s.seen[id] ?? [],
       notices: s.notices[id] ?? [],

@@ -3,9 +3,9 @@ import type { I18nText } from '@mp/game-sdk';
 // Public catalog shared by the logic and the UI: card names, goals, teams, the deck units the Host
 // toggles, the presets and the hostage table. Nothing here is a secret of a match.
 
-export type Team = 'ouro' | 'carmim' | 'prata';
+export type Team = 'ouro' | 'carmim' | 'prata' | 'verde';
 export type Room = 'A' | 'B';
-export type Group = 'base' | 'reservas' | 'salas' | 'compartilhar' | 'lideranca';
+export type Group = 'base' | 'reservas' | 'salas' | 'compartilhar' | 'lideranca' | 'atuacao' | 'condicoes' | 'caos';
 
 export const CHARS = [
   'chefao', 'assassino', 'soldadoOuro', 'soldadoCarmim', 'apostador',
@@ -17,6 +17,13 @@ export const CHARS = [
   'sombra', 'sabotador', 'corregedor', 'tirano', 'boticarioOuro', 'boticarioCarmim',
   'usurpadorOuro', 'usurpadorCarmim', 'guardaOuro', 'guardaCarmim', 'vereadorOuro', 'vereadorCarmim',
   'leaoOuro', 'leaoCarmim', 'mandachuva', 'anarquista', 'lacaio', 'embaixadorOuro', 'embaixadorCarmim',
+  'santoOuro', 'santoCarmim', 'mentirosoOuro', 'mentirosoCarmim', 'vendadoOuro', 'vendadoCarmim',
+  'sorridenteOuro', 'sorridenteCarmim', 'mudoOuro', 'mudoCarmim', 'fofoqueiroOuro', 'fofoqueiroCarmim',
+  'timidoOuro', 'timidoCarmim', 'recatadoOuro', 'recatadoCarmim', 'paranoicoOuro', 'paranoicoCarmim',
+  'terapeutaOuro', 'terapeutaCarmim', 'chantagistaOuro', 'chantagistaCarmim', 'trapaceiroOuro', 'trapaceiroCarmim',
+  'capangaOuro', 'capangaCarmim', 'mordacaOuro', 'mordacaCarmim', 'golpistaOuro', 'golpistaCarmim',
+  'negociadorOuro', 'negociadorCarmim', 'intocavelOuro', 'intocavelCarmim',
+  'contagiado', 'trevo', 'bebado',
 ] as const;
 export type CharId = (typeof CHARS)[number];
 
@@ -29,7 +36,28 @@ export type PowerKind =
   | 'usurpador' // permanent public reveal, become leader (not in the last round)
   | 'guarda' // permanent public reveal, one player can't be a hostage this round
   | 'vereador' // public reveal: usurp vote counts 2 in an even room
-  | 'leao'; // in the bigger room, send a player to the other room (not in the last round)
+  | 'leao' // in the bigger room, send a player to the other room (not in the last round)
+  | 'terapeuta'; // show your card to someone; if they have a psych condition they may card share to be cured
+
+/** Conditions a card starts with or a share can give. Love and hate carry a partner. */
+export type CondKind =
+  | 'love'
+  | 'hate'
+  | 'foolish' // tolo: can never turn down a card or colour share
+  | 'shy' // tímido: may not reveal any part of the card
+  | 'coy' // recatado: may only colour share
+  | 'paranoid' // paranoico: may only card share, once per match
+  | 'savvy' // esperto: may only card share
+  | 'cursed' // calado: no noise, no spoken powers
+  | 'honest' // sincero: only true words
+  | 'liar' // mentiroso: only false words
+  | 'zombie'; // infectado: wins with the infected
+
+/** Psych conditions: the Terapeuta can cure them. */
+export const PSYCH: CondKind[] = ['shy', 'coy', 'paranoid'];
+
+/** Powers that need words: a "calado" player can't use them. */
+export const SPOKEN_POWERS: PowerKind[] = ['federal', 'cobrador', 'casamenteira', 'intrigante', 'guarda', 'leao'];
 
 export interface CharDef {
   /** Allegiance. */
@@ -48,6 +76,12 @@ export interface CharDef {
   linked?: boolean;
   /** Recommended minimum player count (warning only). */
   minPlayers?: number;
+  /** Conditions the card starts with (and gets back whenever it changes hands, clean). */
+  starts?: CondKind[];
+  /** Condition given to whoever card shares with this card. */
+  gives?: CondKind;
+  /** Immune to every power and condition. */
+  immune?: boolean;
 }
 
 const T = (pt: string, en: string): I18nText => ({ 'pt-BR': pt, en });
@@ -168,6 +202,180 @@ const [embaixadorOuro, embaixadorCarmim] = pair({
     'Your card is public from the start. You belong to no hall: you walk between both, are never leader or hostage, never vote, and no power affects you. You play for your family.',
   ),
   minPlayers: 11,
+  immune: true,
+});
+
+// ---- Acting cards: the app shows the rule; the table keeps everyone honest.
+const FAMILY = T(' Você joga pela sua família.', ' You play for your family.');
+const withFamily = (x: I18nText): I18nText => ({ 'pt-BR': x['pt-BR'] + FAMILY['pt-BR'], en: x.en + FAMILY.en });
+
+const [santoOuro, santoCarmim] = pair({
+  name: T('Santo', 'Saint'),
+  goal: T('Só diga a verdade.', 'Only speak the truth.'),
+  text: withFamily(
+    T(
+      'Você começa "sincero": tudo o que você FALA tem que ser verdade (gestos e silêncios podem enganar). Sincero e mentiroso se anulam.',
+      'You start "honest": everything you SAY must be true (gestures and silence may mislead). Honest and liar cancel out.',
+    ),
+  ),
+  starts: ['honest'],
+});
+const [mentirosoOuro, mentirosoCarmim] = pair({
+  name: T('Mentiroso', 'Fibber'),
+  goal: T('Só diga mentiras.', 'Only speak lies.'),
+  text: withFamily(
+    T(
+      'Você começa "mentiroso": tudo o que você FALA tem que ser mentira (o celular e os gestos podem dizer a verdade). Sincero e mentiroso se anulam.',
+      'You start "liar": everything you SAY must be a lie (your phone and gestures may tell the truth). Honest and liar cancel out.',
+    ),
+  ),
+  starts: ['liar'],
+});
+const [vendadoOuro, vendadoCarmim] = pair({
+  name: T('Vendado', 'Blindfolded'),
+  goal: T('Jogue de olhos fechados.', 'Play with your eyes closed.'),
+  text: withFamily(
+    T(
+      'Depois de ver sua carta, faça o possível para jogar de olhos fechados até o fim. Peça ajuda para andar entre os salões.',
+      'After seeing your card, do your best to play with your eyes closed until the end. Ask for help to walk between the halls.',
+    ),
+  ),
+});
+const [sorridenteOuro, sorridenteCarmim] = pair({
+  name: T('Sorridente', 'Grinner'),
+  goal: T('Sorria o tempo todo.', 'Smile all the time.'),
+  text: withFamily(T('Faça o possível para estar sempre sorrindo.', 'Do your best to be smiling at all times.')),
+});
+const [mudoOuro, mudoCarmim] = pair({
+  name: T('Mudo', 'Mute'),
+  goal: T('Não faça nenhum som.', 'Make no sound.'),
+  text: withFamily(
+    T('Faça o possível para não emitir nenhum som. Gestos e o celular estão liberados.', 'Do your best to make no sound at all. Gestures and the phone are fine.'),
+  ),
+});
+const [fofoqueiroOuro, fofoqueiroCarmim] = pair({
+  name: T('Fofoqueiro', 'Gossip'),
+  goal: T('Nada de conversa particular.', 'No private talks.'),
+  text: withFamily(
+    T(
+      'Faça o possível para que não existam conversas particulares: chegue perto, escute, se intrometa — sem encostar em ninguém.',
+      'Do your best to make sure there are no private talks: come close, listen in, butt in — without touching anyone.',
+    ),
+  ),
+});
+
+// ---- Conditions: the app enforces them on every share and reveal.
+const [timidoOuro, timidoCarmim] = pair({
+  name: T('Tímido', 'Shy One'),
+  goal: T('Você não mostra nada.', 'You show nothing.'),
+  text: withFamily(
+    T(
+      'Você começa "tímido": não pode mostrar nem trocar nenhuma parte da sua carta (só poderes que obrigam). O Terapeuta pode curar você.',
+      'You start "shy": you may not show or share any part of your card (only powers that force it). The Therapist can cure you.',
+    ),
+  ),
+  starts: ['shy'],
+});
+const [recatadoOuro, recatadoCarmim] = pair({
+  name: T('Recatado', 'Coy One'),
+  goal: T('Só troca de cor.', 'Colour shares only.'),
+  text: withFamily(
+    T(
+      'Você começa "recatado": só pode trocar a cor (com 10 ou menos jogadores, isso quer dizer nada). O Terapeuta pode curar você.',
+      'You start "coy": you may only colour share (with 10 or fewer players, that means nothing at all). The Therapist can cure you.',
+    ),
+  ),
+  starts: ['coy'],
+});
+const [paranoicoOuro, paranoicoCarmim] = pair({
+  name: T('Paranoico', 'Paranoid'),
+  goal: T('Uma troca de carta, e só.', 'One card share, that’s it.'),
+  text: withFamily(
+    T(
+      'Você começa "paranoico": só pode trocar a carta inteira, e uma única vez na partida (trocas forçadas por poderes não contam). O Terapeuta pode curar você.',
+      'You start "paranoid": you may only card share, and only once per match (shares forced by powers don’t count). The Therapist can cure you.',
+    ),
+  ),
+  starts: ['paranoid'],
+});
+const [terapeutaOuro, terapeutaCarmim] = pair({
+  name: T('Terapeuta', 'Therapist'),
+  goal: T('Cure tímidos, recatados e paranoicos.', 'Cure the shy, the coy and the paranoid.'),
+  text: withFamily(
+    T(
+      'Mostre sua carta a alguém do salão. Se a pessoa estiver tímida, recatada ou paranoica, ela pode trocar a carta com você na hora — e fica curada.',
+      'Show your card to someone in your hall. If they are shy, coy or paranoid, they may card share with you right away — and are cured.',
+    ),
+  ),
+  power: 'terapeuta',
+});
+const [chantagistaOuro, chantagistaCarmim] = pair({
+  name: T('Chantagista', 'Blackmailer'),
+  goal: T('Quem te vê, se cala.', 'Whoever sees you clams up.'),
+  text: withFamily(T('Quem trocar a carta com você fica "tímido".', 'Whoever card shares with you becomes "shy".')),
+  gives: 'shy',
+});
+const [trapaceiroOuro, trapaceiroCarmim] = pair({
+  name: T('Trapaceiro', 'Card Sharp'),
+  goal: T('Quem te vê, vira tolo.', 'Whoever sees you turns gullible.'),
+  text: withFamily(
+    T(
+      'Quem trocar a carta com você fica "tolo": nunca mais recusa um pedido de troca. Tolo anula tímido, recatado e paranoico.',
+      'Whoever card shares with you becomes "gullible": they can never turn down a share again. Gullible cancels shy, coy and paranoid.',
+    ),
+  ),
+  gives: 'foolish',
+});
+const [capangaOuro, capangaCarmim] = pair({
+  name: T('Capanga', 'Thug'),
+  goal: T('Quem te vê, só mostra a cor.', 'Whoever sees you shows colours only.'),
+  text: withFamily(T('Quem trocar a carta com você fica "recatado".', 'Whoever card shares with you becomes "coy".')),
+  gives: 'coy',
+});
+const [mordacaOuro, mordacaCarmim] = pair({
+  name: T('Mordaça', 'Gagger'),
+  goal: T('Quem te vê, fica calado.', 'Whoever sees you goes quiet.'),
+  text: withFamily(
+    T(
+      'Quem trocar a carta com você fica "calado": não pode fazer barulho nem usar poderes que exigem falar (Federal, Cobrador, Casamenteira, Intrigante, Guarda, Leão-de-chácara).',
+      'Whoever card shares with you becomes "gagged": no noise, and no powers that need words (Fed, Enforcer, Matchmaker, Troublemaker, Guard, Doorman).',
+    ),
+  ),
+  gives: 'cursed',
+});
+const [golpistaOuro, golpistaCarmim] = pair({
+  name: T('Golpista', 'Grifter'),
+  goal: T('Troca de cor vira carta inteira.', 'Colour shares become full reveals.'),
+  text: withFamily(
+    T(
+      'Quando alguém aceita trocar a cor com você, os dois mostram a carta inteira um ao outro em vez disso.',
+      'When someone agrees to a colour share with you, you both show each other the whole card instead.',
+    ),
+  ),
+  minPlayers: 11,
+});
+const [negociadorOuro, negociadorCarmim] = pair({
+  name: T('Negociador', 'Negotiator'),
+  goal: T('Só troca de carta inteira.', 'Card shares only.'),
+  text: withFamily(
+    T(
+      'Você começa "esperto": só pode trocar a carta inteira — nada de mostrar, revelar ou trocar só a cor.',
+      'You start "savvy": you may only card share — no showing, revealing or colour sharing.',
+    ),
+  ),
+  starts: ['savvy'],
+  minPlayers: 11,
+});
+const [intocavelOuro, intocavelCarmim] = pair({
+  name: T('Intocável', 'Untouchable'),
+  goal: T('Nada pega em você.', 'Nothing sticks to you.'),
+  text: withFamily(
+    T(
+      'Você é imune a todos os poderes e condições, sem exceção. Nunca minta sobre ser imune.',
+      'You are immune to every power and condition, no exceptions. Never lie about being immune.',
+    ),
+  ),
+  immune: true,
 });
 
 const grey = (name: I18nText, goal: I18nText, text: I18nText, extra: Partial<CharDef> = {}): CharDef => ({
@@ -518,10 +726,77 @@ export const CATALOG: Record<CharId, CharDef> = {
     T('Tirano', 'Tyrant'),
     T('Que ninguém dos dois chefes te veja.', 'Don’t let both heads see you.'),
     T(
-      'Você é "tolo": aceita todo pedido de compartilhar carta. Você vence se o Chefão e o Assassino NÃO tiverem compartilhado a carta com você, os dois. Se vencer, todos os outros perdem.',
-      'You are "gullible": you accept every card share offer. You win unless both the Boss and the Hitman card shared with you. If you win, everyone else loses.',
+      'Você começa "tolo": aceita todo pedido de troca (carta ou cor). Você vence se o Chefão e o Assassino NÃO tiverem compartilhado a carta com você, os dois. Se vencer, todos os outros perdem.',
+      'You start "gullible": you accept every share offer (card or colour). You win unless both the Boss and the Hitman card shared with you. If you win, everyone else loses.',
     ),
+    { starts: ['foolish'] },
   ),
+  santoOuro,
+  santoCarmim,
+  mentirosoOuro,
+  mentirosoCarmim,
+  vendadoOuro,
+  vendadoCarmim,
+  sorridenteOuro,
+  sorridenteCarmim,
+  mudoOuro,
+  mudoCarmim,
+  fofoqueiroOuro,
+  fofoqueiroCarmim,
+  timidoOuro,
+  timidoCarmim,
+  recatadoOuro,
+  recatadoCarmim,
+  paranoicoOuro,
+  paranoicoCarmim,
+  terapeutaOuro,
+  terapeutaCarmim,
+  chantagistaOuro,
+  chantagistaCarmim,
+  trapaceiroOuro,
+  trapaceiroCarmim,
+  capangaOuro,
+  capangaCarmim,
+  mordacaOuro,
+  mordacaCarmim,
+  golpistaOuro,
+  golpistaCarmim,
+  negociadorOuro,
+  negociadorCarmim,
+  intocavelOuro,
+  intocavelCarmim,
+  contagiado: {
+    team: 'verde',
+    look: 'verde',
+    name: T('Contagiado', 'Infected'),
+    goal: T('Espalhe a infecção.', 'Spread the infection.'),
+    text: T(
+      'Você começa "infectado". Quem trocar carta ou cor com um infectado também fica infectado. Os infectados vencem juntos se, no fim, todos os que não caíram estiverem infectados (Embaixadores não contam).',
+      'You start "infected". Whoever card or colour shares with an infected player becomes infected too. The infected win together if, at the end, everyone who did not go down is infected (Envoys don’t count).',
+    ),
+    starts: ['zombie'],
+  },
+  trevo: {
+    team: 'verde',
+    look: 'verde',
+    name: T('Trevo da Sorte', 'Lucky Clover'),
+    goal: T('Quem estiver com o trevo no fim vence.', 'Whoever holds the clover at the end wins.'),
+    text: T(
+      'Você começa "tolo". Quem trocar carta ou cor com você troca de carta com você na hora (e assume a nova carta, limpa). Quem estiver com o Trevo no fim vence. Ninguém pode ficar com o Trevo duas vezes na mesma partida.',
+      'You start "gullible". Whoever card or colour shares with you swaps cards with you at once (and takes the new card, clean). Whoever holds the Clover at the end wins. Nobody can hold the Clover twice in one match.',
+    ),
+    starts: ['foolish'],
+  },
+  bebado: {
+    team: 'prata',
+    look: 'prata',
+    name: T('Bêbado', 'Drunk'),
+    goal: T('Na última rodada, você fica sóbrio.', 'In the last round, you sober up.'),
+    text: T(
+      'Antes de distribuir, uma carta foi separada — a carta "sóbria". No começo da última rodada, o celular troca a sua carta por ela, e você passa a jogar com essa carta, limpa.',
+      'Before dealing, one card was set aside — the "sober" card. At the start of the last round, your phone swaps your card for it, and you play that card from then on, clean.',
+    ),
+  },
   boticarioOuro,
   boticarioCarmim,
 
@@ -601,6 +876,26 @@ export const UNITS: Unit[] = [
   { id: 'anarquista', group: 'lideranca', cards: ['anarquista'] },
   { id: 'lacaio', group: 'lideranca', cards: ['lacaio'] },
   { id: 'embaixador', group: 'lideranca', cards: ['embaixadorOuro', 'embaixadorCarmim'] },
+  { id: 'santo', group: 'atuacao', cards: ['santoOuro', 'santoCarmim'] },
+  { id: 'mentiroso', group: 'atuacao', cards: ['mentirosoOuro', 'mentirosoCarmim'] },
+  { id: 'vendado', group: 'atuacao', cards: ['vendadoOuro', 'vendadoCarmim'] },
+  { id: 'sorridente', group: 'atuacao', cards: ['sorridenteOuro', 'sorridenteCarmim'] },
+  { id: 'mudo', group: 'atuacao', cards: ['mudoOuro', 'mudoCarmim'] },
+  { id: 'fofoqueiro', group: 'atuacao', cards: ['fofoqueiroOuro', 'fofoqueiroCarmim'] },
+  { id: 'timido', group: 'condicoes', cards: ['timidoOuro', 'timidoCarmim'] },
+  { id: 'recatado', group: 'condicoes', cards: ['recatadoOuro', 'recatadoCarmim'] },
+  { id: 'paranoico', group: 'condicoes', cards: ['paranoicoOuro', 'paranoicoCarmim'] },
+  { id: 'terapeuta', group: 'condicoes', cards: ['terapeutaOuro', 'terapeutaCarmim'] },
+  { id: 'chantagista', group: 'condicoes', cards: ['chantagistaOuro', 'chantagistaCarmim'] },
+  { id: 'trapaceiro', group: 'condicoes', cards: ['trapaceiroOuro', 'trapaceiroCarmim'] },
+  { id: 'capanga', group: 'condicoes', cards: ['capangaOuro', 'capangaCarmim'] },
+  { id: 'mordaca', group: 'condicoes', cards: ['mordacaOuro', 'mordacaCarmim'] },
+  { id: 'golpista', group: 'condicoes', cards: ['golpistaOuro', 'golpistaCarmim'] },
+  { id: 'negociador', group: 'condicoes', cards: ['negociadorOuro', 'negociadorCarmim'] },
+  { id: 'intocavel', group: 'condicoes', cards: ['intocavelOuro', 'intocavelCarmim'] },
+  { id: 'contagiado', group: 'caos', cards: ['contagiado'] },
+  { id: 'trevo', group: 'caos', cards: ['trevo'] },
+  { id: 'bebado', group: 'caos', cards: ['bebado'] },
 ];
 
 export const UNIT_BY_ID: Record<string, Unit> = Object.fromEntries(UNITS.map((u) => [u.id, u]));
@@ -613,6 +908,7 @@ export const PRESETS: Record<string, string[]> = {
     'medico', 'fichaQuente', 'afilhado', 'sombra', 'usurpador', 'casamenteira', 'rival', 'atirador',
     'federal', 'leao', 'vereador', 'cobrador', 'infiltrado', 'mordomo', 'bonnie', 'esposa',
     'duquesa', 'corregedor', 'habitue', 'anarquista', 'embaixador', 'credor', 'mandachuva', 'lacaio',
+    'trevo', 'bebado', 'timido', 'chantagista', 'terapeuta', 'santo', 'mentiroso', 'sorridente',
   ],
 };
 
@@ -621,6 +917,9 @@ export const GROUP_NAMES: Record<Exclude<Group, 'base'>, I18nText> = {
   salas: T('Objetivos por salão', 'Hall goals'),
   compartilhar: T('Poderes de compartilhar', 'Sharing powers'),
   lideranca: T('Liderança e salão', 'Leadership & halls'),
+  atuacao: T('Atuação', 'Acting'),
+  condicoes: T('Condições', 'Conditions'),
+  caos: T('Cartas do caos', 'Wild cards'),
 };
 
 /** Players counted for the hostage table and the 11+ rules: everyone but the Envoys. */

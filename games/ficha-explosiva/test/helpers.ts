@@ -1,7 +1,7 @@
 import { expect } from 'vitest';
 import { createTestRoom } from '@mp/engine/testing';
 import game, { type PlayerView, type PublicView, type State } from '../src/logic.ts';
-import type { CharId, Room as Hall } from '../src/shared.ts';
+import { CATALOG, type CharId, type Room as Hall } from '../src/shared.ts';
 
 export type Room = ReturnType<typeof createTestRoom<State>>;
 export const pub = (room: Room) => room.publicView() as PublicView;
@@ -15,7 +15,14 @@ export function newRoom(players: number, config: Record<string, unknown> = {}, s
 export function match(
   cards: CharId[],
   halls: (Hall | null)[],
-  opts: { config?: Record<string, unknown>; units?: string[]; buried?: CharId | null; ready?: boolean } = {},
+  opts: {
+    config?: Record<string, unknown>;
+    units?: string[];
+    buried?: CharId | null;
+    /** The Bêbado's set-aside card. */
+    sober?: CharId | null;
+    ready?: boolean;
+  } = {},
 ) {
   const room = newRoom(cards.length, opts.config);
   room.act('p1', { type: 'intro', dir: 'skip' }); // when the tutorial is on
@@ -28,12 +35,14 @@ export function match(
     const id = `p${i + 1}`;
     s.card[id] = c;
     s.room[id] = halls[i]!;
-    s.conditions[id] = c === 'tirano' ? [{ k: 'foolish' }] : [];
+    s.conditions[id] = (CATALOG[c].starts ?? []).map((k) => ({ k }) as State['conditions'][string][number]);
     if (halls[i] === null) s.revealed[id] = c;
   });
-  const extra = opts.buried !== undefined ? [opts.buried] : [];
-  s.deck = [...cards, ...extra].filter((c): c is CharId => !!c).sort();
+  s.everClover = room.ids.filter((id) => s.card[id] === 'trevo');
+  const extra = [opts.buried, opts.sober].filter((c): c is CharId => !!c);
+  s.deck = [...cards, ...extra].sort();
   s.buried = opts.buried ?? null;
+  s.sober = opts.sober ?? null;
   if (opts.ready ?? true) readyAll(room);
   return room;
 }

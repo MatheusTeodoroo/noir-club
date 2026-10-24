@@ -95,7 +95,7 @@ function paginate(lines: I18nText[]): I18nText[][] {
 }
 
 /** Rules pages per group of characters, written from the same catalog the cards use. */
-const characterPages = (['reservas', 'salas', 'compartilhar', 'lideranca'] as const).flatMap((g) => {
+const characterPages = (['reservas', 'salas', 'compartilhar', 'lideranca', 'atuacao', 'condicoes', 'caos'] as const).flatMap((g) => {
   const lines = [...new Set(UNITS.filter((u) => u.group === g).flatMap((u) => u.cards))]
     // Twin cards (an Ouro and a Carmim copy) share one line.
     .filter((c, i, all) => all.findIndex((x) => CATALOG[x].name.en === CATALOG[c].name.en) === i)
@@ -150,8 +150,8 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
     title: tx('As cartas', 'The cards'),
     body: [
       tx(
-        '**Ouro** e **Carmim**: vencem ou perdem com a família. **Prata**: cada carta tem o próprio objetivo, escrito nela.',
-        '**Gold** and **Crimson**: win or lose with their family. **Silver**: each card has its own goal, written on it.',
+        '**Ouro** e **Carmim**: vencem ou perdem com a família. **Prata**: cada carta tem o próprio objetivo, escrito nela. **Verde** (Contagiado, Trevo da Sorte): objetivos próprios que bagunçam a mesa.',
+        '**Gold** and **Crimson**: win or lose with their family. **Silver**: each card has its own goal, written on it. **Green** (Infected, Lucky Clover): goals of their own that shake up the table.',
       ),
       tx(
         'A **cor** de uma carta é a da faixa. O **Infiltrado** é a exceção: num compartilhamento de cor ele mostra a cor da outra família.',
@@ -206,6 +206,10 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
       tx(
         'Tudo só funciona com quem está **no mesmo salão** (Embaixadores falam com todos). O que você viu fica em **Ver o que você sabe**.',
         'All of it only works with people **in the same hall** (Envoys reach everyone). What you have seen stays under **See what you know**.',
+      ),
+      tx(
+        'Suas **condições** podem travar botões: tímido não mostra nada, recatado só troca cor, paranoico e esperto só trocam carta. Um tolo aceita sozinho. Poderes que obrigam (Federal, Cobrador, Terapeuta) passam por cima de tudo isso.',
+        'Your **conditions** may lock buttons: shy shows nothing, coy only colour shares, paranoid and savvy only card share. A gullible player accepts on their own. Powers that force a share (Fed, Enforcer, Therapist) override all of this.',
       ),
     ],
   },
@@ -269,8 +273,12 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
     title: tx('Situações especiais', 'Special situations'),
     body: [
       tx(
-        '**Condições**: apaixonado (terminem no mesmo salão), odeia (terminem em salões diferentes) e tolo (aceita todo pedido de carta). Apaixonado e odeia se anulam.',
-        '**Conditions**: in love (end in the same hall), in hate (end in different halls) and gullible (accepts every card share). In love and in hate cancel out.',
+        '**Condições**: apaixonado e odeia trocam seu objetivo; tolo aceita todo pedido de troca; tímido, recatado e paranoico (psicológicas — o Terapeuta cura); esperto só troca carta; calado não fala nem usa poderes falados; sincero e mentiroso valem para o que você fala; infectado vence com os infectados. Só o Boticário tira todas de uma vez; o Intocável e os Embaixadores nunca pegam nenhuma.',
+        '**Conditions**: in love and in hate replace your goal; gullible accepts every share; shy, coy and paranoid (psych — the Therapist cures them); savvy only card shares; gagged can’t speak or use spoken powers; honest and liar apply to what you say; infected wins with the infected. Only the Apothecary removes them all at once; the Untouchable and the Envoys never catch any.',
+      ),
+      tx(
+        '**Pares que se anulam**: apaixonado/odeia, sincero/mentiroso, e tolo com tímido, recatado ou paranoico — quem pega o oposto fica sem nenhum dos dois.',
+        '**Pairs that cancel**: in love/in hate, honest/liar, and gullible with shy, coy or paranoid — whoever catches the opposite ends with neither.',
       ),
       tx(
         '**Quem cai da conexão** pausa o jogo por 20 s. Se não voltar, continua como carta parada: fica no salão, conta no fim e pode ser refém. Se era líder, o salão nomeia outro.',

@@ -6,8 +6,8 @@ import {
   type I18nText,
   type PlayerProps,
 } from '@mp/game-sdk';
-import type { Announcement, DealerView, Notice, PlayerView, PublicView, Result, Seen } from './logic.ts';
-import { CATALOG, GROUP_NAMES, UNITS, type CharId, type Room, type Team } from './shared.ts';
+import type { Announcement, DealerView, MesaError, Notice, PlayerView, PublicView, Result, Seen } from './logic.ts';
+import { CATALOG, GROUP_NAMES, UNITS, type CharId, type CondKind, type Room, type Team } from './shared.ts';
 import { CREDITS, RULES, SLIDES, type Demo } from './texts.ts';
 
 // Only `react` and `@mp/game-sdk` may be imported here (plus the public shared.ts and texts.ts).
@@ -77,6 +77,24 @@ const L = {
   ouro: { 'pt-BR': 'Ouro', en: 'Gold' },
   carmim: { 'pt-BR': 'Carmim', en: 'Crimson' },
   prata: { 'pt-BR': 'Prata', en: 'Silver' },
+  verde: { 'pt-BR': 'Verde', en: 'Green' },
+  zombiesWin: { 'pt-BR': 'Os infectados vencem!', en: 'The infected win!' },
+  cantShareNote: {
+    'pt-BR': 'Suas condições impedem você de aceitar.',
+    en: 'Your conditions keep you from accepting.',
+  },
+  psychOffer: {
+    'pt-BR': '{n} (Terapeuta) oferece cura: troque a carta e perca sua condição.',
+    en: '{n} (Therapist) offers a cure: card share and lose your condition.',
+  },
+  limitedNote: {
+    'pt-BR': 'Suas condições limitam o que você pode mostrar.',
+    en: 'Your conditions limit what you can show.',
+  },
+  errZombieImmune: {
+    'pt-BR': 'O Contagiado não pode jogar com o Intocável.',
+    en: 'The Infected can’t be played with the Untouchable.',
+  },
   nenhum: { 'pt-BR': 'Nenhuma', en: 'Neither' },
 
   // phone
@@ -203,6 +221,37 @@ const NOTICE: Record<Notice['k'], I18nText> = {
   cured: { 'pt-BR': '{a} (Boticário) curou suas condições.', en: '{a} (Apothecary) cured your conditions.' },
   leader: { 'pt-BR': 'Você agora é o líder do salão.', en: 'You are now the hall’s leader.' },
   lostLead: { 'pt-BR': 'Você não é mais o líder.', en: 'You are no longer the leader.' },
+  condition: { 'pt-BR': 'Trocar com {a} deixou você "{c}".', en: 'Sharing with {a} left you "{c}".' },
+  healed: { 'pt-BR': '{a} (Terapeuta) curou você.', en: '{a} (Therapist) cured you.' },
+  sober: { 'pt-BR': 'Você ficou sóbrio: sua carta mudou! Veja a nova.', en: 'You sobered up: your card changed! Check the new one.' },
+};
+
+/** Condition names, as the cards print them. */
+const COND: Record<CondKind, I18nText> = {
+  love: { 'pt-BR': 'apaixonado', en: 'in love' },
+  hate: { 'pt-BR': 'odeia', en: 'in hate' },
+  foolish: { 'pt-BR': 'tolo', en: 'gullible' },
+  shy: { 'pt-BR': 'tímido', en: 'shy' },
+  coy: { 'pt-BR': 'recatado', en: 'coy' },
+  paranoid: { 'pt-BR': 'paranoico', en: 'paranoid' },
+  savvy: { 'pt-BR': 'esperto', en: 'savvy' },
+  cursed: { 'pt-BR': 'calado', en: 'gagged' },
+  honest: { 'pt-BR': 'sincero', en: 'honest' },
+  liar: { 'pt-BR': 'mentiroso', en: 'liar' },
+  zombie: { 'pt-BR': 'infectado', en: 'infected' },
+};
+
+/** What each condition means for the player, shown under their open card. */
+const COND_RULE: Record<Exclude<CondKind, 'love' | 'hate'>, I18nText> = {
+  foolish: { 'pt-BR': 'Tolo: você aceita todo pedido de troca.', en: 'Gullible: you accept every share offer.' },
+  shy: { 'pt-BR': 'Tímido: você não mostra nem troca nada.', en: 'Shy: you show and share nothing.' },
+  coy: { 'pt-BR': 'Recatado: só troca de cor.', en: 'Coy: colour shares only.' },
+  paranoid: { 'pt-BR': 'Paranoico: uma única troca de carta na partida.', en: 'Paranoid: a single card share per match.' },
+  savvy: { 'pt-BR': 'Esperto: só troca de carta inteira.', en: 'Savvy: card shares only.' },
+  cursed: { 'pt-BR': 'Calado: sem barulho e sem poderes falados.', en: 'Gagged: no noise and no spoken powers.' },
+  honest: { 'pt-BR': 'Sincero: tudo o que você fala é verdade.', en: 'Honest: everything you say is true.' },
+  liar: { 'pt-BR': 'Mentiroso: tudo o que você fala é mentira.', en: 'Liar: everything you say is a lie.' },
+  zombie: { 'pt-BR': 'Infectado: você vence com os infectados.', en: 'Infected: you win with the infected.' },
 };
 
 const SEEN_HOW: Record<Seen['how'], I18nText> = {
@@ -223,6 +272,7 @@ const POWER_TARGETS: Record<string, number> = {
   guarda: 1,
   vereador: 0,
   leao: 1,
+  terapeuta: 1,
 };
 
 const GLYPH: Record<CharId, string> = {
@@ -238,9 +288,17 @@ const GLYPH: Record<CharId, string> = {
   boticarioCarmim: '⚗️', usurpadorOuro: '✊', usurpadorCarmim: '✊', guardaOuro: '🚧',
   guardaCarmim: '🚧', vereadorOuro: '🗳️', vereadorCarmim: '🗳️', leaoOuro: '🚪', leaoCarmim: '🚪',
   mandachuva: '🎰', anarquista: '🏴', lacaio: '🙇', embaixadorOuro: '🕊️', embaixadorCarmim: '🕊️',
+  santoOuro: '😇', santoCarmim: '😇', mentirosoOuro: '🤥', mentirosoCarmim: '🤥', vendadoOuro: '🙈',
+  vendadoCarmim: '🙈', sorridenteOuro: '😁', sorridenteCarmim: '😁', mudoOuro: '🤐', mudoCarmim: '🤐',
+  fofoqueiroOuro: '📸', fofoqueiroCarmim: '📸', timidoOuro: '😳', timidoCarmim: '😳', recatadoOuro: '🧣',
+  recatadoCarmim: '🧣', paranoicoOuro: '👀', paranoicoCarmim: '👀', terapeutaOuro: '🛋️', terapeutaCarmim: '🛋️',
+  chantagistaOuro: '✉️', chantagistaCarmim: '✉️', trapaceiroOuro: '🃏', trapaceiroCarmim: '🃏',
+  capangaOuro: '🥊', capangaCarmim: '🥊', mordacaOuro: '🩹', mordacaCarmim: '🩹', golpistaOuro: '🎩',
+  golpistaCarmim: '🎩', negociadorOuro: '🤝', negociadorCarmim: '🤝', intocavelOuro: '🛡️', intocavelCarmim: '🛡️',
+  contagiado: '🦠', trevo: '🍀', bebado: '🍾',
 };
 
-const TEAM_LABEL: Record<Team, I18nText> = { ouro: L.ouro, carmim: L.carmim, prata: L.prata };
+const TEAM_LABEL: Record<Team, I18nText> = { ouro: L.ouro, carmim: L.carmim, prata: L.prata, verde: L.verde };
 
 const CSS = `
 .feg-wrap{position:relative;height:100vh;display:grid;grid-template-rows:auto 1fr;padding:2.4em 3.4em 4.2em;gap:1.4em;overflow:hidden}
@@ -272,12 +330,14 @@ const CSS = `
 .feg-chip--ouro{background:linear-gradient(180deg,#f0d77a,#b8902a);color:#1a0f05}
 .feg-chip--carmim{background:linear-gradient(180deg,#d9344f,#7a0a1c);color:#fff3f3}
 .feg-chip--prata{background:linear-gradient(180deg,#d6d8de,#8b8f99);color:#15161a}
+.feg-chip--verde{background:linear-gradient(180deg,#5fbf72,#1f6b34);color:#f1fff3}
 .feg-deck{display:flex;flex-wrap:wrap;gap:.7em;justify-content:center;align-content:center}
 .feg-card{--c1:#f0d77a;--c2:#b8902a;--ink:#1a0f05;width:7.2em;height:10em;border-radius:.8em;position:relative;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;padding:.5em .4em .6em;
   background:linear-gradient(165deg,#fbf3e1,#e2cfa6);color:var(--ink);box-shadow:0 0 0 .18em var(--c2) inset,0 1em 2em -1em #000;overflow:hidden;font-size:1em}
 .feg-card::before{content:'';position:absolute;inset:auto 0 0 0;height:2.1em;background:linear-gradient(180deg,var(--c1),var(--c2))}
 .feg-card--carmim{--c1:#d9344f;--c2:#7a0a1c}
 .feg-card--prata{--c1:#d6d8de;--c2:#7d818b}
+.feg-card--verde{--c1:#5fbf72;--c2:#1f6b34}
 .feg-card-team{font-size:.6em;letter-spacing:.14em;text-transform:uppercase;font-weight:800;opacity:.75}
 .feg-card-glyph{font-size:2.8em;align-self:center;line-height:1}
 .feg-card-name{position:relative;z-index:1;font-family:var(--font-display);font-weight:800;font-size:.78em;text-align:center;line-height:1.1;color:#fff;text-shadow:0 1px 2px #0008;padding:0 .2em}
@@ -798,7 +858,7 @@ function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
           </div>
           {m.errors.map((e) => (
             <p key={e} className="feg-error">
-              {t(e === 'tooMany' ? L.errTooMany : e === 'needBury' ? L.errNeedBury : L.errFew)}
+              {t(MESA_ERRORS[e])}
             </p>
           ))}
         </div>
@@ -986,6 +1046,7 @@ function Reveal({
   notes.push(result.bossId && result.dead.includes(result.bossId) ? L.bossFell : L.bossLives);
   if (result.doctorOk === false) notes.push(L.doctorMiss);
   if (result.engineerOk === false) notes.push(L.engineerMiss);
+  if (result.zombies) notes.push(L.zombiesWin);
   const shown: PublicView = { ...view, rooms: halls, envoys: outside, revealed: {} };
   let i = 0;
   return (
@@ -1062,7 +1123,7 @@ function MyCard({
   const [sure, setSure] = useState(false);
   // A swapped card is flagged on the back, never opened by itself (people may be standing close).
   const [seenSwap, setSeenSwap] = useState(0);
-  const swap = view.notices.filter((n) => n.k === 'swapped').at(-1)?.n ?? 0;
+  const swap = view.notices.filter((n) => n.k === 'swapped' || n.k === 'sober').at(-1)?.n ?? 0;
   if (!view.card) return null;
   const def = CATALOG[view.card];
   if (!open) {
@@ -1088,16 +1149,16 @@ function MyCard({
       <p className="feg-text">{t(def.text)}</p>
       {view.conditions.map((c, i) => (
         <p key={i} className="feg-cond">
-          {c.k === 'foolish'
-            ? t(L.foolish)
-            : fill(t(c.k === 'love' ? L.inLove : L.inHate), { n: names[c.with]?.name ?? c.with })}
+          {c.k === 'love' || c.k === 'hate'
+            ? fill(t(c.k === 'love' ? L.inLove : L.inHate), { n: names[c.with]?.name ?? c.with })
+            : t(COND_RULE[c.k])}
         </p>
       ))}
       <div className="feg-actions" style={{ width: '100%' }}>
         <button type="button" className="feg-pick" onClick={() => setOpen(false)} style={{ justifyContent: 'center' }}>
           {t(L.hide)}
         </button>
-        {view.phase === 'round' && view.room && !sure && (
+        {view.phase === 'round' && view.room && view.allowed.show && !sure && (
           <button type="button" className="feg-pick" onClick={() => setSure(true)} style={{ justifyContent: 'center' }}>
             {t(L.revealRoom)}
           </button>
@@ -1132,7 +1193,7 @@ function MyCard({
 function Mesa({ view, kit, t, send }: { view: PlayerView; kit: PlayerProps['kit']; t: (x: I18nText) => string; send: (a: unknown) => void }) {
   const m = view.mesa!;
   if (!view.isHost) return <p className="feg-note">{t(L.waitHost)}</p>;
-  const groups = ['reservas', 'salas', 'compartilhar', 'lideranca'] as const;
+  const groups = ['reservas', 'salas', 'compartilhar', 'lideranca', 'atuacao', 'condicoes', 'caos'] as const;
   return (
     <div className="feg-p">
       <p className="feg-label">{t(L.presets)}</p>
@@ -1169,7 +1230,7 @@ function Mesa({ view, kit, t, send }: { view: PlayerView; kit: PlayerProps['kit'
       ))}
       {m.errors.map((e) => (
         <p key={e} className="feg-cond">
-          {t(e === 'tooMany' ? L.errTooMany : e === 'needBury' ? L.errNeedBury : L.errFew)}
+          {t(MESA_ERRORS[e])}
         </p>
       ))}
       <p className="feg-note">
@@ -1184,13 +1245,27 @@ function Mesa({ view, kit, t, send }: { view: PlayerView; kit: PlayerProps['kit'
 
 function Requests({ view, kit, t, send, names }: { view: PlayerView; kit: PlayerProps['kit']; t: (x: I18nText) => string; send: (a: unknown) => void; names: Names }) {
   const nm = (id: string) => names[id]?.name ?? id;
+  // A cure offer or a share your conditions forbid would name a role or a condition: neutral until tapped.
+  const [opened, setOpened] = useState<string[]>([]);
   return (
     <>
-      {view.requestsIn.map((q) => (
+      {view.requestsIn.map((q) =>
+        (q.psych || !q.canAccept) && !opened.includes(q.id) ? (
+          <button
+            key={q.id}
+            type="button"
+            className="feg-toast mp-enter"
+            style={{ border: 0, color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}
+            onClick={() => setOpened([...opened, q.id])}
+          >
+            {t(L.secretNews)}
+          </button>
+        ) : (
         <div key={q.id} className="feg-alert">
-          <b>{fill(t(q.kind === 'card' ? L.wantsShare : L.wantsColor), { n: nm(q.from) })}</b>
+          <b>{fill(t(q.psych ? L.psychOffer : q.kind === 'card' ? L.wantsShare : L.wantsColor), { n: nm(q.from) })}</b>
+          {!q.canAccept && <p className="feg-text">{t(L.cantShareNote)}</p>}
           <div className="feg-actions">
-            <kit.Button variant="gold" onClick={() => send({ type: 'answer', id: q.id, accept: true })}>
+            <kit.Button variant="gold" disabled={!q.canAccept} onClick={() => send({ type: 'answer', id: q.id, accept: true })}>
               {t(L.accept)}
             </kit.Button>
             <kit.Button variant="ghost" onClick={() => send({ type: 'answer', id: q.id, accept: false })}>
@@ -1198,7 +1273,8 @@ function Requests({ view, kit, t, send, names }: { view: PlayerView; kit: Player
             </kit.Button>
           </div>
         </div>
-      ))}
+        ),
+      )}
       {view.requestOut && (
         <div className="feg-toast feg-row feg-row--between">
           <span>{fill(t(L.waitingAnswer), { n: nm(view.requestOut.to) })}</span>
@@ -1212,7 +1288,16 @@ function Requests({ view, kit, t, send, names }: { view: PlayerView; kit: Player
 }
 
 /** Notices that name a role or a condition: they show a neutral line until tapped. */
-const SECRET_NOTICES: Notice['k'][] = ['forced', 'enforced', 'love', 'hate', 'cancelled', 'swapped', 'cured'];
+const SECRET_NOTICES: Notice['k'][] = [
+  'forced', 'enforced', 'love', 'hate', 'cancelled', 'swapped', 'cured', 'condition', 'healed', 'sober',
+];
+
+const MESA_ERRORS: Record<MesaError, I18nText> = {
+  tooMany: L.errTooMany,
+  needBury: L.errNeedBury,
+  fewPlayers: L.errFew,
+  zombieImmune: L.errZombieImmune,
+};
 
 function Notices({ view, t, names }: { view: PlayerView; t: (x: I18nText) => string; names: Names }) {
   const [seenUpTo, setSeenUpTo] = useState(0);
@@ -1233,7 +1318,14 @@ function Notices({ view, t, names }: { view: PlayerView; t: (x: I18nText) => str
           >
             {hidden
               ? t(L.secretNews)
-              : fill(t(NOTICE[n.k]), { a: names[n.who ?? '']?.name ?? '', b: names[n.who2 ?? '']?.name ?? '', r: n.room ?? '' })}
+              : n.k === 'condition' && n.cancelled
+                ? t(NOTICE.cancelled)
+                : fill(t(NOTICE[n.k]), {
+                    a: names[n.who ?? '']?.name ?? '',
+                    b: names[n.who2 ?? '']?.name ?? '',
+                    r: n.room ?? '',
+                    c: n.cond ? t(COND[n.cond]) : '',
+                  })}
           </button>
         );
       })}
@@ -1424,19 +1516,29 @@ function People({ view, kit, t, send, names, me }: { view: PlayerView; kit: Play
               </button>
               {isOpen && canReach && (
                 <div className="feg-actions">
-                  <kit.Button small variant="gold" disabled={!!view.requestOut} onClick={() => send({ type: 'request', to: id, kind: 'card' })}>
+                  <kit.Button
+                    small
+                    variant="gold"
+                    disabled={!!view.requestOut || !view.allowed.cardShare}
+                    onClick={() => send({ type: 'request', to: id, kind: 'card' })}
+                  >
                     {t(L.askCard)}
                   </kit.Button>
                   {view.big && (
-                    <kit.Button small variant="gold" disabled={!!view.requestOut} onClick={() => send({ type: 'request', to: id, kind: 'color' })}>
+                    <kit.Button
+                      small
+                      variant="gold"
+                      disabled={!!view.requestOut || !view.allowed.colorShare}
+                      onClick={() => send({ type: 'request', to: id, kind: 'color' })}
+                    >
                       {t(L.askColor)}
                     </kit.Button>
                   )}
-                  <kit.Button small variant="ghost" onClick={() => send({ type: 'show', to: id, kind: 'card' })}>
+                  <kit.Button small variant="ghost" disabled={!view.allowed.show} onClick={() => send({ type: 'show', to: id, kind: 'card' })}>
                     {t(L.showCard)}
                   </kit.Button>
                   {view.big && (
-                    <kit.Button small variant="ghost" onClick={() => send({ type: 'show', to: id, kind: 'color' })}>
+                    <kit.Button small variant="ghost" disabled={!view.allowed.show} onClick={() => send({ type: 'show', to: id, kind: 'color' })}>
                       {t(L.showColor)}
                     </kit.Button>
                   )}

@@ -25,6 +25,8 @@ leave open is decided here (see "Defaults chosen"). All text, names and art are 
 | Usurp pointing in a room | that room | phones of that room | never on TV |
 | Hostages chosen by a leader | that room (the leader announces them) | phones of that room | exchange (TV shows both rooms together) |
 | Buried card | nobody | — | final reveal |
+| Bêbado's set-aside ("sober") card | nobody, then whoever holds the Bêbado | that phone, at the start of the last round | final reveal |
+| Who is infected / other conditions gained | the holder | own phone (with the card open) | final reveal |
 | Pause announcements (Investigador, Apostador, Atirador) | everyone | TV | when announced |
 
 Refusals that could leak: sharing is offered only with players in the same room, and the phone
@@ -92,6 +94,23 @@ Carmim copy):
   to the other room; not in the last round); Mandachuva (Prata, Mastermind); Anarquista (Prata);
   Lacaio (Prata, Minion); Embaixador ×2 (Envoy: outside both rooms, immune, never leader,
   hostage, voter or target; announced on the TV).
+- **Atuação (0.3.0, ×2 each):** Santo (Angel, starts "sincero"), Mentiroso (Demon, "mentiroso"),
+  Vendado (Blind), Sorridente (Clown), Mudo (Mime), Fofoqueiro (Paparazzo).
+- **Condições (0.3.0, ×2 each):** Tímido (Shy Guy, "tímido": no reveals at all), Recatado (Coy Boy,
+  colour shares only), Paranoico (one voluntary card share per match), Terapeuta (Psychologist:
+  shows its card; a player with a psych condition may accept a curing card share), Chantagista
+  (Criminal → "tímido"), Trapaceiro (Dealer → "tolo"), Capanga (Thug → "recatado"), Mordaça (Mummy →
+  "calado": no spoken powers), Golpista (Conman: an accepted colour share becomes mutual full
+  reveals), Negociador ("esperto": card shares only), Intocável (Invincible/Immunologist: immune).
+- **Caos (0.3.0):** Contagiado (Zombie, green: infection spreads through any share; the infected
+  win if everyone standing is infected), Trevo da Sorte (Leprechaun, green, starts "tolo": any
+  share swaps cards, never back to a former holder; the holder wins), Bêbado (Drunk: a card is set
+  aside at the deal and swapped in at the start of the last round).
+
+Condition rules: forced shares (Federal, Cobrador, Terapeuta) ignore conditions and don't use up
+the paranoid's share; honest/liar and tolo vs tímido/recatado/paranoico cancel like love/hate; the
+Boticário clears all; immune players never get any. The Contagiado can't be dealt with the
+Intocável (mesa error).
 
 Cross-cutting rules from the source: powers are mandatory; a share asked for and accepted must
 happen (the app does it); a new card is a clean card (conditions cleared); "in love" + "in hate"
@@ -180,5 +199,10 @@ the two rooms through a call or screen share).
 - The card hides again whenever the phase changes (tap to peek); the power controls only show
   while the card is open.
 - Dinamite / Guarda-costas still go through the pause steps before the reveal.
-- Acting characters, psych conditions, Zombie, Leprechaun, Drunk and other cards outside the four
-  groups are not in v1.
+- Acting cards (Santo, Mentiroso, Vendado, Sorridente, Mudo, Fofoqueiro) only show their rule:
+  the table enforces them. Recatado may not *show* its colour either (only colour share).
+- The Bêbado's sober card is chosen among non-linked, non-Envoy cards, and swapped in by the app at
+  the start of the last round (nothing to forget).
+- Tolo auto-accepts card and colour shares the player's other conditions allow (the Tirano too).
+- A refused share says only "recusou"; a player whose condition forbids accepting sees Accept
+  disabled (in the physical game they would say so themselves).
