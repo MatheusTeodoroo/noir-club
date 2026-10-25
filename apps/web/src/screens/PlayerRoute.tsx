@@ -26,16 +26,24 @@ function loadProfile(): Profile | null {
 export function PlayerRoute() {
   const code = normalizeRoomCode(useParams().code ?? '');
   const joinedKey = storageKey(`mp.joined.${code}`);
-  const [profile, setProfile] = useState<Profile | null>(() =>
-    sessionStorage.getItem(joinedKey) ? loadProfile() : null,
-  );
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    try {
+      return sessionStorage.getItem(joinedKey) ? loadProfile() : null;
+    } catch {
+      return null;
+    }
+  });
 
   if (!profile) {
     return (
       <JoinForm
         onJoin={(p) => {
-          localStorage.setItem(storageKey('mp.profile'), JSON.stringify(p));
-          sessionStorage.setItem(joinedKey, '1');
+          try {
+            localStorage.setItem(storageKey('mp.profile'), JSON.stringify(p));
+            sessionStorage.setItem(joinedKey, '1');
+          } catch {
+            /* storage blocked (embedded browsers): the seat lasts this visit */
+          }
           setProfile(p);
         }}
       />

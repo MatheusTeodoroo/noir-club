@@ -5,9 +5,14 @@
 
 let ctx: AudioContext | null = null;
 
+/** Starts audio after a user gesture. Embedded browsers without Web Audio simply stay silent. */
 export function unlockAudio() {
-  ctx ??= new AudioContext();
-  if (ctx.state === 'suspended') void ctx.resume();
+  try {
+    ctx ??= new AudioContext();
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => {});
+  } catch {
+    /* no audio on this device */
+  }
 }
 
 export function audioReady() {

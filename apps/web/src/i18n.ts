@@ -86,6 +86,9 @@ const pt = {
     'Noir Club é um projeto independente de jogos sociais. Se algum conteúdo aqui é seu e foi usado sem permissão, envie uma reivindicação de direitos autorais.',
   'links.opensNewTab': 'abre em nova aba',
   'results.feedback': 'Algo deu errado ou tem uma ideia?',
+  'crash.title': 'Algo deu errado',
+  'crash.hint': 'Este navegador encontrou um erro. Recarregue; se continuar, reporte o bug com a mensagem abaixo.',
+  'crash.reload': 'Recarregar',
 } as const;
 
 type Key = keyof typeof pt;
@@ -174,6 +177,9 @@ const en: Record<Key, string> = {
     'Noir Club is an independent social-games project. If any content here is yours and was used without permission, submit a copyright claim.',
   'links.opensNewTab': 'opens in a new tab',
   'results.feedback': 'Something went wrong or have an idea?',
+  'crash.title': 'Something went wrong',
+  'crash.hint': 'This browser hit an error. Reload; if it keeps happening, report the bug with the message below.',
+  'crash.reload': 'Reload',
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { 'pt-BR': pt, en };
