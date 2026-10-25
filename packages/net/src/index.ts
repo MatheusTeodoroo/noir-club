@@ -29,12 +29,7 @@ function randomToken(bytes: number) {
   return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** Identities for this page's lifetime, so blocked storage still keeps one identity per key. */
-const memoryIdentities = new Map<string, Identity>();
-
 export function getIdentity(storageKey = 'mp.identity'): Identity {
-  const remembered = memoryIdentities.get(storageKey);
-  if (remembered) return remembered;
   try {
     const raw = localStorage.getItem(storageKey);
     if (raw) {
@@ -45,7 +40,6 @@ export function getIdentity(storageKey = 'mp.identity'): Identity {
     /* storage unavailable */
   }
   const fresh = { id: randomToken(8), secret: randomToken(16) };
-  memoryIdentities.set(storageKey, fresh);
   try {
     localStorage.setItem(storageKey, JSON.stringify(fresh));
   } catch {

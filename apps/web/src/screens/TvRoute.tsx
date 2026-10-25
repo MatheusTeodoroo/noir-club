@@ -26,15 +26,6 @@ function loadPairing(): Pairing | null {
   }
 }
 
-/** Storage can be blocked (embedded browsers, private modes): the pairing then lasts this visit. */
-function store(write: () => void) {
-  try {
-    write();
-  } catch {
-    /* ignore */
-  }
-}
-
 /**
  * The TV entry point. One tap (to unlock audio), then it shows a pairing code and waits for the
  * Host to claim it. After that it never needs input again and reconnects on its own.
@@ -59,7 +50,7 @@ export function TvRoute() {
     return (
       <PairingScreen
         onPaired={(p) => {
-          store(() => localStorage.setItem(KEY, JSON.stringify(p)));
+          localStorage.setItem(KEY, JSON.stringify(p));
           setPairing(p);
         }}
       />
@@ -69,7 +60,7 @@ export function TvRoute() {
     <PairedTv
       pairing={pairing}
       onReset={() => {
-        store(() => localStorage.removeItem(KEY));
+        localStorage.removeItem(KEY);
         setPairing(null);
       }}
     />

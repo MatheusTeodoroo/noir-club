@@ -1,5 +1,4 @@
 /// <reference lib="webworker" />
-import '../compat.ts';
 import { EngineRuntime, type EngineState, type RuntimeOut } from '@mp/engine';
 import type { GameLogic } from '@mp/game-sdk';
 import type { ClientId, ClientInfo, GameRef } from '@mp/protocol';

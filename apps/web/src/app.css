@@ -16,7 +16,6 @@
   display: grid;
   gap: 16px;
   align-content: start;
-  min-height: 100vh;
   min-height: 100dvh;
 }
 
@@ -192,10 +191,7 @@
 
 .tv-lobby {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   margin: auto;
   width: 80em;
   height: 45em;
@@ -303,10 +299,6 @@
   padding: 1.5em 1.9em;
   border-radius: var(--radius-lg);
   background: linear-gradient(180deg, rgba(34, 21, 31, 0.85), rgba(12, 8, 16, 0.92));
-  /* Plain gold first for browsers without color-mix (older embedded Chromium). */
-  box-shadow:
-    0 0 0 1px rgba(212, 175, 55, 0.55),
-    0 1.2em 3em -1.6em rgba(212, 175, 55, 0.7);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--accent, var(--gold)) 55%, transparent),
     0 1.2em 3em -1.6em color-mix(in srgb, var(--accent, var(--gold)) 70%, transparent);
@@ -485,10 +477,7 @@
 
 .picker {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   z-index: 60;
   background: rgba(5, 3, 7, 0.92);
   backdrop-filter: blur(6px);
@@ -632,25 +621,4 @@
   top: max(12px, env(safe-area-inset-top));
   right: 16px;
   z-index: 5;
-}
-
-/* Root error screen (main.tsx): shown instead of a blank page when the app crashes. */
-.crash-screen {
-  min-height: 100vh;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 16px;
-  padding: 24px 16px;
-  text-align: center;
-}
-
-.crash-screen code {
-  max-width: 40em;
-  padding: 8px 12px;
-  border-radius: var(--radius);
-  background: rgba(200, 16, 46, 0.15);
-  color: var(--crimson-hi);
-  font-size: 0.85rem;
-  word-break: break-word;
 }
