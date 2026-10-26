@@ -1,0 +1,76 @@
+{
+  "id": "cadeia-alimentar",
+  "version": "0.1.0",
+  "name": {
+    "pt-BR": "Cadeia Alimentar",
+    "en": "Food Chain"
+  },
+  "description": {
+    "pt-BR": "Treze animais, quatro áreas, quatro rodadas: devore, esconda-se e cumpra o objetivo secreto do seu bicho.",
+    "en": "Thirteen animals, four areas, four rounds: hunt, hide and meet your animal's secret goal."
+  },
+  "minPlayers": 13,
+  "maxPlayers": 13,
+  "usesDealer": false,
+  "estimatedMinutes": 20,
+  "accent": "#3f7a4f",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
+      "key": "setupSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Tempo de cada passo inicial: animal, espiar, palpite (s)",
+        "en": "Time for each opening step: animal, peek, guess (s)"
+      },
+      "min": 15,
+      "max": 90,
+      "step": 5,
+      "default": 30
+    },
+    {
+      "key": "talkSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Conversa antes de cada rodada (s)",
+        "en": "Talk before each round (s)"
+      },
+      "min": 30,
+      "max": 300,
+      "step": 15,
+      "default": 90
+    },
+    {
+      "key": "moveSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Tempo para escolher a área (s)",
+        "en": "Time to choose an area (s)"
+      },
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "default": 20
+    },
+    {
+      "key": "attackSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Duração da caçada (s)",
+        "en": "Hunt duration (s)"
+      },
+      "min": 20,
+      "max": 120,
+      "step": 5,
+      "default": 45
+    }
+  ]
+}
