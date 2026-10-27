@@ -1,0 +1,63 @@
+{
+  "id": "testa-a-testa",
+  "version": "0.1.0",
+  "name": {
+    "pt-BR": "Testa a Testa",
+    "en": "Browbeat"
+  },
+  "description": {
+    "pt-BR": "Um duelo de pôquer em que você vê a carta do rival, mas nunca a sua. Aposte, blefe — e não fuja com um 10 na testa.",
+    "en": "A poker duel where you see your rival's card but never your own. Bet, bluff — and never fold with a 10 on your brow."
+  },
+  "minPlayers": 2,
+  "maxPlayers": 2,
+  "usesDealer": false,
+  "estimatedMinutes": 10,
+  "accent": "#b3263a",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
+      "key": "chips",
+      "type": "number",
+      "label": {
+        "pt-BR": "Fichas iniciais",
+        "en": "Starting chips"
+      },
+      "min": 5,
+      "max": 100,
+      "step": 5,
+      "default": 20
+    },
+    {
+      "key": "rounds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Rodadas",
+        "en": "Rounds"
+      },
+      "min": 3,
+      "max": 30,
+      "default": 10
+    },
+    {
+      "key": "turnSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Tempo por jogada (s)",
+        "en": "Time per move (s)"
+      },
+      "min": 15,
+      "max": 90,
+      "step": 5,
+      "default": 30
+    }
+  ]
+}
