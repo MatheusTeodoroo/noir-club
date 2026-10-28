@@ -1,0 +1,40 @@
+{
+  "id": "onix-marfim",
+  "version": "0.1.0",
+  "name": {
+    "pt-BR": "Ônix & Marfim",
+    "en": "Onyx & Ivory"
+  },
+  "description": {
+    "pt-BR": "Nove pedras, de 0 a 8. Você só vê a cor da pedra do rival — nunca o número. Nove rodadas para ler o duelo.",
+    "en": "Nine stones, 0 to 8. You only see the colour of your rival's stone — never its number. Nine rounds to read the duel."
+  },
+  "minPlayers": 2,
+  "maxPlayers": 2,
+  "usesDealer": false,
+  "estimatedMinutes": 6,
+  "accent": "#c9b88a",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
+      "key": "turnSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Tempo por jogada (s)",
+        "en": "Time per move (s)"
+      },
+      "min": 15,
+      "max": 90,
+      "step": 5,
+      "default": 45
+    }
+  ]
+}

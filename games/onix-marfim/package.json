@@ -1,0 +1,11 @@
+{
+  "name": "@mp/game-onix-marfim",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@mp/game-sdk": "*"
+  },
+  "devDependencies": {
+    "@mp/engine": "*"
+  }
+}
