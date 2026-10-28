@@ -1,0 +1,40 @@
+{
+  "id": "onix-marfim-ii",
+  "version": "0.1.0",
+  "name": {
+    "pt-BR": "Ônix & Marfim II",
+    "en": "Onyx & Ivory II"
+  },
+  "description": {
+    "pt-BR": "99 pontos para nove rodadas. Aposte quanto quiser — o rival só vê se foi ônix (um dígito) ou marfim (dois) e a sua lâmpada se apagando.",
+    "en": "99 points for nine rounds. Bid what you like — your rival only sees onyx (one digit) or ivory (two) and your lamp dimming."
+  },
+  "minPlayers": 2,
+  "maxPlayers": 2,
+  "usesDealer": false,
+  "estimatedMinutes": 8,
+  "accent": "#c9b88a",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
+      "key": "turnSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Tempo por aposta (s)",
+        "en": "Time per bid (s)"
+      },
+      "min": 15,
+      "max": 90,
+      "step": 5,
+      "default": 45
+    }
+  ]
+}
