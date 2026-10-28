@@ -1,0 +1,11 @@
+{
+  "name": "@mp/game-flip-side",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@mp/game-sdk": "*"
+  },
+  "devDependencies": {
+    "@mp/engine": "*"
+  }
+}

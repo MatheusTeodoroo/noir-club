@@ -1,0 +1,63 @@
+{
+  "id": "flip-side",
+  "version": "0.1.0",
+  "name": {
+    "pt-BR": "Frente e Verso",
+    "en": "Flip Side"
+  },
+  "description": {
+    "pt-BR": "Cada carta tem duas faces: a frente todos veem, o verso só você. Escolha o lado, aposte — ou jure que os dois lados vencem.",
+    "en": "Every card has two faces: everyone sees the front, only you see the back. Pick a side and bet — or swear both sides win."
+  },
+  "minPlayers": 2,
+  "maxPlayers": 2,
+  "usesDealer": false,
+  "estimatedMinutes": 15,
+  "accent": "#c9a227",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
+      "key": "chips",
+      "type": "number",
+      "label": {
+        "pt-BR": "Fichas iniciais",
+        "en": "Starting chips"
+      },
+      "min": 5,
+      "max": 100,
+      "step": 5,
+      "default": 30
+    },
+    {
+      "key": "rounds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Rodadas",
+        "en": "Rounds"
+      },
+      "min": 3,
+      "max": 40,
+      "default": 15
+    },
+    {
+      "key": "turnSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Tempo por jogada (s)",
+        "en": "Time per move (s)"
+      },
+      "min": 15,
+      "max": 90,
+      "step": 5,
+      "default": 30
+    }
+  ]
+}
