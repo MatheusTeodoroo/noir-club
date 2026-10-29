@@ -1,0 +1,52 @@
+{
+  "id": "meio-a-meio",
+  "version": "0.1.0",
+  "name": {
+    "pt-BR": "Meio a Meio",
+    "en": "Fifty-Fifty"
+  },
+  "description": {
+    "pt-BR": "Escreva um dilema com duas respostas e tente rachar a sala exatamente ao meio.",
+    "en": "Write a dilemma with two answers and try to split the room right down the middle."
+  },
+  "minPlayers": 5,
+  "maxPlayers": 16,
+  "usesDealer": false,
+  "estimatedMinutes": 15,
+  "accent": "#d4af37",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
+      "key": "writeSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Tempo para escrever a pergunta (s)",
+        "en": "Time to write the question (s)"
+      },
+      "min": 30,
+      "max": 180,
+      "step": 15,
+      "default": 75
+    },
+    {
+      "key": "voteSeconds",
+      "type": "number",
+      "label": {
+        "pt-BR": "Tempo para votar (s)",
+        "en": "Time to vote (s)"
+      },
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "default": 25
+    }
+  ]
+}

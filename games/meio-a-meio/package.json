@@ -1,0 +1,7 @@
+{
+  "name": "@mp/game-meio-a-meio",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@mp/game-sdk": "*" },
+  "devDependencies": { "@mp/engine": "*" }
+}
