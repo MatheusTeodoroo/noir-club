@@ -15,17 +15,23 @@ export interface RegistryEntry {
 
 // `examples/` (reference games, e.g. the Dealer demo) load only in test servers started with
 // VITE_INCLUDE_EXAMPLES=1; they never reach the lobby list or the production build.
+// The dev globs sit behind `import.meta.env.DEV` so the production build drops them: otherwise
+// every manifest would be inlined in the main bundle and every game emitted as an unused chunk.
 const withExamples = import.meta.env.DEV && import.meta.env.VITE_INCLUDE_EXAMPLES === '1';
-const devManifests = {
-  ...import.meta.glob<GameManifest>('@games/*/manifest.json', { eager: true, import: 'default' }),
-  ...(withExamples
-    ? import.meta.glob<GameManifest>('@examples/*/manifest.json', { eager: true, import: 'default' })
-    : {}),
-};
-const devUi = {
-  ...import.meta.glob<{ default: GameUI }>('@games/*/src/ui.tsx'),
-  ...(withExamples ? import.meta.glob<{ default: GameUI }>('@examples/*/src/ui.tsx') : {}),
-};
+const devManifests = import.meta.env.DEV
+  ? {
+      ...import.meta.glob<GameManifest>('@games/*/manifest.json', { eager: true, import: 'default' }),
+      ...(withExamples
+        ? import.meta.glob<GameManifest>('@examples/*/manifest.json', { eager: true, import: 'default' })
+        : {}),
+    }
+  : {};
+const devUi = import.meta.env.DEV
+  ? {
+      ...import.meta.glob<{ default: GameUI }>('@games/*/src/ui.tsx'),
+      ...(withExamples ? import.meta.glob<{ default: GameUI }>('@examples/*/src/ui.tsx') : {}),
+    }
+  : {};
 
 let registry: Promise<RegistryEntry[]> | null = null;
 

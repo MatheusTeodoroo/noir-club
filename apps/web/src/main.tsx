@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { StrictMode, useCallback, useEffect, useState } from 'react';
+import { lazy, StrictMode, Suspense, useCallback, useEffect, useState } from 'react';
 import * as jsxRuntime from 'react/jsx-runtime';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router';
@@ -8,8 +8,9 @@ import type { Lang } from '@mp/protocol';
 import { detectLang, LangContext, saveLang, SetLangContext } from './i18n.ts';
 import { detectQuality } from './quality.ts';
 import { Home } from './screens/Home.tsx';
-import { PlayerRoute } from './screens/PlayerRoute.tsx';
-import { TvRoute } from './screens/TvRoute.tsx';
+// Each screen is its own chunk: the home page doesn't download the room or the TV.
+const PlayerRoute = lazy(() => import('./screens/PlayerRoute.tsx').then((m) => ({ default: m.PlayerRoute })));
+const TvRoute = lazy(() => import('./screens/TvRoute.tsx').then((m) => ({ default: m.TvRoute })));
 import './app.css';
 
 // Production game bundles resolve `react` and `react/jsx-runtime` to this shared instance
@@ -31,12 +32,20 @@ function App() {
       <LangContext.Provider value={lang}>
         <SetLangContext.Provider value={setLang}>
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/r/:code" element={<PlayerRoute />} />
-              <Route path="/tv" element={<TvRoute />} />
-              <Route path="*" element={<Home />} />
-            </Routes>
+            <Suspense
+              fallback={
+                <div className="screen-center">
+                  <div className="mp-spinner" />
+                </div>
+              }
+            >
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/r/:code" element={<PlayerRoute />} />
+                <Route path="/tv" element={<TvRoute />} />
+                <Route path="*" element={<Home />} />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </SetLangContext.Provider>
       </LangContext.Provider>

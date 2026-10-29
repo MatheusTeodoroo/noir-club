@@ -32,7 +32,18 @@ const pt = {
   'admin.pickGame': 'Escolher jogo',
   'admin.changeGame': 'Trocar jogo',
   'admin.searchGames': 'Buscar jogo',
-  'admin.fitsOnly': 'Só os que cabem na sala ({n})',
+  'admin.filters': 'Filtros',
+  'admin.filterAll': 'Todos',
+  'admin.filterDuel': 'Solo e duelo',
+  'admin.filterGroup': 'Grupos',
+  'admin.filterFits': 'Cabem na sala ({n})',
+  'admin.filterQuick': 'Até {n} min',
+  'admin.recent': 'Recentes',
+  'admin.allGames': 'Todos os jogos',
+  'admin.results': 'Resultados',
+  'admin.clearFilters': 'Limpar',
+  'admin.back': 'Voltar',
+  'admin.chooseThis': 'Escolher este jogo',
   'admin.noGamesFound': 'Nenhum jogo encontrado.',
   'admin.close': 'Fechar',
   'admin.selected': 'Escolhido',
@@ -120,7 +131,18 @@ const en: Record<Key, string> = {
   'admin.pickGame': 'Choose a game',
   'admin.changeGame': 'Change game',
   'admin.searchGames': 'Search games',
-  'admin.fitsOnly': 'Only games that fit the room ({n})',
+  'admin.filters': 'Filters',
+  'admin.filterAll': 'All',
+  'admin.filterDuel': 'Solo & duel',
+  'admin.filterGroup': 'Groups',
+  'admin.filterFits': 'Fit the room ({n})',
+  'admin.filterQuick': 'Up to {n} min',
+  'admin.recent': 'Recent',
+  'admin.allGames': 'All games',
+  'admin.results': 'Results',
+  'admin.clearFilters': 'Clear',
+  'admin.back': 'Back',
+  'admin.chooseThis': 'Choose this game',
   'admin.noGamesFound': 'No games found.',
   'admin.close': 'Close',
   'admin.selected': 'Chosen',
@@ -224,7 +246,7 @@ export function useT() {
 
 /** "4–12", or "4–12 · pares" when the game only starts with every second count. */
 export function playerRange(m: Pick<GameManifest, 'minPlayers' | 'maxPlayers' | 'playerStep'>, t: T) {
-  const range = `${m.minPlayers}–${m.maxPlayers}`;
+  const range = m.minPlayers === m.maxPlayers ? `${m.minPlayers}` : `${m.minPlayers}–${m.maxPlayers}`;
   const step = m.playerStep ?? 1;
   if (step <= 1) return range;
   return step === 2 && m.minPlayers % 2 === 0 ? `${range} · ${t('lobby.even')}` : `${range} · +${step}`;

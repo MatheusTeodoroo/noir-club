@@ -517,12 +517,91 @@
 
 .picker-tools {
   display: grid;
-  gap: 4px;
+  gap: 10px;
 }
 
-.picker-list {
+/* One scrollable row of filter chips; it bleeds to the screen edges on phones. */
+.picker-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 -16px;
+  padding: 2px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.picker-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.picker-filters-sep {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+}
+
+.picker-filter {
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font: 500 0.82rem var(--font-ui);
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 150ms,
+    color 150ms,
+    box-shadow 150ms;
+}
+
+.picker-filter[aria-pressed='true'] {
+  color: var(--ink-0);
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold));
+  box-shadow: none;
+}
+
+.picker-section {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+}
+
+.picker-section .section-title {
+  margin: 0;
+}
+
+.picker-count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.picker-count-n {
+  color: var(--text-mute);
+  font-family: var(--font-ui);
+  letter-spacing: 0.04em;
+}
+
+.picker-clear {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--gold-hi);
+  font: 500 0.78rem var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
 }
 
 .picker-empty {
@@ -530,12 +609,94 @@
   padding: 24px 0;
 }
 
-.picker-chosen {
-  margin-left: 8px;
-  vertical-align: middle;
-  font-family: var(--font-ui);
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
+/* Compact game tile: the accent colour runs down the left edge. */
+.game-tile {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  gap: 10px;
+  min-height: 92px;
+  padding: 12px 12px 10px 14px;
+  border: 0;
+  border-radius: 14px;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  background:
+    linear-gradient(90deg, var(--accent, var(--gold)) 0 3px, transparent 3px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+  box-shadow: 0 0 0 1px var(--line) inset;
+  transition:
+    box-shadow 150ms,
+    transform 150ms var(--ease-out);
+}
+
+.game-tile:active {
+  transform: scale(0.97);
+}
+
+.game-tile[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 2px var(--gold) inset,
+    0 10px 30px -14px var(--gold);
+}
+
+.game-tile-name {
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  padding-right: 18px;
+}
+
+.game-tile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.game-tile-off {
+  color: var(--crimson-hi);
+}
+
+.game-tile-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: var(--gold-hi);
+  font-weight: 700;
+}
+
+.picker-details {
+  display: grid;
+  gap: 14px;
+  padding: 20px 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(34, 21, 31, 0.85), rgba(12, 8, 16, 0.92));
+  box-shadow:
+    0 0 0 1px var(--accent, var(--gold)) inset,
+    0 18px 50px -24px var(--accent, var(--gold));
+}
+
+.picker-details-name {
+  font-size: 1.7rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.picker-details-desc {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.picker-details-warn {
+  margin: 0;
+  color: var(--crimson-hi);
+  font-size: 0.85rem;
 }
 
 /* ---------- Language switch and form links ---------- */

@@ -1,5 +1,7 @@
 import {
   createContext,
+  lazy,
+  Suspense,
   useContext,
   useEffect,
   useRef,
@@ -8,7 +10,6 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
-import { useRive } from '@rive-app/react-webgl2';
 
 // ---------------------------------------------------------------------------
 // Contexts: room clock and rendering quality tier
@@ -375,16 +376,7 @@ export function GoldDust() {
 
 export type RiveValues = Record<string, string | number | boolean>;
 
-export function RiveView({
-  src,
-  artboard,
-  stateMachine = 'Main',
-  values,
-  trigger,
-  className,
-  style,
-  fallback,
-}: {
+export interface RiveViewProps {
   src: string;
   artboard?: string;
   stateMachine?: string;
@@ -392,47 +384,16 @@ export function RiveView({
   trigger?: { name: string; nonce: number | string };
   className?: string;
   style?: CSSProperties;
+  /** Shown while the Rive runtime loads and if the file fails to load. */
   fallback?: ReactNode;
-}) {
-  const tier = useQuality();
-  const [failed, setFailed] = useState(false);
-  const { rive, RiveComponent } = useRive(
-    failed
-      ? null
-      : {
-          src,
-          artboard,
-          stateMachine,
-          autoplay: true,
-          // Only bind a view model when the caller drives data; plain animations have none.
-          autoBind: !!values || !!trigger,
-          onLoadError: () => setFailed(true),
-        },
-    { useDevicePixelRatio: tier !== 'low' },
+}
+
+const RivePlayer = lazy(() => import('./rive.tsx'));
+
+export function RiveView(props: RiveViewProps) {
+  return (
+    <Suspense fallback={props.fallback ?? null}>
+      <RivePlayer {...props} />
+    </Suspense>
   );
-
-  useEffect(() => {
-    const vmi = rive?.viewModelInstance;
-    if (!vmi || !values) return;
-    for (const [key, v] of Object.entries(values)) {
-      if (typeof v === 'string') {
-        const p = vmi.string(key);
-        if (p) p.value = v;
-      } else if (typeof v === 'number') {
-        const p = vmi.number(key);
-        if (p) p.value = v;
-      } else {
-        const p = vmi.boolean(key);
-        if (p) p.value = v;
-      }
-    }
-  }, [rive, values]);
-
-  useEffect(() => {
-    if (!trigger) return;
-    rive?.viewModelInstance?.trigger(trigger.name)?.trigger();
-  }, [rive, trigger?.name, trigger?.nonce]);
-
-  if (failed) return <>{fallback ?? null}</>;
-  return <RiveComponent className={className} style={style} />;
 }

@@ -14,7 +14,8 @@ async function device(browser: Browser, path: string) {
 }
 
 async function joinAs(page: Page, name: string) {
-  await page.locator('input.mp-input').first().fill(name);
+  // The room screen is a lazy chunk: until it arrives the previous screen stays up.
+  await page.getByLabel('Apelido').fill(name);
   await page.getByRole('button', { name: /Sentar/ }).click();
 }
 
@@ -73,7 +74,8 @@ test('host, players, two displays and a dealer play a round; engine survives the
   // The Dealer demo lives in examples/ and is only listed by the e2e server (VITE_INCLUDE_EXAMPLES).
   await host.page.getByRole('button', { name: /Escolher jogo/ }).click();
   await host.page.getByRole('searchbox').fill('Número Secreto');
-  await host.page.locator('.picker .game-card').first().click();
+  await host.page.locator('.picker .game-tile').first().click();
+  await host.page.getByRole('button', { name: 'Escolher este jogo' }).click();
   await expect(tv1.page.getByText('Número Secreto').first()).toBeVisible();
   // Shorter discussion (60 → 15 s) and vote (30 → 10 s).
   const minus = host.page.getByRole('button', { name: '-' });
