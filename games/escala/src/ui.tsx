@@ -140,7 +140,8 @@ const CSS = `
 .eg-tv.dense{gap:.6em;padding-top:1.4em}
 .eg-tv.dense .eg-h1{font-size:2.6em}
 .eg-tv.dense .eg-sub{font-size:1.3em}
-.eg-tv.dense .eg-theme{padding:.4em 1.2em;gap:.2em}
+.eg-tv.dense .eg-theme,.eg-theme.slim{padding:.4em 1.2em;gap:.2em}
+.eg-theme.slim h2{font-size:1.8em}
 .eg-tv.dense .eg-theme h2{font-size:1.6em}
 .eg-tv.dense .eg-scale{font-size:1em}
 .eg-warn{font-size:1.2em;color:var(--crimson-hi);margin:.4em 0 0}
@@ -161,13 +162,16 @@ const CSS = `
 .eg-seats.many .eg-seat{width:7.6em}
 .eg-seat b{font-size:1.25em;font-weight:600;max-width:7em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .eg-seat small{font-family:var(--font-display);font-size:1.2em;color:var(--gold)}
-.eg-board{display:grid;gap:.7em;align-content:start;min-height:0;overflow:hidden}
-.eg-row{display:flex;flex-wrap:wrap;justify-content:center;align-content:flex-start;gap:.5em}
-.eg-row>.eg-card{width:calc(var(--cw) / var(--fs) * 1em);font-size:calc(var(--fs) * 1em)}
+.eg-board{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:.7em;min-height:0;overflow:hidden}
+.eg-board.top{grid-template-rows:auto minmax(0,1fr)}
+.eg-row{display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:.5em;min-height:0;overflow:hidden}
+.eg-row>.eg-card{width:calc(var(--cw) / var(--fs) * 1em);height:6.2em;box-sizing:border-box;font-size:calc(var(--fs) * 1em)}
 .eg-card{position:relative;display:grid;grid-template-rows:auto 1fr auto;gap:.25em;padding:.55em .6em .5em;min-height:5em;border-radius:.6em;
   background:linear-gradient(170deg,#1d1710,#0e0b08);box-shadow:0 0 0 1px var(--line-strong) inset,0 .3em .8em rgba(0,0,0,.4);animation:eg-rise .5s var(--ease-out) both}
 .eg-card .eg-pos{font-family:var(--font-display);font-size:.8em;color:var(--text-mute)}
-.eg-card .eg-clue{font-family:var(--font-serif);font-style:italic;font-size:1.15em;line-height:1.15;color:var(--text);overflow-wrap:anywhere}
+.eg-card .eg-clue{font-family:var(--font-serif);font-style:italic;font-size:1.15em;line-height:1.15;color:var(--text);overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.eg-card .eg-own span{overflow:hidden;text-overflow:ellipsis}
 .eg-card .eg-own{display:flex;align-items:center;gap:.3em;font-size:.8em;color:var(--text-dim);white-space:nowrap;overflow:hidden}
 .eg-val{position:absolute;top:.35em;right:.45em;font-family:var(--font-display);font-weight:900;font-size:1.6em;color:var(--gold-hi);animation:eg-flip .5s var(--ease-out) both}
 .eg-card.hit{box-shadow:0 0 0 .14em var(--ok) inset,0 0 1.2em rgba(90,200,120,.25);transition:box-shadow .4s}
@@ -272,19 +276,57 @@ function useWho(platform: DisplayProps['platform']) {
   };
 }
 
-/** Card size on the TV by how many cards are on the board. */
-function boardSize(n: number) {
-  if (n <= 8) return { cw: 15, fs: 1.5 };
-  if (n <= 16) return { cw: 11.5, fs: 1.2 };
-  if (n <= 32) return { cw: 8.6, fs: 0.95 };
-  if (n <= 40) return { cw: 6.6, fs: 0.72 };
-  if (n <= 64) return { cw: 5.6, fs: 0.6 };
-  return { cw: 4.7, fs: 0.5 };
+/** Card width (stage em) and text scale, largest first. */
+const CARD_SIZES: [cw: number, fs: number][] = [
+  [15, 1.5],
+  [13, 1.3],
+  [11.5, 1.15],
+  [10, 1],
+  [8.6, 0.9],
+  [7.4, 0.78],
+  [6.4, 0.68],
+  [5.6, 0.6],
+  [4.9, 0.52],
+  [4.3, 0.46],
+  [3.8, 0.4],
+];
+/** Card height in its own em (see .eg-row>.eg-card). */
+const CARD_H = 6.2;
+const CARD_GAP = 0.5;
+
+/**
+ * Picks the largest card size whose rows fit the space the board really has. TVs differ in
+ * resolution, aspect ratio and overscan, so a size chosen by card count alone can clip.
+ */
+function useCardFit(n: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState(CARD_SIZES[CARD_SIZES.length - 1]!);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      const em = parseFloat(getComputedStyle(el).fontSize) || 16;
+      const w = el.clientWidth / em;
+      const h = el.clientHeight / em;
+      const pick =
+        CARD_SIZES.find(([cw, fs]) => {
+          const cols = Math.max(1, Math.floor((w + CARD_GAP) / (cw + CARD_GAP)));
+          const rows = Math.ceil(n / cols);
+          return rows * (CARD_H * fs + CARD_GAP) - CARD_GAP <= h;
+        }) ?? CARD_SIZES[CARD_SIZES.length - 1]!;
+      setSize((prev) => (prev[0] === pick[0] ? prev : pick));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [n]);
+  return { ref, style: { ['--cw' as string]: size[0], ['--fs' as string]: size[1] } };
 }
 
-function ThemeBar({ theme, t }: { theme: Theme; t: T }) {
+function ThemeBar({ theme, t, slim }: { theme: Theme; t: T; slim?: boolean }) {
   return (
-    <div className="eg-theme mp-enter">
+    <div className={`eg-theme mp-enter ${slim ? 'slim' : ''}`}>
       <h2>{t(theme.title)}</h2>
       <div className="eg-scale">
         <span className="eg-end">
@@ -572,7 +614,11 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
           />
         )}
       </header>
-      {view.theme ? <ThemeBar theme={view.theme} t={t} /> : <div />}
+      {view.theme ? (
+        <ThemeBar theme={view.theme} t={t} slim={view.phase === 'sort' || view.phase === 'reveal'} />
+      ) : (
+        <div />
+      )}
 
       {view.phase === 'theme' && (
         <div className="eg-center">
@@ -647,7 +693,7 @@ function TvCard({
       <span className="eg-pos">{pos !== undefined ? pos : ''}</span>
       <span className="eg-clue">{card.clue ?? '—'}</span>
       <span className="eg-own">
-        {who.avatar} {who.name}
+        {who.avatar} <span>{who.name}</span>
       </span>
       {value !== undefined && shown && <span className="eg-val">{value}</span>}
     </div>
@@ -664,15 +710,15 @@ function SortBoard({ view, t, kit, platform }: Pick<DisplayProps<PublicView>, 'v
     view.mode === 'coop'
       ? view.order.map((id) => byId[id]!).filter(Boolean)
       : [...view.cards].sort((a, b) => (seat[a.owner] ?? 0) - (seat[b.owner] ?? 0));
-  const size = boardSize(list.length);
+  const fitted = useCardFit(list.length);
   return (
     <div className="eg-board">
-      <div className="eg-row" style={{ ['--cw' as string]: size.cw, ['--fs' as string]: size.fs }}>
+      <div className="eg-row" ref={fitted.ref} style={fitted.style}>
         {list.map((c, i) => (
           <TvCard key={c.id} card={c} pos={view.mode === 'coop' ? i + 1 : undefined} who={who(c.owner)} />
         ))}
       </div>
-      <div className="row wrap" style={{ gap: '.8em', justifyContent: 'center', marginTop: '.4em' }}>
+      <div className="row wrap" style={{ gap: '.8em', justifyContent: 'center' }}>
         <span className="mp-eyebrow" style={{ fontSize: '1em' }}>
           {view.ready.length}/{players.filter((p) => p.connected).length} {t(L.ready)}
         </span>
@@ -708,13 +754,13 @@ function RevealBoard({
   const flips = result.leadMs + n * result.stepMs;
   const at = (ms: number) => elapsed >= ms;
   const flipped = (i: number) => at(result.leadMs + i * result.stepMs);
+  const fitted = useCardFit(n);
 
   if (result.coop) {
     const coop = result.coop;
-    const size = boardSize(n);
     return (
       <div className="eg-board">
-        <div className="eg-row" style={{ ['--cw' as string]: size.cw, ['--fs' as string]: size.fs }}>
+        <div className="eg-row" ref={fitted.ref} style={fitted.style}>
           {coop.order.map((id, i) => (
             <TvCard
               key={id}
@@ -727,19 +773,18 @@ function RevealBoard({
             />
           ))}
         </div>
-        {at(flips) && (
-          <div className="eg-score">
-            <p className="eg-big">{coop.accuracy}%</p>
-            <div className="eg-scoretext">
-              <span>{t(L.accuracy)}</span>
-              <em>
-                {coop.hits === n ? t(L.perfect) : fill(t(L.hits), { h: coop.hits, n })}
-                {view.accuracies.length > 1 &&
-                  ` · ${t(L.average)}: ${Math.round(view.accuracies.reduce((a, b) => a + b, 0) / view.accuracies.length)}%`}
-              </em>
-            </div>
+        {/* Space for the score is kept from the start, so the cards don't resize when it appears. */}
+        <div className="eg-score" style={{ visibility: at(flips) ? 'visible' : 'hidden' }}>
+          <p className="eg-big">{coop.accuracy}%</p>
+          <div className="eg-scoretext">
+            <span>{t(L.accuracy)}</span>
+            <em>
+              {coop.hits === n ? t(L.perfect) : fill(t(L.hits), { h: coop.hits, n })}
+              {view.accuracies.length > 1 &&
+                ` · ${t(L.average)}: ${Math.round(view.accuracies.reduce((a, b) => a + b, 0) / view.accuracies.length)}%`}
+            </em>
           </div>
-        )}
+        </div>
       </div>
     );
   }
@@ -751,11 +796,10 @@ function RevealBoard({
   const rowsFit = players.length > 10 ? 'slim' : '';
   // While cards flip: the correct order with every clue and value. Then: everyone's rows.
   if (!at(flips)) {
-    const size = boardSize(n);
     return (
-      <div className="eg-board">
+      <div className="eg-board top">
         <p className="eg-label">{t(L.correctRow)}</p>
-        <div className="eg-row" style={{ ['--cw' as string]: size.cw, ['--fs' as string]: size.fs }}>
+        <div className="eg-row" ref={fitted.ref} style={fitted.style}>
           {result.correct.map((id, i) => (
             <TvCard
               key={id}
