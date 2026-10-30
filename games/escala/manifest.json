@@ -1,6 +1,6 @@
 {
   "id": "escala",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "name": { "pt-BR": "Escala", "en": "Scale" },
   "description": {
     "pt-BR": "Cartas secretas de 1 a 100 e um tema na mesa. Descreva seus números com palavras e coloque tudo em ordem, juntos ou um contra o outro.",

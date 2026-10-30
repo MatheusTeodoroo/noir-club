@@ -26,7 +26,7 @@ refused or explained.
 |---|---|---|---|---|---|
 | intro (only with `tutorial`) | 5 min (safety net) | Host taps Start on the last slide or Skip; or the Host leaves | tutorial slide with a live demo beside it | Host: Back / Next / Skip; others: slide title | — |
 | theme | none (no limit, as requested) | master picks/writes | master, the 3 drawn options (draw) | master: pick 1 of 3 or write title + optional extremes; others wait | — |
-| clues | `clueSeconds` 60, **started only once at least half the connected players have clued all their cards** | every connected player clued all cards | theme + scale, seats with x/n progress | one clue per card (≤ 30 chars), editable until the phase ends | — |
+| clues | `clueSeconds` 60, **started only once at least half the connected players have clued all their cards** | every connected player clued all cards | theme + scale, seats with x/n progress | one clue per card (≤ 60 chars), editable until the phase ends | — |
 | sort | `sortSeconds` 180 | every connected player is Ready | coop: the shared row live; versus: all cards grouped by owner; ready avatars | reorder (tap-then-tap, ↑↓, drag handle), Ready toggle | — |
 | reveal | 2.5 s + one card per step (≤ 1.2 s, faster with many cards) + 7 s (coop) / 10 s (versus) | — | cards flip lowest→highest; coop: hit/miss + accuracy %; versus: correct order, then each player's row with hits and points | after the flips: own result | — |
 
@@ -37,7 +37,7 @@ refused or explained.
 | `tvRules {page | null}` | Host | any phase, page < RULES.length | shows a rules page over the TV, or clears it |
 | `pickTheme {index}` | master | theme, draw mode, 0–2 | sets theme, deals cards → clues |
 | `writeTheme {title, low?, high?}` | master | theme, write mode, title 1–60, extremes ≤ 24 | sets theme, deals cards → clues |
-| `clue {cardId, text}` | card owner | clues, 1–30 chars | sets/edits the clue; may start the half-table timer or end the phase |
+| `clue {cardId, text}` | card owner | clues, 1–60 chars | sets/edits the clue; may start the half-table timer or end the phase |
 | `move {cardId, to}` | anyone | sort | coop: moves on the shared row and clears everyone's Ready; versus: moves on own row and clears own Ready |
 | `ready {value}` | anyone | sort | toggles Ready; all connected Ready → reveal |
 
@@ -93,6 +93,6 @@ Nothing differs.
 ## Defaults chosen
 - "Half" means at least 50 % of connected players (so 1 of 2 starts the timer).
 - Theme bank: ~127 original themes in PT and EN; the bank reshuffles when every theme has been used.
-- Clue max 30 characters; written theme max 60, extremes max 24.
+- Clue max 60 characters (3 lines on a TV card); written theme max 60, extremes max 24.
 - Versus TV groups the cards by owner during sorting so players can find each other's clues.
 - No Rive; CSS animations in the same style as Middle Race and Incógnito.

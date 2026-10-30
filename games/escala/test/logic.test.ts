@@ -9,7 +9,7 @@ import game, {
   type PublicView,
   type State,
 } from '../src/logic.ts';
-import { PERFECT_BONUS } from '../src/shared.ts';
+import { CLUE_MAX, PERFECT_BONUS } from '../src/shared.ts';
 import { RULES, SLIDES } from '../src/texts.ts';
 
 type Room = ReturnType<typeof createTestRoom<State>>;
@@ -202,6 +202,15 @@ describe(game.manifest.name['pt-BR'], () => {
     expect(missing.every((c) => c.clue === null)).toBe(true);
   });
 
+  it('accepts clues up to the character limit', () => {
+    const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false } });
+    pickTheme(room);
+    const card = me(room, 'p1').mine[0]!;
+    const long = 'a'.repeat(CLUE_MAX);
+    room.act('p1', { type: 'clue', cardId: card.id, text: long });
+    expect(me(room, 'p1').mine[0]!.clue).toBe(long);
+  });
+
   it('lets a player edit a clue until the phase ends', () => {
     const room = createTestRoom<State>(game, { players: 3, config: { tutorial: false } });
     pickTheme(room);
@@ -334,7 +343,7 @@ describe(game.manifest.name['pt-BR'], () => {
     before = room.snapshot();
     const other = me(room, 'p2').mine[0]!;
     room.act('p1', { type: 'clue', cardId: other.id, text: 'not mine' });
-    room.act('p1', { type: 'clue', cardId: me(room, 'p1').mine[0]!.id, text: 'x'.repeat(31) });
+    room.act('p1', { type: 'clue', cardId: me(room, 'p1').mine[0]!.id, text: 'x'.repeat(CLUE_MAX + 1) });
     room.act('p1', { type: 'clue', cardId: me(room, 'p1').mine[0]!.id, text: '   ' });
     room.act('p1', { type: 'clue', cardId: 'zzz', text: 'ok' });
     room.act('p1', { type: 'move', cardId: 'c1', to: 0 });

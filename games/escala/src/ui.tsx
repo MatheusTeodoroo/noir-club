@@ -165,12 +165,12 @@ const CSS = `
 .eg-board{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:.7em;min-height:0;overflow:hidden}
 .eg-board.top{grid-template-rows:auto minmax(0,1fr)}
 .eg-row{display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:.5em;min-height:0;overflow:hidden}
-.eg-row>.eg-card{width:calc(var(--cw) / var(--fs) * 1em);height:6.2em;box-sizing:border-box;font-size:calc(var(--fs) * 1em)}
+.eg-row>.eg-card{width:calc(var(--cw) / var(--fs) * 1em);height:7.4em;box-sizing:border-box;font-size:calc(var(--fs) * 1em)}
 .eg-card{position:relative;display:grid;grid-template-rows:auto 1fr auto;gap:.25em;padding:.55em .6em .5em;min-height:5em;border-radius:.6em;
   background:linear-gradient(170deg,#1d1710,#0e0b08);box-shadow:0 0 0 1px var(--line-strong) inset,0 .3em .8em rgba(0,0,0,.4);animation:eg-rise .5s var(--ease-out) both}
 .eg-card .eg-pos{font-family:var(--font-display);font-size:.8em;color:var(--text-mute)}
 .eg-card .eg-clue{font-family:var(--font-serif);font-style:italic;font-size:1.15em;line-height:1.15;color:var(--text);overflow-wrap:anywhere;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .eg-card .eg-own span{overflow:hidden;text-overflow:ellipsis}
 .eg-card .eg-own{display:flex;align-items:center;gap:.3em;font-size:.8em;color:var(--text-dim);white-space:nowrap;overflow:hidden}
 .eg-val{position:absolute;top:.35em;right:.45em;font-family:var(--font-display);font-weight:900;font-size:1.6em;color:var(--gold-hi);animation:eg-flip .5s var(--ease-out) both}
@@ -276,22 +276,14 @@ function useWho(platform: DisplayProps['platform']) {
   };
 }
 
-/** Card width (stage em) and text scale, largest first. */
-const CARD_SIZES: [cw: number, fs: number][] = [
-  [15, 1.5],
-  [13, 1.3],
-  [11.5, 1.15],
-  [10, 1],
-  [8.6, 0.9],
-  [7.4, 0.78],
-  [6.4, 0.68],
-  [5.6, 0.6],
-  [4.9, 0.52],
-  [4.3, 0.46],
-  [3.8, 0.4],
-];
+/** Card width in its own em: wide enough for a full clue (CLUE_MAX) in three lines. */
+const CARD_W = 13.5;
 /** Card height in its own em (see .eg-row>.eg-card). */
-const CARD_H = 6.2;
+const CARD_H = 7.4;
+/** Card width (stage em) and text scale, largest first. */
+const CARD_SIZES: [cw: number, fs: number][] = [1.5, 1.3, 1.15, 1, 0.9, 0.78, 0.68, 0.6, 0.52, 0.46, 0.4].map(
+  (fs) => [CARD_W * fs, fs],
+);
 const CARD_GAP = 0.5;
 
 /**

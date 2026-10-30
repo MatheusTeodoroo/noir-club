@@ -148,8 +148,8 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
         'The deck has 100 cards, 1 to 100, no repeats. Each player gets **1 card by default**; the Host can deal more, up to 100 ÷ players (10 players: up to 10 cards). Asking for more is capped and the TV says so.',
       ),
       tx(
-        'Para cada carta, escreva uma **dica** de até 30 caracteres. Dá para trocar a dica até a fase acabar. Não diga nem escreva números: essa é a regra de honra do jogo.',
-        'For each card, write a **clue** of up to 30 characters. You can change it until the phase ends. Don’t say or write numbers: that’s the game’s honour rule.',
+        'Para cada carta, escreva uma **dica** de até 60 caracteres. Dá para trocar a dica até a fase acabar. Não diga nem escreva números: essa é a regra de honra do jogo.',
+        'For each card, write a **clue** of up to 60 characters. You can change it until the phase ends. Don’t say or write numbers: that’s the game’s honour rule.',
       ),
       tx(
         'A TV mostra só quantas dicas cada um já escreveu. As dicas aparecem todas juntas quando a fase acaba.',
