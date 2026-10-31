@@ -107,7 +107,14 @@ they stay put. Cops' turn: they lose their turn. Vote: their vote is missing; th
 once every connected cop voted. Disconnected players are skipped when their turn comes.
 
 ## Remote players
-Nothing specific: the game is built for one house with separate rooms.
+Built for one house with separate rooms. Fully remote, each space becomes a voice call (Discord,
+TeamSpeak…) and the Host turns on **remote screens**:
+- `playerSpace`: every phone says which space to be in — the side whose turn it is (placing,
+  thieves, a squad, or the one called in the intermission) goes to its room, everyone else to the
+  hall; in the vote every side is in its own room.
+- `dealerAudience`: the thieves, who may open the standing Dealer board (`dealerIdleView`) on their
+  own screens at /dealer. Everyone may open the public TV at /display.
+In person (option off) nothing changes.
 
 ## Edge cases
 Both thieves on one stop → one arrest catches both. A team with every member offline is skipped.

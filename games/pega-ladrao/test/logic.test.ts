@@ -343,3 +343,28 @@ describe('tutorial and rules', () => {
     }
   });
 });
+
+describe('remote screens (Host option)', () => {
+  const where = (room: Room, id: string) => room.playerFrame(id)!.platform.space?.['pt-BR'] ?? null;
+
+  it('is off unless the Host turns it on', () => {
+    const room = playing({ players: 7 });
+    expect(where(room, 'p1')).toBeNull();
+  });
+
+  it('sends each player to their salão, the exiles to the Terrace at night and to their new salão in the swap', () => {
+    const room = playing({ players: 7 });
+    room.engine.action('p1', { type: 'setSettings', remoteScreens: true }, room.now);
+    for (const id of members(room, 'nobre')) expect(where(room, id)).toBe('Salão Nobre');
+    for (const id of members(room, 'prive')) expect(where(room, id)).toBe('Salão Privé');
+    allReady(room);
+    const ex = exileBy(room, (_s, ids) => ids[0]!);
+    expect(pub(room).phase).toBe('noite');
+    expect(where(room, ex.nobre)).toBe('Terraço');
+    expect(where(room, ex.prive)).toBe('Terraço');
+    room.advance(60_001);
+    expect(pub(room).phase).toBe('troca');
+    expect(where(room, ex.nobre)).toBe('Salão Privé');
+    expect(where(room, ex.prive)).toBe('Salão Nobre');
+  });
+});

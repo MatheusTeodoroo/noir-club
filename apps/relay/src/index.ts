@@ -79,6 +79,12 @@ export default {
       return env.ROOMS.get(env.ROOMS.idFromName(code)).fetch(request);
     }
 
+    const pairRole = path.match(/^\/api\/pair\/([A-Za-z]{4})$/);
+    if (pairRole) {
+      const code = pairRole[1]!.toUpperCase();
+      return env.PAIRING.get(env.PAIRING.idFromName('global')).fetch(`https://pair/role?code=${code}`);
+    }
+
     if (path === '/ws/pair') {
       return env.PAIRING.get(env.PAIRING.idFromName('global')).fetch(request);
     }

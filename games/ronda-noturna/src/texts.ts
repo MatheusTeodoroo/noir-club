@@ -6,6 +6,15 @@ import type { I18nText } from '@mp/game-sdk';
 
 const tx = (pt: string, en: string): I18nText => ({ 'pt-BR': pt, en });
 
+/** The five spaces of the house; with remote screens on, phones say which one to be in. */
+export const SPACES = {
+  hall: tx('Corredor', 'Hall'),
+  thieves: tx('Sala dos ladrões', "Thieves' room"),
+  red: tx('Sala Vermelha', 'Red room'),
+  blue: tx('Sala Azul', 'Blue room'),
+  green: tx('Sala Verde', 'Green room'),
+} satisfies Record<string, I18nText>;
+
 /**
  * Tutorial slides on the TV before the role briefing; the Host advances them from the phone.
  * `demo` names the live illustration the TV draws beside the text with the game's own pieces.

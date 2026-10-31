@@ -61,6 +61,8 @@ export interface EngineState {
   rng: number;
   lang: Lang;
   sharedHost: boolean;
+  /** Host option for remote play (personal TV / team Dealer screens, room notices). Absent in old snapshots. */
+  remoteScreens?: boolean;
   phase: RoomPhase;
   clients: Record<ClientId, ClientInfo>;
   players: Record<ClientId, PlayerRecord>;
@@ -96,6 +98,7 @@ export function initialState(seed: number): EngineState {
     rng: seed >>> 0,
     lang: 'pt-BR',
     sharedHost: false,
+    remoteScreens: false,
     phase: 'lobby',
     clients: {},
     players: {},
@@ -223,6 +226,7 @@ export class Engine {
       case 'setSettings':
         if (admin) {
           if (a.lang) s.lang = a.lang;
+          if (a.remoteScreens !== undefined) s.remoteScreens = a.remoteScreens;
           if (a.sharedHost !== undefined && a.sharedHost !== s.sharedHost) {
             s.sharedHost = a.sharedHost;
             this.fx.relay.push({ t: 'e:mode', sharedHost: a.sharedHost });
@@ -687,6 +691,7 @@ export class Engine {
       phase: s.phase,
       lang: s.lang,
       sharedHost: s.sharedHost,
+      remoteScreens: !!s.remoteScreens,
       players: s.order
         .map((id) => s.players[id])
         .filter((p): p is PlayerRecord => !!p)
@@ -715,6 +720,9 @@ export class Engine {
 
     const publicGame = hasGame ? this.logic!.publicView(matchState, ctx) : null;
     const privates: Frames['privates'] = new Map();
+    // Remote screens: who may watch the team Dealer board, computed once per frame.
+    const remote = !!s.remoteScreens && !!hasGame && s.phase === 'playing';
+    const audience = remote && this.logic?.dealerIdleView ? new Set(this.logic.dealerAudience?.(matchState, ctx) ?? []) : new Set<ClientId>();
 
     for (const c of clients) {
       if (!c.connected) continue;
@@ -752,6 +760,8 @@ export class Engine {
             remote: p.remote,
             dealer,
             canRequestDealer,
+            teamDealer: remote && inMatch && !!this.logic?.dealerAudience && !!this.logic.dealerIdleView,
+            space: remote && inMatch ? (this.logic!.playerSpace?.(matchState, c.id, ctx) ?? null) : null,
           },
           game: hasGame && inMatch ? this.logic!.playerView(matchState, c.id, ctx) : null,
           dealerGame,
@@ -783,6 +793,15 @@ export class Engine {
               : !cur && s.phase === 'playing' && hasGame && this.logic?.dealerIdleView
                 ? this.logic.dealerIdleView(matchState, ctx)
                 : null,
+        });
+      } else if (c.role === 'viewer' && c.view === 'dealer') {
+        // A remote player's own Dealer screen: only the standing board, only for the game's audience.
+        const allowed = !!c.owner && audience.has(c.owner) && !s.dealer.current;
+        privates.set(c.id, {
+          kind: 'dealer',
+          current: null,
+          queue: [],
+          game: allowed ? this.logic!.dealerIdleView!(matchState, ctx) : null,
         });
       }
     }

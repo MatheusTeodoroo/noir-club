@@ -690,4 +690,43 @@ describe(game.manifest.name['pt-BR'], () => {
       expect(pub(room).turn.actor).toBe(b);
     });
   });
+
+  describe('remote screens (Host option)', () => {
+    const remoteRoom = () => {
+      const room = newRoom();
+      room.engine.action('p1', { type: 'setSettings', remoteScreens: true }, room.now);
+      return room;
+    };
+    const space = (room: Room, id: string) => room.playerFrame(id)!.platform.space?.['pt-BR'];
+
+    it('is off unless the Host turns it on', () => {
+      const room = newRoom();
+      placeAll(room);
+      expect(room.playerFrame('p1')!.platform.space).toBeNull();
+      expect(room.playerFrame(st(room).thieves[0]!)!.platform.teamDealer).toBe(false);
+    });
+
+    it('offers "my Dealer" to every phone alike, so it gives no one away', () => {
+      const room = remoteRoom();
+      for (const id of room.ids) expect(room.playerFrame(id)!.platform.teamDealer).toBe(true);
+      expect(game.dealerAudience!(st(room), {} as never)).toEqual(st(room).thieves);
+    });
+
+    it('sends the side whose turn it is to its room and everyone else to the hall', () => {
+      const room = remoteRoom();
+      placeAll(room);
+      skipBreak(room);
+      const s = st(room);
+      expect(s.phase).toBe('thieves');
+      for (const id of s.thieves) expect(space(room, id)).toBe('Sala dos ladrões');
+      for (const id of cops(s)) expect(space(room, id)).toBe('Corredor');
+      // Cops' turn: the first squad goes to its room.
+      for (const id of [...s.thieves]) room.act(id, { type: 'move', path: [] });
+      skipBreak(room);
+      const team = st(room).groupSeq[st(room).groupIdx]!;
+      const roomName = { red: 'Sala Vermelha', blue: 'Sala Azul', green: 'Sala Verde' }[team];
+      for (const id of st(room).teams[team]) expect(space(room, id)).toBe(roomName);
+      for (const id of st(room).thieves) expect(space(room, id)).toBe('Corredor');
+    });
+  });
 });

@@ -14,7 +14,12 @@ import { z } from 'zod';
 export const PROTOCOL_VERSION = 1;
 
 export type ClientId = string;
-export type Role = 'player' | 'display' | 'dealer';
+/**
+ * `viewer`: a remote player's own screen (opened at /display or /dealer and paired from their
+ * phone while the Host has "remote screens" on). Shows the public board, or the team Dealer board
+ * when the game allows that player. Never runs the engine and isn't counted as a TV.
+ */
+export type Role = 'player' | 'display' | 'dealer' | 'viewer';
 export type Lang = 'pt-BR' | 'en';
 
 export interface ClientInfo {
@@ -24,6 +29,9 @@ export interface ClientInfo {
   avatar: string;
   connected: boolean;
   isAdmin: boolean;
+  /** Viewers only: the player this screen belongs to, and what it shows. */
+  owner?: ClientId;
+  view?: 'display' | 'dealer';
 }
 
 /** Scheduled effect that every display plays at the same room-clock instant. */
@@ -72,6 +80,8 @@ export interface PublicPlatformView {
   phase: RoomPhase;
   lang: Lang;
   sharedHost: boolean;
+  /** Host option for remote play: players may pair their own TV / team Dealer screens. */
+  remoteScreens: boolean;
   players: PublicPlayer[];
   game: GameRef | null;
   gameConfig: Record<string, unknown>;
@@ -103,6 +113,13 @@ export interface PlayerPlatformView {
     | { status: 'called'; attemptsLeft: number }
     | { status: 'inside'; deadline: number };
   canRequestDealer: boolean;
+  /**
+   * Remote screens on and the game has a team Dealer board: offer "my Dealer" to every player alike
+   * (offering it only to the audience would reveal who they are). The engine decides what it shows.
+   */
+  teamDealer: boolean;
+  /** Remote screens on: where (which room / call) this player should be right now. */
+  space: Record<Lang, string> | null;
 }
 
 export interface PlayerFrame {
@@ -144,6 +161,7 @@ export const PlatformAction = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('setSettings'),
     sharedHost: z.boolean().optional(),
+    remoteScreens: z.boolean().optional(),
     lang: z.enum(['pt-BR', 'en']).optional(),
   }),
   z.object({ type: z.literal('start') }),
@@ -166,7 +184,15 @@ export const ClientToRelay = z.discriminatedUnion('t', [
   z.object({ t: z.literal('ping'), t0: z.number() }),
   z.object({ t: z.literal('signal'), to: z.string(), data: z.unknown() }),
   z.object({ t: z.literal('action'), payload: z.unknown() }),
-  z.object({ t: z.literal('claimTv'), pairCode: z.string(), role: z.enum(['display', 'dealer']) }),
+  // `personal`: a player pairs a screen for themselves (remote screens), not a room TV.
+  z.object({
+    t: z.literal('claimTv'),
+    pairCode: z.string(),
+    role: z.enum(['display', 'dealer']),
+    personal: z.boolean().optional(),
+  }),
+  // Host only: end the room for everyone (TVs return to pairing).
+  z.object({ t: z.literal('closeRoom') }),
   // Engine-only messages (relay ignores them from non-engine sockets).
   z.object({ t: z.literal('e:public'), frame: z.unknown() }),
   z.object({ t: z.literal('e:private'), to: z.string(), frame: z.unknown() }),
@@ -203,7 +229,11 @@ export type RelayToClient =
   | { t: 'public'; frame: PublicFrame }
   | { t: 'private'; frame: PrivateFrame }
   | { t: 'kicked' }
+  /** The room no longer exists: the Host closed it, or it sat idle too long. Sockets close with 4004. */
+  | { t: 'closed'; reason: RoomClosedReason }
   | { t: 'error'; code: string; message: string };
+
+export type RoomClosedReason = 'host' | 'idle';
 
 /** Messages on the TV pairing socket (/ws/pair). */
 export type PairToTv =
@@ -252,4 +282,8 @@ export const TIMING = {
   /** Max time everyone has to load a game bundle. */
   loadTimeoutMs: 15_000,
   dealerCodeAttempts: 3,
+  /** No player connected this long → the room closes (TVs left on are sent back to pairing). */
+  roomNoPlayersMs: 15 * 60_000,
+  /** No one joined or played this long → the room closes even with phones still connected. */
+  roomInactiveMs: 3 * 60 * 60_000,
 } as const;

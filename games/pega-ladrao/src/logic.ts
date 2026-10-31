@@ -1,6 +1,6 @@
 import { defineGame, type GameCtx, type GameManifest } from '@mp/game-sdk';
 import manifestJson from '../manifest.json';
-import { RULES, SLIDES } from './texts.ts';
+import { PLACES, RULES, SLIDES } from './texts.ts';
 
 // Pega Ladrão — after "Catch the Burglar" (The Genius, S1E6). Two salões and a Terraço between
 // them. Each day both salões exile one player to the Terraço; at night the burglar, unless
@@ -449,5 +449,15 @@ export default defineGame<State, Config>({
       exile: exiled ? { from: exiled, to: other(exiled), arrived: state.arrived.includes(playerId) } : null,
       result: state.phase === 'final' ? state.result : null,
     };
+  },
+
+  // Remote screens (Host option): which room — which call, when playing remotely — to be in.
+  // The night's exiles wait on the Terrace; in the swap they already belong to their new salão.
+  playerSpace(state, playerId) {
+    if (state.phase === 'intro' || state.phase === 'final') return null;
+    const salon = state.salon[playerId];
+    if (!salon) return null;
+    if (state.phase === 'noite' && state.exiles && Object.values(state.exiles).includes(playerId)) return PLACES.terraco;
+    return PLACES[salon];
   },
 });

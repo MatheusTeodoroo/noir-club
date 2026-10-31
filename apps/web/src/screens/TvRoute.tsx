@@ -29,9 +29,14 @@ function loadPairing(): Pairing | null {
 /**
  * The TV entry point. One tap (to unlock audio), then it shows a pairing code and waits for the
  * Host to claim it. After that it never needs input again and reconnects on its own.
+ * At /display or /dealer the screen's role is fixed by the link; at /tv the Host picks it.
  */
-export function TvRoute() {
-  const [pairing, setPairing] = useState<Pairing | null>(loadPairing);
+export function TvRoute({ role }: { role?: Pairing['role'] }) {
+  // A saved pairing for the other role (same browser, other link) doesn't apply here.
+  const [pairing, setPairing] = useState<Pairing | null>(() => {
+    const saved = loadPairing();
+    return saved && (!role || saved.role === role) ? saved : null;
+  });
   // Already-paired TVs come back on their own after a reload/power cycle: no tap required.
   const [armed, setArmed] = useState(() => pairing !== null);
   useEffect(() => {
@@ -49,6 +54,7 @@ export function TvRoute() {
   if (!pairing) {
     return (
       <PairingScreen
+        role={role}
         onPaired={(p) => {
           localStorage.setItem(KEY, JSON.stringify(p));
           setPairing(p);
@@ -93,17 +99,17 @@ function TapToStart({ onStart }: { onStart(): void }) {
   );
 }
 
-function PairingScreen({ onPaired }: { onPaired(p: Pairing): void }) {
+function PairingScreen({ role, onPaired }: { role?: Pairing['role']; onPaired(p: Pairing): void }) {
   const { t } = useT();
   const [code, setCode] = useState<string | null>(null);
-  useEffect(() => openPairing(setCode, (p) => onPaired({ room: p.room, role: p.role, grant: p.grant })), []);
+  useEffect(() => openPairing(setCode, (p) => onPaired({ room: p.room, role: p.role, grant: p.grant }), role), [role]);
   return (
     <Stage className="tv">
       <div className="screen-center">
         <div className="stack mp-enter" style={{ justifyItems: 'center', gap: '2.4em', textAlign: 'center' }}>
           <Logo size={1.1} />
           <span className="mp-eyebrow" style={{ fontSize: '1.2em' }}>
-            {t('tv.pairTitle')}
+            {t(role === 'display' ? 'tv.pairTitleDisplay' : role === 'dealer' ? 'tv.pairTitleDealer' : 'tv.pairTitle')}
           </span>
           <p className="mp-subtitle" style={{ fontSize: '1.8em' }}>
             {t('tv.pairHint')}
@@ -128,17 +134,20 @@ function PairedTv({ pairing, onReset }: { pairing: Pairing; onReset(): void }) {
     const off = s.client.on('error', (code) => {
       if (code === 'bad_grant' || code === 'no_room' || code === 'kicked') onReset();
     });
+    // Room closed by the Host or for being idle: this screen is free for the next room.
+    const offClosed = s.client.on('roomClosed', () => onReset());
     setSession(s);
     return () => {
       off();
+      offClosed();
       s.close();
     };
   }, [pairing.grant]);
 
   if (!session) return null;
   return pairing.role === 'display' ? (
-    <DisplayScreen session={session} code={pairing.room} />
+    <DisplayScreen session={session} code={pairing.room} onLeave={onReset} />
   ) : (
-    <DealerScreen session={session} />
+    <DealerScreen session={session} onLeave={onReset} />
   );
 }

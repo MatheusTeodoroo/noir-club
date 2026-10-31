@@ -87,7 +87,9 @@ Rules of "Catch the Burglar" (The Genius: Rules of the Game, tvN / CJ E&M, 2013)
 mechanics are reused; names, text and art are our own. See `CREDITS.md`.
 
 ## Remote players
-Nothing differs: they belong to a salão and the group arranges a call.
+They belong to a salão and the group arranges one call per room. With the Host's **remote
+screens** on, `playerSpace` tells each phone where to be: its salão; at night the two exiles go to
+the Terrace; in the swap each exile is already sent to the other salão. Off, nothing changes.
 
 ## Edge cases
 - Nobody votes → random member of the salão is exiled. Tie → random among the tied.

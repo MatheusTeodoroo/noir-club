@@ -10,6 +10,7 @@ import type {
   PrivateFrame,
   PublicFrame,
   RelayToClient,
+  RoomClosedReason,
 } from '@mp/protocol';
 import { RoomClock, localNow } from './clock.ts';
 import { PeerMesh } from './p2p.ts';
@@ -81,13 +82,25 @@ function fetchIce(): Promise<IceServer[]> {
 // TV pairing socket
 // ---------------------------------------------------------------------------
 
-export function openPairing(onCode: (code: string) => void, onPaired: (p: Extract<PairToTv, { t: 'paired' }>) => void) {
+/**
+ * Waits on the pairing socket for the Host to claim this TV. `role` fixes what this screen will be
+ * (opened at /display or /dealer); without it the Host chooses.
+ */
+export function openPairing(
+  onCode: (code: string) => void,
+  onPaired: (p: Extract<PairToTv, { t: 'paired' }>) => void,
+  role?: 'display' | 'dealer',
+) {
   let ws: WebSocket | null = null;
   let stopped = false;
   let keepalive: ReturnType<typeof setInterval> | null = null;
   let lastCode = '';
   const open = () => {
-    ws = new WebSocket(`${wsBase()}/ws/pair${lastCode ? `?code=${lastCode}` : ''}`);
+    const q = new URLSearchParams();
+    if (lastCode) q.set('code', lastCode);
+    if (role) q.set('role', role);
+    const qs = q.toString();
+    ws = new WebSocket(`${wsBase()}/ws/pair${qs ? `?${qs}` : ''}`);
     ws.onmessage = (ev) => {
       if (ev.data === 'pong') return;
       const msg = JSON.parse(String(ev.data)) as PairToTv;
@@ -133,6 +146,8 @@ export interface RoomClientEvents {
   privateFrame(frame: PrivateFrame): void;
   error(code: string, message: string): void;
   kicked(): void;
+  /** The room was closed (by the Host or for being idle): stop and leave. */
+  roomClosed(reason: RoomClosedReason): void;
 }
 
 export interface RoomClientOptions {
@@ -205,8 +220,14 @@ export class RoomClient {
     this.raw({ t: 'action', payload });
   }
 
-  claimTv(pairCode: string, role: 'display' | 'dealer') {
-    this.raw({ t: 'claimTv', pairCode: pairCode.toUpperCase(), role });
+  /** Pairs a waiting TV: a room screen (Host), or with `personal` this player's own screen. */
+  claimTv(pairCode: string, role: 'display' | 'dealer', personal = false) {
+    this.raw({ t: 'claimTv', pairCode: pairCode.toUpperCase(), role, ...(personal ? { personal } : {}) });
+  }
+
+  /** Host only: end the room for every device. */
+  closeRoom() {
+    this.raw({ t: 'closeRoom' });
   }
 
   // Engine-side outputs ------------------------------------------------------
@@ -283,7 +304,7 @@ export class RoomClient {
         setTimeout(() => !this.closed && this.connect(), 300);
         return;
       }
-      if (this.closed || ev.code === 4000 || ev.code === 4003 || ev.code === 4001) {
+      if (this.closed || ev.code === 4000 || ev.code === 4003 || ev.code === 4001 || ev.code === 4004) {
         this.setStatus('closed');
         return;
       }
@@ -357,6 +378,10 @@ export class RoomClient {
         this.closed = true;
         this.emit('kicked');
         break;
+      case 'closed':
+        this.closed = true;
+        this.emit('roomClosed', msg.reason);
+        break;
       case 'error':
         this.emit('error', msg.code, msg.message);
         break;
@@ -388,4 +413,11 @@ export class RoomClient {
     if (typeof RTCPeerConnection === 'undefined') return;
     void this.mesh.dial(this.engineId).catch(() => {});
   }
+}
+
+/** The role a waiting TV declared for its pairing code: undefined = no such code, null = Host picks. */
+export async function pairCodeRole(code: string): Promise<'display' | 'dealer' | null | undefined> {
+  const res = await fetch(`/api/pair/${code}`);
+  if (!res.ok) return undefined;
+  return ((await res.json()) as { role: 'display' | 'dealer' | null }).role;
 }

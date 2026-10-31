@@ -98,6 +98,16 @@ export interface GameLogic<S = any, Cfg = any> {
    * one team's room and shows that team's board the whole match (usually nobody ever visits).
    */
   dealerIdleView?(state: S, ctx: GameCtx<Cfg>): unknown;
+  /**
+   * Remote screens (a Host option): players who may open `dealerIdleView` on their own screen,
+   * i.e. the team that stands in the Dealer's room. Leave it out and nobody can.
+   */
+  dealerAudience?(state: S, ctx: GameCtx<Cfg>): ClientId[];
+  /**
+   * Remote screens (a Host option): the room this player should be in now, shown on their phone
+   * so remote players switch calls (e.g. "Sala Vermelha"). Null = no specific place.
+   */
+  playerSpace?(state: S, playerId: ClientId, ctx: GameCtx<Cfg>): I18nText | null;
 }
 
 export function defineGame<S, Cfg = Record<string, unknown>>(logic: GameLogic<S, Cfg>): GameLogic<S, Cfg> {

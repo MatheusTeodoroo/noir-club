@@ -176,8 +176,9 @@ cancelled; if they were leader the room's leadership becomes vacant (anyone may 
 `exchange` and `pause` they are skipped by the "everyone acted" checks.
 
 ## Remote players
-Dealer view on their phone during the briefing. Nothing else differs (they must still be in one of
-the two rooms through a call or screen share).
+Dealer view on their phone during the briefing. They must still be in one of the two rooms, one
+call per room. With the Host's **remote screens** on, `playerSpace` tells each phone which room to
+be in from the briefing on, and during the exchange sends each hostage to the other room.
 
 ## Edge cases
 - Round ends with no leader in a room → a random member becomes leader; unlocked hostages are

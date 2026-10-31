@@ -1,7 +1,7 @@
 import { defineGame, type GameCtx, type GameManifest } from '@mp/game-sdk';
 import manifestJson from '../manifest.json';
 import { adjacency, FIXED_BOARDS, generateBoard } from './board.ts';
-import { RULES, SLIDES } from './texts.ts';
+import { RULES, SLIDES, SPACES } from './texts.ts';
 import { ACTIONS_PER_COP, groupOrder, POINTS_PER_WINNER, TEAMS, THIEF_STEPS, type Side, type Team } from './shared.ts';
 
 // Ronda Noturna: two hidden thieves steal stars across a metro-map city; three police teams
@@ -975,5 +975,28 @@ export default defineGame<State, Config>({
       total: ctx.timerTotal('turn'),
       log: logFor(state, 'thief', 30),
     };
+  },
+
+  // Remote screens (Host option): the thieves may open their board (the standing Dealer) on their
+  // own screen, and every phone says which room — which call, when playing remotely — to be in.
+  dealerAudience: (state) => [...state.thieves],
+
+  playerSpace(state, playerId) {
+    const side = sideOf(state, playerId);
+    if (!side) return null;
+    const ownRoom = SPACES[side];
+    switch (state.phase) {
+      case 'vote':
+        // Each squad votes in its room; the thieves wait in theirs.
+        return ownRoom;
+      case 'intermission':
+        return state.next === side ? ownRoom : SPACES.hall;
+      case 'placing':
+      case 'thieves':
+      case 'cops':
+        return currentTurn(state).side === side ? ownRoom : SPACES.hall;
+      default:
+        return SPACES.hall;
+    }
   },
 });

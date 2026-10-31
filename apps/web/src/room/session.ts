@@ -1,6 +1,14 @@
 import { useSyncExternalStore } from 'react';
 import { RoomClient, type ConnectionStatus, type Identity } from '@mp/net';
-import type { ClientId, ClientInfo, DealerFrame, PlayerFrame, PrivateFrame, PublicFrame } from '@mp/protocol';
+import type {
+  ClientId,
+  ClientInfo,
+  DealerFrame,
+  PlayerFrame,
+  PrivateFrame,
+  PublicFrame,
+  RoomClosedReason,
+} from '@mp/protocol';
 import { EngineHost } from '../engine/EngineHost.ts';
 import { playSound } from '../audio.ts';
 
@@ -18,6 +26,8 @@ export interface SessionState {
   fx: { name: string; nonce: number } | null;
   error: { code: string; message: string } | null;
   kicked: boolean;
+  /** The room is gone: closed by the Host, idle too long, or no longer found. */
+  closed: RoomClosedReason | 'gone' | null;
 }
 
 export interface SessionOptions {
@@ -54,6 +64,7 @@ export class Session {
     fx: null,
     error: null,
     kicked: false,
+    closed: null,
   };
 
   constructor(private opts: SessionOptions) {
@@ -90,8 +101,12 @@ export class Session {
     c.on('action', (from, payload) => this.engine?.action(from, payload));
     c.on('publicFrame', (frame) => this.schedulePublic(frame));
     c.on('privateFrame', (frame) => this.applyPrivate(frame));
-    c.on('error', (code, message) => this.set({ error: { code, message } }));
+    c.on('error', (code, message) => this.set({ error: { code, message }, ...(code === 'no_room' ? { closed: 'gone' as const } : {}) }));
     c.on('kicked', () => this.set({ kicked: true }));
+    c.on('roomClosed', (reason) => {
+      this.dropEngine();
+      this.set({ closed: reason, hostingEngine: false });
+    });
   }
 
   subscribe = (fn: () => void) => {

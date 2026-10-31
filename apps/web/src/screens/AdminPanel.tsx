@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { PublicFrame } from '@mp/protocol';
 import { normalizeRoomCode } from '@mp/protocol';
+import { pairCodeRole } from '@mp/net';
 import { configDefaults, fitsPlayerCount, type ConfigField } from '@mp/game-sdk';
 import { Avatar, Button, Panel, Stepper, Toggle } from '@mp/ui';
 import { playerRange, useT } from '../i18n.ts';
@@ -91,6 +92,11 @@ export function AdminPanel({ session, frame }: { session: Session; frame: Public
           checked={pub.sharedHost}
           onChange={(sharedHost) => session.send({ type: 'setSettings', sharedHost })}
         />
+        <Toggle
+          label={t('admin.remoteScreens')}
+          checked={pub.remoteScreens}
+          onChange={(remoteScreens) => session.send({ type: 'setSettings', remoteScreens })}
+        />
         {pub.sharedHost && pub.displays === 0 && (
           <span className="mp-chip mp-chip--crimson" style={{ justifySelf: 'start' }}>
             {t('admin.noDisplay')}
@@ -122,6 +128,7 @@ export function AdminPanel({ session, frame }: { session: Session; frame: Public
               </Button>
             </div>
           ))}
+        <CloseRoom session={session} />
       </Panel>
 
       <div className="sticky-bottom stack" style={{ gap: 6 }}>
@@ -132,6 +139,32 @@ export function AdminPanel({ session, frame }: { session: Session; frame: Public
         )}
         <Button block variant="crimson" disabled={!inRange} onClick={() => session.send({ type: 'start' })}>
           {t('admin.start')} {selected ? `· ${tg(selected.name)}` : ''}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Ends the room for everyone, after a second tap to confirm. */
+function CloseRoom({ session }: { session: Session }) {
+  const { t } = useT();
+  const [confirming, setConfirming] = useState(false);
+  if (!confirming) {
+    return (
+      <Button small variant="ghost" onClick={() => setConfirming(true)}>
+        ✕ {t('admin.closeRoom')}
+      </Button>
+    );
+  }
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <span style={{ color: 'var(--crimson-hi)', fontSize: '0.9rem' }}>{t('admin.closeRoomConfirm')}</span>
+      <div className="row">
+        <Button block small variant="ghost" onClick={() => setConfirming(false)}>
+          {t('admin.cancel')}
+        </Button>
+        <Button block small variant="crimson" onClick={() => session.client.closeRoom()}>
+          {t('admin.closeRoomYes')}
         </Button>
       </div>
     </div>
@@ -169,6 +202,19 @@ export function TvPairing({ session, frame }: { session: Session; frame: PublicF
   const { t } = useT();
   const state = useSession(session);
   const [code, setCode] = useState('');
+  // A TV opened at /display or /dealer already knows its role: then only that button shows.
+  const [fixedRole, setFixedRole] = useState<'display' | 'dealer' | null>(null);
+  useEffect(() => {
+    setFixedRole(null);
+    if (code.length !== 4) return;
+    let alive = true;
+    void pairCodeRole(code)
+      .then((role) => alive && setFixedRole(role ?? null))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [code]);
   const pub = frame.platform;
   const claim = (role: 'display' | 'dealer') => {
     if (code.length !== 4) return;
@@ -194,12 +240,16 @@ export function TvPairing({ session, frame }: { session: Session; frame: PublicF
         />
       </label>
       <div className="row">
-        <Button block small disabled={code.length !== 4} onClick={() => claim('display')}>
-          📺 {t('admin.asDisplay')}
-        </Button>
-        <Button block small variant="crimson" disabled={code.length !== 4} onClick={() => claim('dealer')}>
-          🃏 {t('admin.asDealer')}
-        </Button>
+        {fixedRole !== 'dealer' && (
+          <Button block small disabled={code.length !== 4} onClick={() => claim('display')}>
+            📺 {fixedRole ? t('admin.connectAs', { role: t('admin.asDisplay') }) : t('admin.asDisplay')}
+          </Button>
+        )}
+        {fixedRole !== 'display' && (
+          <Button block small variant="crimson" disabled={code.length !== 4} onClick={() => claim('dealer')}>
+            🃏 {fixedRole ? t('admin.connectAs', { role: t('admin.asDealer') }) : t('admin.asDealer')}
+          </Button>
+        )}
       </div>
       {state.error?.code === 'pair_not_found' && (
         <span style={{ color: 'var(--crimson-hi)' }}>{state.error.message}</span>

@@ -72,10 +72,18 @@ export function Home() {
             {error && <p style={{ color: 'var(--crimson-hi)', margin: 0, textAlign: 'center' }}>{error}</p>}
           </Panel>
           <div className="stack" style={{ justifyItems: 'center', gap: 6 }}>
-            <Button variant="ghost" small onClick={() => nav('/tv')}>
-              📺 {t('home.tv')}
-            </Button>
-            <span style={{ color: 'var(--text-mute)', fontSize: '0.8rem' }}>{t('home.tvHint')}</span>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>{t('home.tv')}</span>
+            <div className="row" style={{ gap: 8 }}>
+              <Button variant="ghost" small onClick={() => nav('/display')}>
+                📺 Display
+              </Button>
+              <Button variant="ghost" small onClick={() => nav('/dealer')}>
+                🃏 Dealer
+              </Button>
+            </div>
+            <span style={{ color: 'var(--text-mute)', fontSize: '0.8rem', textAlign: 'center' }}>
+              {t('home.tvHint', { display: `${location.host}/display`, dealer: `${location.host}/dealer` })}
+            </span>
           </div>
           <SiteLinks full />
         </div>

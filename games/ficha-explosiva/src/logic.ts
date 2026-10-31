@@ -16,7 +16,7 @@ import {
   PSYCH,
   SPOKEN_POWERS,
 } from './shared.ts';
-import { RULES, SLIDES } from './texts.ts';
+import { PLACES, RULES, SLIDES } from './texts.ts';
 
 // Ficha Explosiva: two halls, two families. Players are dealt hidden cards and split between hall
 // A and hall B; each hall elects a leader, and at the end of every timed round the leaders swap
@@ -1651,5 +1651,17 @@ export default defineGame<State, Config>({
 
   dealerView(s, id): DealerView {
     return { card: s.card[id] ?? null, room: s.room[id] ?? null };
+  },
+
+  // Remote screens (Host option): which room — which call, when playing remotely — to be in.
+  // During the exchange a hostage is already sent to the other room.
+  playerSpace(s, id) {
+    if (s.phase === 'intro' || s.phase === 'mesa') return null;
+    if (s.phase === 'exchange' && s.exchange) {
+      if (s.exchange.A.includes(id)) return PLACES.B;
+      if (s.exchange.B.includes(id)) return PLACES.A;
+    }
+    const room = s.room[id];
+    return room ? PLACES[room] : null;
   },
 });

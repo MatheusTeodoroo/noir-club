@@ -730,3 +730,32 @@ describe('tutorial and rules', () => {
     expect(pub(quiet).hint).toBeNull();
   });
 });
+
+describe('remote screens (Host option)', () => {
+  const where = (room: ReturnType<typeof basic>, id: string) => room.playerFrame(id)!.platform.space?.['pt-BR'] ?? null;
+
+  it('sends each player to their room, and hostages to the other room in the exchange', () => {
+    const room = basic();
+    expect(where(room, pub(room).rooms.A[0]!)).toBeNull();
+    room.engine.action('p1', { type: 'setSettings', remoteScreens: true }, room.now);
+    for (const id of pub(room).rooms.A) expect(where(room, id)).toBe('Salão A');
+    for (const id of pub(room).rooms.B) expect(where(room, id)).toBe('Salão B');
+    const [a1, a2] = pub(room).rooms.A;
+    const [b1, b2] = pub(room).rooms.B;
+    const s = room.state();
+    if (!s.leader.A) room.act(a2!, { type: 'nominate', target: a1 });
+    if (!s.leader.B) room.act(b2!, { type: 'nominate', target: b1 });
+    const sent: Record<string, string> = {};
+    for (const hall of ['A', 'B'] as const) {
+      const leader = room.state().leader[hall]!;
+      const target = pv(room, leader).eligible[0]!;
+      sent[hall] = target;
+      room.act(leader, { type: 'toggleHostage', target });
+      room.act(leader, { type: 'lockHostages' });
+    }
+    finishRound(room);
+    expect(pub(room).phase).toBe('exchange');
+    expect(where(room, sent.A!)).toBe('Salão B');
+    expect(where(room, sent.B!)).toBe('Salão A');
+  });
+});

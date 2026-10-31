@@ -167,6 +167,58 @@ describe('dealer queue', () => {
   });
 });
 
+describe('remote screens (Host option)', () => {
+  const remoteGame = {
+    ...demo,
+    dealerIdleView: (s: DemoState) => ({ idle: true, round: s.round }),
+    dealerAudience: () => ['ana'],
+    playerSpace: (_s: DemoState, id: string) => ({ 'pt-BR': `sala de ${id}`, en: `${id}'s room` }),
+  };
+  /** Adds a personal Dealer screen for `owner` (as the relay does after a personal pairing). */
+  const withViewer = (t: ReturnType<typeof setup>, id: string, owner: string, view: 'display' | 'dealer') =>
+    t.presence([...t.clients, client(id, 'viewer', { owner, view })]);
+  const viewerFrame = (t: ReturnType<typeof setup>, id: string) => t.frames().privates.get(id) as DealerFrame;
+
+  it('stays off by default: no notice, no team Dealer on personal screens', () => {
+    const t = setup(remoteGame);
+    withViewer(t, 'pc-ana', 'ana', 'dealer');
+    expect(t.frames().public.platform.remoteScreens).toBe(false);
+    expect(playerFrame(t, 'ana').platform).toMatchObject({ teamDealer: false, space: null });
+    expect(viewerFrame(t, 'pc-ana').game).toBeNull();
+  });
+
+  it('only the Host turns it on', () => {
+    const t = setup(remoteGame);
+    t.act('ana', { type: 'setSettings', remoteScreens: true });
+    expect(t.frames().public.platform.remoteScreens).toBe(false);
+    t.act('host', { type: 'setSettings', remoteScreens: true });
+    expect(t.frames().public.platform.remoteScreens).toBe(true);
+  });
+
+  it("shows the team Dealer only on the audience's own screens", () => {
+    const t = setup(remoteGame);
+    t.act('host', { type: 'setSettings', remoteScreens: true });
+    t.presence([...t.clients, client('pc-ana', 'viewer', { owner: 'ana', view: 'dealer' }), client('pc-bia', 'viewer', { owner: 'bia', view: 'dealer' })]);
+    // Everyone is offered the option (so it reveals nothing); only the audience's screen gets the board.
+    expect(playerFrame(t, 'ana').platform.teamDealer).toBe(true);
+    expect(playerFrame(t, 'bia').platform.teamDealer).toBe(true);
+    expect(viewerFrame(t, 'pc-ana').game).toEqual({ idle: true, round: 1 });
+    expect(viewerFrame(t, 'pc-bia').game).toBeNull();
+  });
+
+  it('tells each player which room to be in', () => {
+    const t = setup(remoteGame);
+    t.act('host', { type: 'setSettings', remoteScreens: true });
+    expect(playerFrame(t, 'bia').platform.space).toEqual({ 'pt-BR': 'sala de bia', en: "bia's room" });
+  });
+
+  it('personal screens never count as room TVs', () => {
+    const t = setup(remoteGame);
+    withViewer(t, 'pc-ana', 'ana', 'display');
+    expect(t.frames().public.platform.displays).toBe(1);
+  });
+});
+
 describe('disconnects', () => {
   it('pauses game timers while a player is away and resumes them after', () => {
     const t = setup();

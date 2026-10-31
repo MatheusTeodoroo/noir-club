@@ -11,7 +11,7 @@ import { useSession, type Session } from '../room/session.ts';
  * The public board. No input: everything follows public frames, which are applied on the shared
  * room clock so every Display in every room of the house changes at the same instant.
  */
-export function DisplayScreen({ session, code }: { session: Session; code: string }) {
+export function DisplayScreen({ session, code, onLeave }: { session: Session; code: string; onLeave?(): void }) {
   const state = useSession(session);
   const frame = state.public;
   const gameUI = useGameUI(session, frame);
@@ -58,7 +58,7 @@ export function DisplayScreen({ session, code }: { session: Session; code: strin
               </div>
             </>
           )}
-          <StatusOverlay state={state} />
+          <StatusOverlay state={state} onLeave={onLeave} />
           {state.fx && <FxFlash key={state.fx.nonce} />}
         </Stage>
       </RoomTimeContext.Provider>

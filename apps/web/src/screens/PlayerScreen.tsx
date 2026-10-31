@@ -8,6 +8,7 @@ import { GameBoundary, kit, Scoreboard, StatusOverlay, useGameUI } from '../room
 import { useSession, type Session } from '../room/session.ts';
 import { AdminPanel, TvPairing } from './AdminPanel.tsx';
 import { DEALER_VISIT_MS_HINT } from './constants.ts';
+import { MyScreen, SpaceNotice } from './MyScreen.tsx';
 
 export function PlayerScreen({ session, code }: { session: Session; code: string }) {
   const state = useSession(session);
@@ -56,6 +57,8 @@ export function PlayerScreen({ session, code }: { session: Session; code: string
             </div>
           )}
 
+          {me?.platform.space && <SpaceNotice space={me.platform.space} />}
+
           {!frame || !me ? (
             <div className="screen-center" style={{ minHeight: '50dvh' }}>
               <div className="mp-spinner" />
@@ -77,6 +80,10 @@ export function PlayerScreen({ session, code }: { session: Session; code: string
             <Results session={session} frame={frame} me={me} />
           ) : (
             <Playing session={session} frame={frame} me={me} ui={gameUI} />
+          )}
+
+          {pub?.remoteScreens && me && !me.platform.spectator && (
+            <MyScreen session={session} teamDealer={me.platform.teamDealer} />
           )}
 
           {me?.platform.isAdmin && frame && pub && pub.phase !== 'lobby' && (

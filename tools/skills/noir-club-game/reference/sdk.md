@@ -35,6 +35,8 @@ export default defineGame<State, Config>({
   playerView(state, playerId, ctx): PlayerView,        // required — one phone
   dealerView?(state, playerId, ctx): DealerView,       // Dealer screen while playerId is inside
   dealerIdleView?(state, ctx): DealerView,             // Dealer screen while nobody visits (platform.md)
+  dealerAudience?(state, ctx): string[],               // remote screens: who may open dealerIdleView on their own screen
+  playerSpace?(state, playerId, ctx): I18nText | null, // remote screens: which room (call) to be in now
 });
 ```
 

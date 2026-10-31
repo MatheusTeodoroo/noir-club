@@ -4,6 +4,13 @@ import type { I18nText } from '@mp/game-sdk';
 
 const tx = (pt: string, en: string): I18nText => ({ 'pt-BR': pt, en });
 
+/** The three rooms; with remote screens on, phones say which one to be in. */
+export const PLACES = {
+  nobre: tx('Salão Nobre', 'Salão Nobre'),
+  prive: tx('Salão Privé', 'Salão Privé'),
+  terraco: tx('Terraço', 'Terrace'),
+} satisfies Record<string, I18nText>;
+
 /** Tutorial slides on the TV before the first round; `demo` names the live illustration beside them. */
 export const SLIDES: { title: I18nText; body: I18nText[]; demo: 'salons' | 'day' | 'night' | 'ledger' | 'end' }[] = [
   {

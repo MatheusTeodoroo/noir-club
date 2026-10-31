@@ -8,7 +8,7 @@ import { DEALER_CALL_MS_HINT, DEALER_VISIT_MS_HINT } from './constants.ts';
  * The private screen in the isolated room. Shows who is called and the one-time code; once the
  * player types it on their phone, shows that player's private game view. No input.
  */
-export function DealerScreen({ session }: { session: Session }) {
+export function DealerScreen({ session, onLeave }: { session: Session; onLeave?(): void }) {
   const state = useSession(session);
   const frame = state.public;
   const dealer = state.dealer;
@@ -121,7 +121,7 @@ export function DealerScreen({ session }: { session: Session }) {
       <RoomTimeContext.Provider value={session.roomNow}>
         <Stage className="tv" particles={!cur?.verified}>
           {body}
-          <StatusOverlay state={state} />
+          <StatusOverlay state={state} onLeave={onLeave} />
         </Stage>
       </RoomTimeContext.Provider>
     </LangContext.Provider>

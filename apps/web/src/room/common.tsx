@@ -44,13 +44,29 @@ export function useGameUI(session: Session, frame: PublicFrame | null): GameUI |
   return loaded;
 }
 
-export function StatusOverlay({ state }: { state: SessionState }) {
+/**
+ * Connection and pause states over any screen. `onLeave` (TVs) adds a button to drop this room
+ * while it can't be reached, back to the pairing screen.
+ */
+export function StatusOverlay({ state, onLeave }: { state: SessionState; onLeave?(): void }) {
   const { t } = useT();
   const pub = state.public?.platform;
+  if (state.closed) return <RoomClosed reason={state.closed} />;
   let message: string | null = null;
+  let canLeave = false;
   if (state.kicked) message = t('status.kicked');
-  else if (state.status === 'reconnecting' || state.status === 'connecting')
-    message = state.you ? t('status.reconnecting') : null;
+  else if (state.status === 'reconnecting' || state.status === 'connecting') {
+    // A TV that never got in (relay down, room gone) still needs the way out.
+    message = state.you || (onLeave && state.status === 'reconnecting') ? t('status.reconnecting') : null;
+    canLeave = true;
+  } else if (state.you?.role === 'viewer' && pub && !pub.remoteScreens) {
+    // A player's own screen while the Host has remote screens off.
+    message = t('remote.off');
+    canLeave = true;
+  } else if (state.engineId && !state.engineOnline) {
+    message = t('status.engineOffline');
+    canLeave = true;
+  }
   else if (state.engineId && !state.engineOnline) message = t('status.engineOffline');
   else if (pub?.paused?.playerId) {
     const name = pub.players.find((p) => p.id === pub.paused!.playerId)?.name ?? '?';
@@ -69,6 +85,29 @@ export function StatusOverlay({ state }: { state: SessionState }) {
         <p className="mp-subtitle" style={{ fontSize: '1.6rem', maxWidth: 520 }}>
           {message}
         </p>
+        {onLeave && canLeave && (
+          <Button small variant="ghost" onClick={onLeave}>
+            {t('tv.reset')}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** The room no longer exists. Phones go back home; TVs never see this (they return to pairing). */
+function RoomClosed({ reason }: { reason: NonNullable<SessionState['closed']> }) {
+  const { t } = useT();
+  return (
+    <div className="mp-overlay" role="status">
+      <div style={{ display: 'grid', gap: 20, justifyItems: 'center', padding: 16 }}>
+        <h2 className="mp-title" style={{ fontSize: '1.8rem' }}>
+          {t('status.closedTitle')}
+        </h2>
+        <p className="mp-subtitle" style={{ fontSize: '1.2rem', maxWidth: 520 }}>
+          {t(reason === 'host' ? 'status.closedHost' : reason === 'idle' ? 'status.closedIdle' : 'status.closedGone')}
+        </p>
+        <Button onClick={() => location.assign('/')}>{t('status.backHome')}</Button>
       </div>
     </div>
   );

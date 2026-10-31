@@ -76,6 +76,24 @@ a secret number, a clue — where a glance at a phone in a crowded room would le
 the walk to the Dealer is itself part of the tension. Information a player can keep to themselves
 casually belongs in `playerView`.
 
+## Remote screens (a Host option, off by default)
+
+For games played fully remote, with each space of the house turned into a voice call (Discord,
+TeamSpeak…). Nothing is streamed: when the Host turns it on, each player can pair a screen of
+their own — a computer opening `/display` gets the public board, in sync like any TV. Two optional
+hooks let a game take part; leave them out and the game simply has neither:
+
+- `dealerAudience(state, ctx)` → player ids who may open `dealerIdleView` on their own screen at
+  `/dealer` (the team that stands in the Dealer's room). Anyone else's personal Dealer shows nothing.
+  It only applies to the standing board; visits already appear on remote players' phones.
+- `playerSpace(state, playerId, ctx)` → `I18nText | null`: the room that player should be in right
+  now ("Sala Vermelha", "Corredor"), shown at the top of their phone so they switch calls. Name the
+  same spaces your rules and tutorial use.
+
+Use them when the design moves people between rooms or keeps a team's board in one room. Off, the
+game plays exactly as in person. Worked example: Ronda Noturna (`dealerAudience` = the thieves;
+`playerSpace` from whose turn it is).
+
 ## Disconnects
 
 A participant who drops mid-match pauses the game: game timers freeze, game actions and Dealer

@@ -6,6 +6,12 @@ import { CATALOG, GROUP_NAMES, UNITS, type CharId } from './shared.ts';
 
 const tx = (pt: string, en: string): I18nText => ({ 'pt-BR': pt, en });
 
+/** The two rooms; with remote screens on, phones say which one to be in. */
+export const PLACES = {
+  A: tx('Salão A', 'Room A'),
+  B: tx('Salão B', 'Room B'),
+} satisfies Record<string, I18nText>;
+
 export type Demo = 'families' | 'halls' | 'share' | 'round';
 
 /** Tutorial slides shown on the TV before the deck is built (the Host advances them). */

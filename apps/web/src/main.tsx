@@ -43,6 +43,8 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/r/:code" element={<PlayerRoute />} />
                 <Route path="/tv" element={<TvRoute />} />
+                <Route path="/display" element={<TvRoute role="display" />} />
+                <Route path="/dealer" element={<TvRoute role="dealer" />} />
                 <Route path="*" element={<Home />} />
               </Routes>
             </Suspense>

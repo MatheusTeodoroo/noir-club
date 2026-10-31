@@ -8,6 +8,7 @@ import {
   type PublicFrame,
   type RelayToClient,
   type Role,
+  type RoomClosedReason,
 } from '@mp/protocol';
 import type { Env } from './index.ts';
 
@@ -19,6 +20,9 @@ interface StoredClient {
   avatar: string;
   isAdmin: boolean;
   joinedAt: number;
+  /** Viewers: the player who paired this screen for themselves, and what it shows. */
+  owner?: ClientId;
+  view?: 'display' | 'dealer';
 }
 
 interface Meta {
@@ -32,17 +36,20 @@ interface Meta {
   /** Engine handoff in progress: waiting for the old engine's final snapshot. */
   transferTo: ClientId | null;
   clients: Record<ClientId, StoredClient>;
-  /** TV grants handed out by claimTv: grant → role (+ id once used). */
-  grants: Record<string, { role: 'display' | 'dealer'; id?: ClientId }>;
+  /** TV grants handed out by claimTv: grant → role (+ id once used; + owner for a player's own screen). */
+  grants: Record<string, { role: 'display' | 'dealer'; id?: ClientId; owner?: ClientId }>;
   kicked: ClientId[];
   lastSeen: number;
+  /** Last join or game action; the room closes after TIMING.roomInactiveMs without one. */
+  lastActivity?: number;
+  /** Since when no player is connected (null while one is); TVs alone don't keep a room alive. */
+  noPlayersSince?: number | null;
 }
 
 interface Attachment {
   id: ClientId;
 }
 
-const ROOM_IDLE_TTL_MS = 6 * 60 * 60 * 1000;
 const TRANSFER_TIMEOUT_MS = 3_000;
 
 /**
@@ -102,6 +109,8 @@ export class RoomObject extends DurableObject<Env> {
         grants: {},
         kicked: [],
         lastSeen: now,
+        lastActivity: now,
+        noPlayersSince: now,
       };
       await this.save();
       await this.scheduleAlarm();
@@ -148,15 +157,28 @@ export class RoomObject extends DurableObject<Env> {
       const g = meta.grants[grant];
       if (!g || (g.id && g.id !== id)) return reject('bad_grant', 'Pareamento expirado');
       g.id = id;
-      stored = {
-        id,
-        secret,
-        role: g.role,
-        name: g.role === 'display' ? 'Display' : 'Dealer',
-        avatar: g.role === 'display' ? '📺' : '🃏',
-        isAdmin: false,
-        joinedAt: stored?.joinedAt ?? now,
-      };
+      const owner = g.owner ? meta.clients[g.owner] : undefined;
+      stored = owner
+        ? {
+            id,
+            secret,
+            role: 'viewer',
+            name: owner.name,
+            avatar: g.role === 'display' ? '🖥️' : '🃏',
+            isAdmin: false,
+            joinedAt: stored?.joinedAt ?? now,
+            owner: owner.id,
+            view: g.role,
+          }
+        : {
+            id,
+            secret,
+            role: g.role,
+            name: g.role === 'display' ? 'Display' : 'Dealer',
+            avatar: g.role === 'display' ? '📺' : '🃏',
+            isAdmin: false,
+            joinedAt: stored?.joinedAt ?? now,
+          };
     } else {
       const name = (url.searchParams.get('name') ?? '').trim().slice(0, 20);
       const avatar = (url.searchParams.get('avatar') ?? '').slice(0, 8);
@@ -181,6 +203,7 @@ export class RoomObject extends DurableObject<Env> {
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({ id } satisfies Attachment);
     meta.lastSeen = now;
+    if (stored.role === 'player') meta.lastActivity = now;
 
     this.send(server, {
       t: 'welcome',
@@ -233,9 +256,13 @@ export class RoomObject extends DurableObject<Env> {
         break;
       case 'action':
         if (meta.engineId) this.sendTo(meta.engineId, { t: 'action', from, payload: msg.payload });
+        meta.lastActivity = Date.now();
         break;
       case 'claimTv':
-        await this.claimTv(from, ws, msg.pairCode, msg.role);
+        await this.claimTv(from, ws, msg.pairCode, msg.role, !!msg.personal);
+        break;
+      case 'closeRoom':
+        if (meta.clients[from]?.isAdmin) await this.closeRoom('host');
         break;
       case 'e:public':
         if (!isEngine) return;
@@ -280,9 +307,9 @@ export class RoomObject extends DurableObject<Env> {
     const meta = this.meta;
     if (!meta) return;
     const now = Date.now();
-    if (this.ctx.getWebSockets().length === 0 && now - meta.lastSeen > ROOM_IDLE_TTL_MS) {
-      await this.ctx.storage.deleteAll();
-      this.meta = null;
+    const idleSince = this.idleDeadline();
+    if (idleSince !== null && now >= idleSince) {
+      await this.closeRoom('idle');
       return;
     }
     if (meta.transferTo && meta.engineOfflineSince === null) {
@@ -319,6 +346,12 @@ export class RoomObject extends DurableObject<Env> {
   private onMembershipChange() {
     const meta = this.meta!;
     const online = this.onlineIds();
+    const playerOnline = [...online].some((id) => meta.clients[id]?.role === 'player');
+    if (playerOnline) meta.noPlayersSince = null;
+    else if (meta.noPlayersSince == null) {
+      meta.noPlayersSince = Date.now();
+      void this.scheduleAlarm();
+    }
     if (meta.engineId && online.has(meta.engineId)) {
       meta.engineOfflineSince = null;
     } else if (meta.engineId && meta.engineOfflineSince === null) {
@@ -374,11 +407,16 @@ export class RoomObject extends DurableObject<Env> {
   // Admin operations
   // ---------------------------------------------------------------------------
 
-  private async claimTv(from: ClientId, ws: WebSocket, pairCode: string, role: 'display' | 'dealer') {
+  /**
+   * Hands a waiting TV a grant for this room. The Host pairs room TVs; with `personal` any player
+   * pairs a screen for themselves (a viewer: the engine decides what it may show).
+   */
+  private async claimTv(from: ClientId, ws: WebSocket, pairCode: string, role: 'display' | 'dealer', personal: boolean) {
     const meta = this.meta!;
-    if (!meta.clients[from]?.isAdmin) return;
+    const claimer = meta.clients[from];
+    if (!claimer || (personal ? claimer.role !== 'player' : !claimer.isAdmin)) return;
     const grant = crypto.randomUUID();
-    meta.grants[grant] = { role };
+    meta.grants[grant] = personal ? { role, owner: from } : { role };
     const res = await this.env.PAIRING.get(this.env.PAIRING.idFromName('global')).fetch('https://pair/claim', {
       method: 'POST',
       body: JSON.stringify({ pairCode, room: meta.code, role, grant }),
@@ -386,8 +424,39 @@ export class RoomObject extends DurableObject<Env> {
     if (!res.ok) {
       delete meta.grants[grant];
       this.send(ws, { t: 'error', code: 'pair_not_found', message: 'Código da TV não encontrado' });
+    } else {
+      // A TV opened at /display or /dealer keeps its own role; the grant follows it.
+      const paired = (await res.json().catch(() => null)) as { role?: 'display' | 'dealer' } | null;
+      if (paired?.role) meta.grants[grant]!.role = paired.role;
     }
     await this.save();
+  }
+
+  /** Ends the room for every device and forgets it; its code then answers "room not found". */
+  private async closeRoom(reason: RoomClosedReason) {
+    this.broadcast({ t: 'closed', reason });
+    for (const ws of this.ctx.getWebSockets()) {
+      ws.serializeAttachment(null);
+      try {
+        ws.close(4004, 'closed');
+      } catch {
+        /* already closing */
+      }
+    }
+    this.meta = null;
+    this.snapshot = null;
+    this.lastPublic = null;
+    await this.ctx.storage.deleteAlarm();
+    await this.ctx.storage.deleteAll();
+  }
+
+  /** When the room counts as abandoned: no player for a while, or nobody joining or playing. */
+  private idleDeadline(): number | null {
+    const meta = this.meta;
+    if (!meta) return null;
+    const inactive = (meta.lastActivity ?? meta.lastSeen) + TIMING.roomInactiveMs;
+    const empty = meta.noPlayersSince != null ? meta.noPlayersSince + TIMING.roomNoPlayersMs : Infinity;
+    return Math.min(inactive, empty);
   }
 
   private async kick(id: ClientId) {
@@ -437,7 +506,9 @@ export class RoomObject extends DurableObject<Env> {
   }
 
   private info(c: StoredClient, connected: boolean): ClientInfo {
-    return { id: c.id, role: c.role, name: c.name, avatar: c.avatar, connected, isAdmin: c.isAdmin };
+    const info: ClientInfo = { id: c.id, role: c.role, name: c.name, avatar: c.avatar, connected, isAdmin: c.isAdmin };
+    if (c.owner) Object.assign(info, { owner: c.owner, view: c.view });
+    return info;
   }
 
   private clientInfos(): ClientInfo[] {
@@ -494,7 +565,8 @@ export class RoomObject extends DurableObject<Env> {
     // the engine, e.g. everyone left), only the idle clean-up remains. Scheduling the past deadline
     // again would re-fire the alarm immediately, forever, for every abandoned room.
     const migrateAt = meta.engineOfflineSince !== null ? meta.engineOfflineSince + TIMING.engineMigrateMs : null;
-    const next = migrateAt !== null && migrateAt > now ? migrateAt : Math.max(now, meta.lastSeen) + ROOM_IDLE_TTL_MS;
+    const idleAt = Math.max(now, this.idleDeadline()!);
+    const next = migrateAt !== null && migrateAt > now ? Math.min(migrateAt, idleAt) : idleAt;
     const current = await this.ctx.storage.getAlarm();
     if (current === null || current > next || current < now) await this.ctx.storage.setAlarm(next);
   }
