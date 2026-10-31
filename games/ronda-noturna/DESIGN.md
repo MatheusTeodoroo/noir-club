@@ -14,7 +14,8 @@ and four isolated rooms (thieves, red, blue, green). Estimated 60–120 minutes 
 |---|---|---|---|
 | Star locations | thieves | Dealer (always); thieves' phones during the thieves' turn | never (stars are taken) |
 | Thieves' positions | thieves | Dealer (always); thieves' phones during their turn or while holding "segure" | arrest (that thief) / end of match |
-| Thieves' paths each round | thieves, corrupt cops | Dealer; corrupt phones inside "segure" | end (positions) |
+| Thieves' paths each round | thieves | Dealer; thieves' phones inside "segure" (secret log) | end (positions) |
+| Where each thief starts / ends each move (the stop only) | corrupt cops | corrupt phones inside "segure" (secret log) — nowhere else | end (positions) |
 | Stars held | thieves | Dealer; thieves' phones inside "segure" | every `revealEvery` rounds (count only); end |
 | Who is corrupt | corrupt cops (both), thieves | briefing (phone inside "segure", or Dealer visit); phones inside "segure"; thieves' Dealer board | end of match |
 | Investigation result | the investigating cop | their phone inside "segure" | never |
@@ -30,7 +31,7 @@ public log is identical to an honest cop's (test: "honest cops see only public m
 |---|---|---|---|---|---|
 | intro (only with `tutorial`) | 5 min safety net | the Host taps Start on the last slide, or Skip; or the Host leaves | tutorial slide with a live demo | Host: Back / Next / Skip; others: slide title | nothing |
 | briefing | `briefingSeconds`, 60 (Dealer mode: at least 40 s per player) | every connected player tapped Ready / visited the Dealer | teams, turn orders, who is done (no map yet) | own team and order; role behind "segure" + Ready (phone mode), or "go to the Dealer" (Dealer mode) | Dealer mode: the visitor's role card; otherwise waiting |
-| placing | none (user's choice) | everyone placed | who is placing, cops' pawns | place pawn on the map (in order: red, blue, green, thieves) | stars, gang |
+| placing | none (user's choice) | everyone placed | who is placing, cops' pawns | place pawn on the map (cops by rank across squads: Red 1, Blue 1, Green 1, Red 2…; then the thieves) | stars, gang |
 | intermission | 10 s (14 s after a reveal) | — | "Up next: X — X to your room" (+ star-count reveal) | who is next | idem |
 | thieves | `thiefMinutes`, 3 | both moved | "Thieves move" | thief taps up to 2 stops / stays | stars, gang, log |
 | cops (×3 per round, order rotates R-B-G / B-G-R / G-R-B) | `copMinutes`, 5 per team | every member acted or passed | team, actor, actions left, log | 2 actions: move 0–1 + investigate or arrest; pass | cops' moves |

@@ -81,6 +81,8 @@ const L = {
   lThiefPlaced: { 'pt-BR': '{who} se escondeu', en: '{who} went into hiding' },
   lThiefPlacedAt: { 'pt-BR': '{who} começou na {a}', en: '{who} starts at {a}' },
   lThiefPlayed: { 'pt-BR': '{who} jogou', en: '{who} played' },
+  lThiefStart: { 'pt-BR': '🦹 {who} começou na {a}', en: '🦹 {who} starts at {a}' },
+  lThiefTo: { 'pt-BR': '🦹 {who} foi para a {a}', en: '🦹 {who} moved to {a}' },
   lThiefStay: { 'pt-BR': '{who} ficou na {a}', en: '{who} stayed at {a}' },
   lStar: { 'pt-BR': '⭐ {who} pegou a estrela da {a} ({n})', en: '⭐ {who} took the star at {a} ({n})' },
   lCopMove: { 'pt-BR': '{who}: {a} → {b}', en: '{who}: {a} → {b}' },
@@ -527,7 +529,7 @@ function copPawns(
 // ---------------------------------------------------------------------------
 // Log lines
 
-const PRIVATE_KINDS = new Set(['thiefPath', 'star', 'thiefPlacedAt']);
+const PRIVATE_KINDS = new Set(['thiefPath', 'thiefAt', 'star', 'thiefPlacedAt']);
 const isPrivate = (e: LogEntry) => PRIVATE_KINDS.has(e.k) || (e.k === 'starsReturned' && e.n !== null);
 
 function logLine(e: LogEntry, t: T, name: (id: string) => string): string {
@@ -544,6 +546,11 @@ function logLine(e: LogEntry, t: T, name: (id: string) => string): string {
       return e.path.length === 1
         ? fill(t(L.lThiefStay), { who: name(e.who), a: e.path[0]! + 1 })
         : `${name(e.who)}: ${e.path.map((n) => n + 1).join(' → ')}`;
+    case 'thiefAt':
+      return fill(t(e.how === 'start' ? L.lThiefStart : e.how === 'stay' ? L.lThiefStay : L.lThiefTo), {
+        who: name(e.who),
+        a: e.node + 1,
+      });
     case 'star':
       return fill(t(L.lStar), { who: name(e.who), a: e.node + 1, n: e.total });
     case 'copMove':

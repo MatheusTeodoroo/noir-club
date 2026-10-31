@@ -32,8 +32,11 @@ type Ctx = GameCtx<Config>;
 
 export type Phase = 'intro' | 'briefing' | 'placing' | 'intermission' | 'thieves' | 'cops' | 'vote' | 'over';
 
-/** Who may read a log line: everyone, corrupt cops and thieves, or thieves only. */
-type Vis = 'all' | 'corrupt' | 'thieves';
+/**
+ * Who may read a log line: everyone, the corrupt cops only (where each thief is — never the path
+ * or the stars), or the thieves only (their own precise lines).
+ */
+type Vis = 'all' | 'crooked' | 'thieves';
 
 export type LogEntry = { r: number } & (
   | { k: 'copPlaced'; who: string; node: number }
@@ -41,8 +44,10 @@ export type LogEntry = { r: number } & (
   /** thieves only */
   | { k: 'thiefPlacedAt'; who: string; node: number }
   | { k: 'thiefPlayed'; who: string }
-  /** corrupt + thieves: the whole path, starting node first (one node = stayed put) */
+  /** thieves only: the whole path, starting node first (one node = stayed put) */
   | { k: 'thiefPath'; who: string; path: number[] }
+  /** corrupt cops only: where a thief starts, moved to, or stayed — the stop, never the path */
+  | { k: 'thiefAt'; who: string; node: number; how: 'start' | 'move' | 'stay' }
   /** thieves only */
   | { k: 'star'; who: string; node: number; total: number }
   | { k: 'copMove'; who: string; from: number; to: number }
@@ -286,7 +291,7 @@ function log(state: State, vis: Vis, entry: LogEntry) {
   state.log.push({ ...entry, vis });
 }
 function readable(vis: Vis, reader: 'cop' | 'corrupt' | 'thief') {
-  return vis === 'all' || (vis === 'corrupt' && reader !== 'cop') || reader === 'thief';
+  return vis === 'all' || (vis === 'crooked' && reader === 'corrupt') || (vis === 'thieves' && reader === 'thief');
 }
 function logFor(state: State, reader: 'cop' | 'corrupt' | 'thief', limit = LOG_TAIL): LogEntry[] {
   const out: LogEntry[] = [];
@@ -423,6 +428,14 @@ function advancePlacing(state: State, ctx: Ctx) {
   intermission(state, ctx, 'thieves');
 }
 
+/** Cops place by rank across the squads: Red 1, Blue 1, Green 1, Red 2, Blue 2, Green 2… */
+function placementOrder(teams: Record<Team, string[]>): string[] {
+  const order: string[] = [];
+  const longest = Math.max(...TEAMS.map((t) => teams[t].length));
+  for (let i = 0; i < longest; i++) for (const t of TEAMS) if (teams[t][i]) order.push(teams[t][i]!);
+  return order;
+}
+
 function randomPlacement(state: State, ctx: Ctx, id: string) {
   const all = state.adj.map((_, i) => i);
   const ok = sideOf(state, id) === 'thieves' ? all.filter((n) => !state.stars.includes(n)) : all;
@@ -435,6 +448,7 @@ function place(state: State, ctx: Ctx, id: string, node: number) {
     state.trail[node] = true;
     log(state, 'all', { r: 0, k: 'thiefPlaced', who: id });
     log(state, 'thieves', { r: 0, k: 'thiefPlacedAt', who: id, node });
+    log(state, 'crooked', { r: 0, k: 'thiefAt', who: id, node, how: 'start' });
   } else {
     log(state, 'all', { r: 0, k: 'copPlaced', who: id, node });
   }
@@ -480,7 +494,8 @@ function nextThief(state: State, ctx: Ctx) {
 
 function stay(state: State, id: string) {
   log(state, 'all', { r: state.round, k: 'thiefPlayed', who: id });
-  log(state, 'corrupt', { r: state.round, k: 'thiefPath', who: id, path: [state.pos[id]!] });
+  log(state, 'thieves', { r: state.round, k: 'thiefPath', who: id, path: [state.pos[id]!] });
+  log(state, 'crooked', { r: state.round, k: 'thiefAt', who: id, node: state.pos[id]!, how: 'stay' });
 }
 
 function endThieves(state: State, ctx: Ctx) {
@@ -583,7 +598,8 @@ function thiefMove(state: State, ctx: Ctx, id: string, path: number[]) {
   }
   state.pos[id] = at;
   log(state, 'all', { r: state.round, k: 'thiefPlayed', who: id });
-  log(state, 'corrupt', { r: state.round, k: 'thiefPath', who: id, path: full });
+  log(state, 'thieves', { r: state.round, k: 'thiefPath', who: id, path: full });
+  log(state, 'crooked', { r: state.round, k: 'thiefAt', who: id, node: at, how: path.length ? 'move' : 'stay' });
   return true;
 }
 
@@ -681,7 +697,7 @@ export default defineGame<State, Config>({
       held: Object.fromEntries(thieves.map((id) => [id, 0])),
       arrested: Object.fromEntries(thieves.map((id) => [id, false])),
       trail: adj.map(() => false),
-      placeOrder: [...teams.red, ...teams.blue, ...teams.green, ...thieves],
+      placeOrder: [...placementOrder(teams), ...thieves],
       placeIdx: 0,
       next: null,
       groupSeq: groupOrder(1),

@@ -99,15 +99,20 @@ describe(game.manifest.name['pt-BR'], () => {
     expect(room.phase()).toBe('results');
   });
 
-  it('places cops in team order, then thieves; thieves cannot start on a star', () => {
+  it('places cops by rank across squads (Red 1, Blue 1, Green 1, Red 2…), then thieves; not on a star', () => {
     const room = newRoom();
     const s = st(room);
-    expect(s.placeOrder).toEqual([...s.teams.red, ...s.teams.blue, ...s.teams.green, ...s.thieves]);
-    for (const id of cops(s)) {
+    const { red, blue, green } = s.teams;
+    // 10 players: 8 cops in squads of 3/3/2 — the short squad is simply skipped at rank 3.
+    const byRank = [0, 1, 2].flatMap((i) => [red[i], blue[i], green[i]]).filter((id): id is string => !!id);
+    expect(byRank).toHaveLength(8);
+    expect(s.placeOrder).toEqual([...byRank, ...s.thieves]);
+    expect(s.placeOrder.slice(0, 3)).toEqual([red[0], blue[0], green[0]]);
+    for (const id of byRank) {
       expect(pub(room).turn.actor).toBe(id);
       room.act(id, { type: 'place', node: 3 });
     }
-    expect(pub(room).cops[cops(s)[0]!]).toBe(3);
+    expect(pub(room).cops[byRank[0]!]).toBe(3);
     const thief = s.thieves[0]!;
     expect(view(room, thief).thief!.stars).toEqual(s.stars);
     const before = room.snapshot();
@@ -411,7 +416,7 @@ describe(game.manifest.name['pt-BR'], () => {
       placeAll(room);
       for (let r = 0; r < 3; r++) playRound(room, (id, x) => towardStar(x, x.pos[id]!));
       const json = room.publicJson();
-      for (const key of ['"stars"', '"corrupt"', '"trail"', '"hit"', '"held"', 'thiefPath', 'thiefPlacedAt', '"star"']) {
+      for (const key of ['"stars"', '"corrupt"', '"trail"', '"hit"', '"held"', 'thiefPath', 'thiefAt', 'thiefPlacedAt', '"star"']) {
         expect(json).not.toContain(key);
       }
       const p = pub(room);
@@ -420,9 +425,11 @@ describe(game.manifest.name['pt-BR'], () => {
       expect(p.arrested).toEqual({});
     });
 
-    it('honest cops see only public moves; corrupt cops also see the thieves’ paths but no stars', () => {
+    it('honest cops see only public moves; corrupt cops see only where each thief is, in the log', () => {
       const room = newRoom(10, { totalStars: 40 });
       placeAll(room);
+      const s0 = st(room);
+      const starts = Object.fromEntries(s0.thieves.map((id) => [id, s0.pos[id]]));
       playRound(room, (id, x) => towardStar(x, x.pos[id]!));
       const s = st(room);
       const h = honest(s)[0]!;
@@ -431,15 +438,40 @@ describe(game.manifest.name['pt-BR'], () => {
       expect(hv.corrupt).toBe(false);
       expect(hv.corruptIds).toBeNull();
       expect(hv.thief).toBeNull();
-      expect(hv.log.some((e) => e.k === 'thiefPath' || e.k === 'star' || e.k === 'thiefPlacedAt')).toBe(false);
+      const secret = ['thiefPath', 'thiefAt', 'star', 'thiefPlacedAt'];
+      expect(hv.log.some((e) => secret.includes(e.k))).toBe(false);
       const cv = view(room, c);
       expect(cv.corrupt).toBe(true);
       expect([...cv.corruptIds!].sort()).toEqual([...s.corrupt].sort());
-      expect(cv.log.some((e) => e.k === 'thiefPath')).toBe(true);
-      expect(cv.log.some((e) => e.k === 'star' || e.k === 'thiefPlacedAt')).toBe(false);
-      // Apart from the secret lines, a corrupt phone's log matches an honest one.
-      expect(cv.log.filter((e) => e.k !== 'thiefPath')).toEqual(hv.log);
+      // The corrupt's log: each thief's start, then the stop they reached — never the path or stars.
+      const at = cv.log.filter((e) => e.k === 'thiefAt');
+      for (const id of s.thieves) {
+        expect(at).toContainEqual({ r: 0, k: 'thiefAt', who: id, node: starts[id], how: 'start' });
+        expect(at.filter((e) => e.who === id).at(-1)).toMatchObject({ r: 1, node: s.pos[id] });
+      }
+      expect(cv.log.some((e) => e.k === 'thiefPath' || e.k === 'star' || e.k === 'thiefPlacedAt')).toBe(false);
+      // Apart from those lines, a corrupt phone's log matches an honest one.
+      expect(cv.log.filter((e) => e.k !== 'thiefAt')).toEqual(hv.log);
+      // Nothing else of the thieves reaches the corrupt's phone: no map position, no stars.
+      expect(cv.thief).toBeNull();
       expect(JSON.stringify(cv)).not.toContain('"stars"');
+      expect(JSON.stringify(cv)).not.toContain('"path"');
+    });
+
+    it('thieves have their own log: full paths, starts and stars — but not the corrupt lines', () => {
+      const room = newRoom(10, { totalStars: 40 });
+      placeAll(room);
+      playRound(room, (id, x) => towardStar(x, x.pos[id]!));
+      const s = st(room);
+      for (const id of s.thieves) {
+        const tv = view(room, id);
+        for (const who of s.thieves) {
+          expect(tv.log).toContainEqual(expect.objectContaining({ k: 'thiefPlacedAt', who }));
+          expect(tv.log).toContainEqual(expect.objectContaining({ k: 'thiefPath', who, r: 1 }));
+        }
+        expect(tv.log.some((e) => e.k === 'star')).toBe(s.thieves.some((t) => s.held[t]! > 0));
+        expect(tv.log.some((e) => e.k === 'thiefAt')).toBe(false);
+      }
     });
 
     it('thieves see the stars on their phones only during their turn; the Dealer shows them always', () => {

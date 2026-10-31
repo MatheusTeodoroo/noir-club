@@ -150,8 +150,8 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
         '**Crooked cops** — 2 cops, **at most one per squad**: two squads have one, one has none. The crooked cops know each other and the thieves know both. Honest cops don’t.',
       ),
       tx(
-        'O corrupto vê no registro secreto o caminho dos ladrões a cada rodada, mas **não vê as estrelas**. A prisão dele **sempre falha**.',
-        'A crooked cop sees the thieves’ path every round in their secret log, but **not the stars**. Their arrests **always fail**.',
+        'O corrupto vê, só no **registro secreto**, a casa onde cada ladrão começou e **para onde foi** a cada rodada — não o caminho nem as estrelas. Ladrões não aparecem no mapa dele. A prisão dele **sempre falha**.',
+        'A crooked cop sees, only in their **secret log**, the stop where each thief started and **where they moved** each round — not the path, nor the stars. Thieves never show on their map. Their arrests **always fail**.',
       ),
     ],
   },
@@ -188,8 +188,8 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
         '**28 stars** are hidden on different stops (the Host can change this).',
       ),
       tx(
-        '**Posicionamento**: na ordem sorteada, cada policial da Vermelha, depois da Azul, depois da Verde, escolhe uma casa. Depois os ladrões, em segredo — **não podem começar numa casa com estrela**. Várias pessoas podem ficar na mesma casa. Não há tempo limite.',
-        '**Placing**: in the drawn order, each Red cop, then Blue, then Green picks a stop. Then the thieves, in secret — **they cannot start on a star**. Several people may share a stop. There is no time limit.',
+        '**Posicionamento**: os policiais escolhem uma casa intercalando as equipes — o 1º da Vermelha, o 1º da Azul, o 1º da Verde, depois o 2º da Vermelha, e assim por diante. Depois os ladrões, em segredo — **não podem começar numa casa com estrela**. Várias pessoas podem ficar na mesma casa. Não há tempo limite.',
+        '**Placing**: the cops pick a stop alternating squads — Red #1, Blue #1, Green #1, then Red #2, and so on. Then the thieves, in secret — **they cannot start on a star**. Several people may share a stop. There is no time limit.',
       ),
     ],
   },
