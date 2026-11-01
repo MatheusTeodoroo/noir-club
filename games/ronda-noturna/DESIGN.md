@@ -61,11 +61,17 @@ public log is identical to an honest cop's (test: "honest cops see only public m
   accepted but **not counted** (otherwise a corrupt in a two-cop team always forces a tie). All
   three teams right → honest cops win; otherwise thieves + corrupt win.
 - Winners get 3 points each, losers 0.
+- **"Always vote" mode** (`alwaysVote`, off by default): a win by stars or arrests goes to the vote
+  instead of ending the match (`pending` holds that result, and the TV says it); at the cap the vote
+  still decides the winner. Either way the vote then scores each squad: right (its corrupt named,
+  or unanimously nobody when it has none) → +2 to each of its honest cops; its corrupt, if any, is
+  expelled and ends the match with 0 points; a squad that misses gives its corrupt +2.
 
 ## Config (Host settings)
 | key | type | default | range/options |
 |---|---|---|---|
 | tutorial | boolean | true | tutorial slides before the briefing + first-round hints |
+| alwaysVote | boolean | false | the squads' vote closes every match and scores per squad |
 | briefing | select | phone | phone (hold to see + Ready) / dealer (one visit each) |
 | briefingSeconds | number | 60 | 20–300 (Dealer mode: at least 40 s × players) |
 | maxRounds | select | 15 | none, 10, 15, 20, 25 |

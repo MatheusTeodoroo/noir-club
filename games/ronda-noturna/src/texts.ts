@@ -288,6 +288,10 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
         'Se **as três equipes acertarem**, a polícia honesta vence. Se alguma errar, ladrões e corruptos vencem. Sem teto, não há votação.',
         'If **all three squads are right**, the honest police win. If any is wrong, thieves and crooked cops win. With no cap, there is no vote.',
       ),
+      tx(
+        '**Modo Votação final sempre** (o Host liga nas opções): a votação acontece no fim de **toda** partida, mesmo depois de uma vitória por estrelas ou por prisões — e essa vitória continua valendo. O voto vale pontos por equipe: acertou o corrupto (ou, sem corrupto, todos votaram **Ninguém**) → **+2** para cada honesto da equipe. O corrupto **expulso perde todos os pontos** da partida; o que **escapa ganha +2**.',
+        '**Always a final vote mode** (the Host turns it on): the vote closes **every** match, even after a win by stars or arrests — and that win still stands. The vote scores per squad: the squad named its crooked cop (or, with none, everyone voted **Nobody**) → **+2** for each of its honest cops. An **expelled crooked cop loses every point** of the match; one who **escapes gets +2**.',
+      ),
     ],
   },
   {
@@ -298,8 +302,8 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
         'The match ends **at once** when the gang reaches the star goal, or when both thieves are caught; otherwise at the vote. The TV reveals the crooked cops and where the thieves were.',
       ),
       tx(
-        'Cada vencedor ganha **3 pontos** no placar da sala; quem perde fica com 0.',
-        'Each winner scores **3 points** on the room’s scoreboard; losers get 0.',
+        'Cada vencedor ganha **3 pontos** no placar da sala; quem perde fica com 0. No modo Votação final sempre, somam-se os pontos da votação.',
+        'Each winner scores **3 points** on the room’s scoreboard; losers get 0. In Always a final vote mode, the vote’s points are added.',
       ),
       tx(
         'Se alguém cair, o jogo pausa por 20 s. Se não voltar: no posicionamento, vai para uma casa aleatória; ladrão fica parado; policial perde a vez; o voto dele fica faltando.',

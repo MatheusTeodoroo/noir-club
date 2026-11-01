@@ -11,6 +11,8 @@ import { ACTIONS_PER_COP, groupOrder, POINTS_PER_WINNER, TEAMS, THIEF_STEPS, typ
 export const manifest = manifestJson as GameManifest;
 
 export interface Config {
+  /** "Always vote" mode: the squads vote on their crooked cop at the end of every match. */
+  alwaysVote: boolean;
   /** Tutorial slides on the TV before the role briefing, plus first-round hints. */
   tutorial: boolean;
   /** '0' = no round cap (and so no final vote). */
@@ -82,6 +84,8 @@ export interface Result {
   thievesPos: Record<string, number | null>;
   stars: number;
   verdicts: GroupVerdict[] | null;
+  /** Points each player takes to the room's scoreboard (public at the end). */
+  points: Record<string, number>;
 }
 
 /** Engine-side state. */
@@ -120,6 +124,8 @@ export interface State {
   /** SECRET until the end: who each cop voted for. */
   votes: Record<string, string>;
   result: Result | null;
+  /** "Always vote" mode: the match result, waiting for the squads' vote to be scored. */
+  pending: { winner: Result['winner']; reason: 'stars' | 'arrests' } | null;
   /** Briefing: who has seen their role (tapped "ready" on the phone, or visited the Dealer). */
   ready: Record<string, boolean>;
   /** Tutorial slide on screen during the intro. */
@@ -176,6 +182,9 @@ export interface PublicView {
   voted: string[];
   result: Result | null;
   briefing: null | { mode: 'phone' | 'dealer'; ready: string[] };
+  /** "Always vote" mode, during the vote: how the match itself ended. */
+  pending: State['pending'];
+  alwaysVote: boolean;
   slide: number;
   slides: number;
   tvRules: number | null;
@@ -264,6 +273,8 @@ const INTRO_MAX_MS = 5 * 60_000;
 const DEALER_BRIEF_PER_PLAYER_MS = 40_000;
 const REVEAL_INTERMISSION_MS = 14_000;
 const VOTE_MS = 180_000;
+/** "Always vote" mode: points for a squad that gets its vote right, and for a corrupt who escapes. */
+const VOTE_BONUS = 2;
 const END_MS = 16_000;
 const LOG_TAIL = 60;
 /** Public lines that have a more precise private twin for the thieves. */
@@ -403,6 +414,13 @@ function finish(
   reason: Result['reason'],
   verdicts: GroupVerdict[] | null,
 ) {
+  // "Always vote" mode: a win by stars or arrests stands, but the squads still vote first.
+  if (reason !== 'vote' && ctx.config.alwaysVote && !state.pending) {
+    state.pending = { winner, reason };
+    startVote(state, ctx);
+    ctx.emit('sound', 'reveal');
+    return;
+  }
   state.phase = 'over';
   state.result = {
     winner,
@@ -411,12 +429,43 @@ function finish(
     thievesPos: Object.fromEntries(state.thieves.map((id) => [id, state.pos[id] ?? null])),
     stars: teamStars(state),
     verdicts,
+    points: matchPoints(state, ctx, winner, verdicts),
   };
   ctx.clearTimer('turn');
   ctx.setTimer('end', END_MS);
   ctx.emit('sound', 'drumroll');
   ctx.emit('sound', 'reveal', 2300);
   ctx.emit('fx', 'reveal', 2300);
+}
+
+/**
+ * Winners take 3. In "always vote" mode the vote adds, per squad: +2 to its honest cops when it
+ * names its corrupt cop (or, with none, unanimously nobody); +2 to a corrupt cop who escapes; and a
+ * corrupt cop who is unmasked loses every point of the match.
+ */
+function matchPoints(
+  state: State,
+  ctx: Ctx,
+  winner: Result['winner'],
+  verdicts: GroupVerdict[] | null,
+): Record<string, number> {
+  const winners =
+    winner === 'thieves'
+      ? [...state.thieves, ...state.corrupt]
+      : TEAMS.flatMap((t) => state.teams[t]).filter((id) => !state.corrupt.includes(id));
+  const points: Record<string, number> = Object.fromEntries(
+    ctx.players.map((p) => [p.id, winners.includes(p.id) ? POINTS_PER_WINNER : 0]),
+  );
+  if (!ctx.config.alwaysVote || !verdicts) return points;
+  for (const v of verdicts) {
+    const honest = state.teams[v.team].filter((id) => id !== v.corrupt);
+    if (v.correct) for (const id of honest) points[id]! += VOTE_BONUS;
+    if (v.corrupt) {
+      if (v.correct) points[v.corrupt] = 0;
+      else points[v.corrupt]! += VOTE_BONUS;
+    }
+  }
+  return points;
 }
 
 /** Moves the placement pointer on, auto-placing anyone who is offline. */
@@ -574,6 +623,10 @@ function tally(state: State, ctx: Ctx) {
     const correct = decision !== null && decision === (corrupt ?? 'none');
     return { team, decision, corrupt, correct };
   });
+  if (state.pending) {
+    finish(state, ctx, state.pending.winner, state.pending.reason, verdicts);
+    return;
+  }
   const copsWin = verdicts.every((v) => v.correct);
   finish(state, ctx, copsWin ? 'cops' : 'thieves', 'vote', verdicts);
 }
@@ -714,6 +767,7 @@ export default defineGame<State, Config>({
       votes: {},
       result: null,
       ready: {},
+      pending: null,
       slide: 0,
       tvRules: null,
     };
@@ -811,14 +865,7 @@ export default defineGame<State, Config>({
       return;
     }
     if (key === 'end') {
-      const r = state.result!;
-      const winners =
-        r.winner === 'thieves'
-          ? [...state.thieves, ...state.corrupt]
-          : TEAMS.flatMap((t) => state.teams[t]).filter((id) => !state.corrupt.includes(id));
-      ctx.end({
-        scores: Object.fromEntries(ctx.players.map((p) => [p.id, winners.includes(p.id) ? POINTS_PER_WINNER : 0])),
-      });
+      ctx.end({ scores: state.result!.points });
       return;
     }
     if (key !== 'turn') return;
@@ -912,6 +959,8 @@ export default defineGame<State, Config>({
         state.phase === 'briefing'
           ? { mode: briefingMode(ctx), ready: Object.keys(state.ready).filter((id) => state.ready[id]) }
           : null,
+      pending: state.pending,
+      alwaysVote: ctx.config.alwaysVote,
       slide: state.slide,
       slides: SLIDES.length,
       tvRules: state.tvRules,

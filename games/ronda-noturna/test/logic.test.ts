@@ -343,6 +343,86 @@ describe(game.manifest.name['pt-BR'], () => {
     expect(room.snapshot()).toBe(before);
   });
 
+  describe('"always vote" mode', () => {
+    /** Each squad votes: `right` names the corrupt (or nobody); a squad in `wrong` misses. */
+    function voteAll(room: Room, wrong: string[] = []) {
+      const s = st(room);
+      for (const t of TEAMS) {
+        const corrupt = s.teams[t].find((id) => s.corrupt.includes(id)) ?? null;
+        for (const id of s.teams[t]) {
+          const mate = s.teams[t].find((o) => o !== id && o !== corrupt);
+          const miss = mate ?? (corrupt && id !== corrupt ? 'none' : s.teams[t].find((o) => o !== id)!);
+          const target = id === corrupt ? 'none' : wrong.includes(t) ? miss : (corrupt ?? 'none');
+          room.act(id, { type: 'vote', target });
+        }
+      }
+    }
+    const points = (room: Room) => {
+      room.advance(16_000);
+      return Object.fromEntries(room.results()!.map((r) => [r.playerId, r.score]));
+    };
+
+    it('a win by stars still goes to the vote; unmasked corrupt cops lose everything', () => {
+      const room = newRoom(10, { alwaysVote: true, totalStars: 40, starGoal: 5, maxRounds: '0' });
+      placeAll(room);
+      for (let r = 0; r < 30 && pub(room).phase !== 'vote'; r++) playRound(room, (id, x) => towardStar(x, x.pos[id]!));
+      expect(pub(room)).toMatchObject({ phase: 'vote', pending: { winner: 'thieves', reason: 'stars' }, result: null });
+      voteAll(room);
+      expect(pub(room).result).toMatchObject({ winner: 'thieves', reason: 'stars' });
+      const s = st(room);
+      const p = points(room);
+      for (const id of s.thieves) expect(p[id]).toBe(3);
+      for (const id of s.corrupt) expect(p[id]).toBe(0); // won with the thieves, but unmasked
+      for (const id of honest(s)) expect(p[id]).toBe(2); // lost the match, got their vote right
+    });
+
+    it('a win by arrests still goes to the vote; a squad that misses gives its corrupt +2', () => {
+      const room = newRoom(10, { alwaysVote: true });
+      const s0 = st(room);
+      const N = s0.adj.findIndex((_, i) => !s0.stars.includes(i));
+      placeAll(room, () => N);
+      skipBreak(room);
+      for (const id of s0.thieves) room.act(id, { type: 'move', path: [] });
+      skipBreak(room);
+      const cop = s0.teams.red.find((id) => !s0.corrupt.includes(id))!;
+      passUntil(room, cop);
+      room.act(cop, { type: 'act', kind: 'arrest', node: N });
+      expect(pub(room)).toMatchObject({ phase: 'vote', pending: { winner: 'cops', reason: 'arrests' } });
+      const missed = TEAMS.find((t) => s0.teams[t].some((id) => s0.corrupt.includes(id)))!;
+      voteAll(room, [missed]);
+      expect(pub(room).result).toMatchObject({ winner: 'cops', reason: 'arrests' });
+      const p = points(room);
+      const escaped = s0.teams[missed].find((id) => s0.corrupt.includes(id))!;
+      expect(p[escaped]).toBe(2);
+      for (const id of s0.corrupt.filter((c) => c !== escaped)) expect(p[id]).toBe(0);
+      for (const t of TEAMS) {
+        for (const id of s0.teams[t].filter((i) => !s0.corrupt.includes(i))) expect(p[id]).toBe(t === missed ? 3 : 5);
+      }
+      for (const id of s0.thieves) expect(p[id]).toBe(0);
+    });
+
+    it('at the round cap the vote decides the winner, and still scores each squad', () => {
+      const room = newRoom(10, { alwaysVote: true, maxRounds: '10' });
+      placeAll(room);
+      for (let r = 0; r < 10; r++) playRound(room);
+      expect(pub(room)).toMatchObject({ phase: 'vote', pending: null });
+      voteAll(room);
+      expect(pub(room).result).toMatchObject({ winner: 'cops', reason: 'vote' });
+      const s = st(room);
+      const p = points(room);
+      for (const id of honest(s)) expect(p[id]).toBe(5);
+      for (const id of [...s.corrupt, ...s.thieves]) expect(p[id]).toBe(0);
+    });
+
+    it('is off by default: a win by stars ends the match at once', () => {
+      const room = newRoom(10, { totalStars: 40, starGoal: 5, maxRounds: '0' });
+      placeAll(room);
+      for (let r = 0; r < 30 && pub(room).phase !== 'over'; r++) playRound(room, (id, x) => towardStar(x, x.pos[id]!));
+      expect(pub(room)).toMatchObject({ phase: 'over', pending: null, alwaysVote: false });
+      expect(pub(room).result!.verdicts).toBeNull();
+    });
+  });
+
   describe('final vote', () => {
     function toVote(seed = 7) {
       const room = newRoom(10, { maxRounds: '10' }, seed);

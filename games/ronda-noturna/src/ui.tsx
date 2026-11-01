@@ -48,6 +48,16 @@ const L = {
     'pt-BR': '{who} age — {n} ação(ões) restante(s).',
     en: '{who} acts — {n} action(s) left.',
   },
+  byStars: { 'pt-BR': 'pelas estrelas', en: 'by stars' },
+  byArrests: { 'pt-BR': 'pelas prisões', en: 'by arrests' },
+  voteStakes: {
+    'pt-BR': 'Agora cada equipe tenta expulsar seu corrupto: acerto dá +2 aos honestos; corrupto expulso perde tudo, o que escapa ganha +2.',
+    en: 'Now each squad tries to expel its crooked cop: a right vote gives its honest cops +2; an expelled crooked cop loses everything, one who escapes gets +2.',
+  },
+  honestBonus: { 'pt-BR': '+2 honestos', en: '+2 honest cops' },
+  crookedOut: { 'pt-BR': 'corrupto expulso', en: 'crooked cop expelled' },
+  crookedEscaped: { 'pt-BR': 'corrupto escapou · +2', en: 'crooked cop escaped · +2' },
+  noBonus: { 'pt-BR': 'sem bônus', en: 'no bonus' },
   voteTitle: { 'pt-BR': 'Quem é o corrupto?', en: 'Who is crooked?' },
   voteSub: {
     'pt-BR': 'Cada equipe vota em segredo na sua sala. “Ninguém” só vale se a equipe toda concordar.',
@@ -681,7 +691,11 @@ function TeamsPanel({
   );
 }
 
-function headline(view: { phase: PublicView['phase']; turn: Turn; next: Side | null }, t: T, name: (id: string) => string) {
+function headline(
+  view: Pick<PublicView, 'phase' | 'turn' | 'next'> & Partial<Pick<PublicView, 'pending' | 'alwaysVote'>>,
+  t: T,
+  name: (id: string) => string,
+) {
   const actor = view.turn.actor ? name(view.turn.actor) : '';
   switch (view.phase) {
     case 'placing':
@@ -701,8 +715,16 @@ function headline(view: { phase: PublicView['phase']; turn: Turn; next: Side | n
         title: sideName(t, view.turn.side),
         sub: fill(t(L.copsSub), { who: actor, n: view.turn.actionsLeft }),
       };
-    case 'vote':
-      return { title: t(L.voteTitle), sub: t(L.voteSub) };
+    case 'vote': {
+      if (!view.alwaysVote) return { title: t(L.voteTitle), sub: t(L.voteSub) };
+      // "Always vote" mode: say how the match ended, then what the vote is worth.
+      const ended = view.pending
+        ? `${t(view.pending.winner === 'thieves' ? L.thievesWin : L.copsWin)} (${t(
+            view.pending.reason === 'stars' ? L.byStars : L.byArrests,
+          )}). `
+        : '';
+      return { title: t(L.voteTitle), sub: `${ended}${t(L.voteStakes)}` };
+    }
     default:
       return { title: '', sub: '' };
   }
@@ -747,7 +769,21 @@ function roundLabel(t: T, round: number, max: number) {
   return max ? `${t(L.round)} ${round} ${t(L.of)} ${max}` : `${t(L.round)} ${round} · ${t(L.noCap)}`;
 }
 
-function OverPanel({ result, platform, kit, t, teams }: { result: Result; platform: DisplayProps['platform']; kit: DisplayProps['kit']; t: T; teams: Record<Team, string[]> }) {
+function OverPanel({
+  result,
+  platform,
+  kit,
+  t,
+  teams,
+  alwaysVote,
+}: {
+  result: Result;
+  platform: DisplayProps['platform'];
+  kit: DisplayProps['kit'];
+  t: T;
+  teams: Record<Team, string[]>;
+  alwaysVote: boolean;
+}) {
   const player = (id: string) => platform.players.find((p) => p.id === id);
   return (
     <div className="rng-verdicts rng-reveal">
@@ -795,6 +831,15 @@ function OverPanel({ result, platform, kit, t, teams }: { result: Result; platfo
                       ? t(L.nobody)
                       : (player(v.decision)?.name ?? v.decision)}
                 </b>
+                {alwaysVote && (
+                  <small className={v.correct ? undefined : 'rng-crooked'}>
+                    {v.correct
+                      ? `${t(L.honestBonus)}${v.corrupt ? ` · ${t(L.crookedOut)}` : ''}`
+                      : v.corrupt
+                        ? t(L.crookedEscaped)
+                        : t(L.noBonus)}
+                  </small>
+                )}
               </div>
             </div>
           ))}
@@ -1214,7 +1259,7 @@ function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
           {view.hint && !over && <p className="rng-hint">💡 {t(HINTS[view.hint])}</p>}
         </div>
         <div className="row" style={{ gap: '1.4em', alignItems: 'center' }}>
-          {!over && <StarsPanel view={view} t={t} />}
+          {!over && view.phase !== 'vote' && <StarsPanel view={view} t={t} />}
           {view.deadline !== null && !over && (
             <Countdown deadline={view.deadline} total={view.total ?? 0} size="6.5em" paused={!!platform.paused} />
           )}
@@ -1239,7 +1284,14 @@ function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
       ) : over ? (
         <div className="rng-over">
           {map}
-          <OverPanel result={view.result!} platform={platform} kit={kit} t={t} teams={view.teams} />
+          <OverPanel
+            result={view.result!}
+            platform={platform}
+            kit={kit}
+            t={t}
+            teams={view.teams}
+            alwaysVote={view.alwaysVote}
+          />
         </div>
       ) : (
         <div className="rng-body">
