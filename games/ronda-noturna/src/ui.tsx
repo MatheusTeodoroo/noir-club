@@ -75,6 +75,12 @@ const L = {
   logEmpty: { 'pt-BR': 'Nada aconteceu ainda.', en: 'Nothing has happened yet.' },
   goal: { 'pt-BR': 'Meta', en: 'Goal' },
   reveals: { 'pt-BR': 'Revelações', en: 'Reveals' },
+  starsPanel: { 'pt-BR': 'Estrelas', en: 'Stars' },
+  starsHidden: { 'pt-BR': 'distribuídas', en: 'hidden' },
+  goalShort: { 'pt-BR': 'meta dos ladrões', en: 'thieves’ goal' },
+  collected: { 'pt-BR': 'coletadas', en: 'taken' },
+  collectedAt: { 'pt-BR': 'coletadas até a rodada {r}', en: 'taken by round {r}' },
+  nextReveal: { 'pt-BR': 'revela no fim da rodada {r}', en: 'next reveal after round {r}' },
   arrested: { 'pt-BR': 'preso', en: 'arrested' },
   // Log lines
   lCopPlaced: { 'pt-BR': '{who} começou na {a}', en: '{who} starts at {a}' },
@@ -351,6 +357,11 @@ const CSS = `
 .rng-card--big p{font-size:1.6em}
 .rng-dealer--role{grid-template-rows:none;place-content:center;justify-items:center;gap:2em}
 .tv .rng-dealer--role{min-height:100vh}
+.rng-starbox{display:flex;gap:.4em;font-size:.9em}
+.rng-starbox>div{display:grid;justify-items:center;align-content:center;min-width:5.6em;padding:.45em .7em;border-radius:.6em;background:rgba(255,255,255,.03);box-shadow:0 0 0 1px var(--line) inset;text-align:center}
+.rng-starbox b{font-family:var(--font-display);font-weight:900;font-size:2em;line-height:1.1;color:var(--gold-hi);white-space:nowrap}
+.rng-starbox small{color:var(--text-dim);font-size:.85em;line-height:1.25}
+.rng-starbox [data-reveal]{min-width:9.5em}
 .rng-count{font-family:var(--font-display);font-weight:900;font-size:2.6em;color:var(--gold-hi);line-height:1}
 `;
 
@@ -695,6 +706,40 @@ function headline(view: { phase: PublicView['phase']; turn: Turn; next: Side | n
     default:
       return { title: '', sub: '' };
   }
+}
+
+/**
+ * The public star count: how many were hidden, the goal, and how many the gang holds — only as of
+ * the last reveal (every `revealEvery` rounds), never the live count.
+ */
+function StarsPanel({ view, t }: { view: PublicView; t: T }) {
+  const last = view.reveals[view.reveals.length - 1] ?? null;
+  const next = (Math.floor(view.round / view.revealEvery) + 1) * view.revealEvery;
+  const nextShown = !view.maxRounds || next <= view.maxRounds;
+  return (
+    <div className="rng-starbox" aria-label={t(L.starsPanel)}>
+      <div>
+        <b>★ {view.totalStars}</b>
+        <small>{t(L.starsHidden)}</small>
+      </div>
+      <div>
+        <b>{view.goal}</b>
+        <small>{t(L.goalShort)}</small>
+      </div>
+      <div data-reveal>
+        <b>{last ? last.n : '?'}</b>
+        <small>
+          {last ? fill(t(L.collectedAt), { r: last.round }) : t(L.collected)}
+          {nextShown && (
+            <>
+              <br />
+              {fill(t(L.nextReveal), { r: next })}
+            </>
+          )}
+        </small>
+      </div>
+    </div>
+  );
 }
 
 function roundLabel(t: T, round: number, max: number) {
@@ -1161,8 +1206,6 @@ function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
         <div>
           <span className="mp-eyebrow" style={{ fontSize: '1.1em' }}>
             {roundLabel(t, view.round, view.maxRounds)}
-            {view.reveals.length > 0 &&
-              ` · ${t(L.reveals)}: ${view.reveals.map((r) => `R${r.round} ★${r.n}`).join('  ')}`}
           </span>
           <h1 className="rng-h1" style={over ? undefined : { fontSize: '3.2em' }}>
             {head.title}
@@ -1170,9 +1213,12 @@ function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
           <p className="rng-sub">{head.sub}</p>
           {view.hint && !over && <p className="rng-hint">💡 {t(HINTS[view.hint])}</p>}
         </div>
-        {view.deadline !== null && !over && (
-          <Countdown deadline={view.deadline} total={view.total ?? 0} size="6.5em" paused={!!platform.paused} />
-        )}
+        <div className="row" style={{ gap: '1.4em', alignItems: 'center' }}>
+          {!over && <StarsPanel view={view} t={t} />}
+          {view.deadline !== null && !over && (
+            <Countdown deadline={view.deadline} total={view.total ?? 0} size="6.5em" paused={!!platform.paused} />
+          )}
+        </div>
       </header>
 
       {view.banner ? (

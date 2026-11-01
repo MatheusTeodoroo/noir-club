@@ -282,13 +282,23 @@ describe(game.manifest.name['pt-BR'], () => {
     for (const id of honest(s)) expect(scores[id]).toBe(0);
   });
 
-  it('reveals the thieves’ star count every 5 rounds', () => {
+  it('the TV shows the stars hidden and the goal always, the gang’s count only every 5 rounds', () => {
     const room = newRoom(10, { totalStars: 40, maxRounds: '0', starGoal: 30 });
     placeAll(room);
-    for (let r = 0; r < 5; r++) playRound(room, (id, x) => towardStar(x, x.pos[id]!));
-    const n = st(room).thieves.reduce((acc, id) => acc + st(room).held[id]!, 0);
+    const held = () => st(room).thieves.reduce((acc, id) => acc + st(room).held[id]!, 0);
+    for (let r = 1; r <= 4; r++) {
+      playRound(room, (id, x) => towardStar(x, x.pos[id]!));
+      // Collected stars change nothing public: same total, same goal, no count yet.
+      expect(pub(room)).toMatchObject({ totalStars: 40, goal: 30, revealEvery: 5, reveals: [], banner: null });
+    }
+    expect(held()).toBeGreaterThan(0);
+    const between = room.publicJson();
+    playRound(room, (id, x) => towardStar(x, x.pos[id]!));
+    const n = held();
     expect(pub(room).reveals).toEqual([{ round: 5, n }]);
     expect(pub(room).banner).toEqual({ round: 5, n });
+    expect(pub(room).totalStars).toBe(40);
+    expect(between).not.toContain('"held"');
   });
 
   it('timers drive every turn when nobody acts', () => {

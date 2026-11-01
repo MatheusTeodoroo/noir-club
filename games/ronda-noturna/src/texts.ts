@@ -264,8 +264,8 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
         'Before each turn there are **10 seconds** for that side to reach its room; the TV says who is up.',
       ),
       tx(
-        'A cada **5 rodadas** (o Host pode mudar), a TV revela **quantas estrelas** o bando tem — nunca onde estão.',
-        'Every **5 rounds** (the Host can change this), the TV reveals **how many stars** the gang holds — never where.',
+        'A TV mostra o tempo todo **quantas estrelas foram distribuídas** e a **meta** dos ladrões. Quantas o bando já coletou só aparece **a cada 5 rodadas** (o Host pode mudar), no fim da rodada — e fica na TV até a próxima revelação. Nunca onde estão.',
+        'The TV always shows **how many stars were hidden** and the thieves’ **goal**. How many the gang has taken is shown only **every 5 rounds** (the Host can change this), at the end of the round — and stays on the TV until the next reveal. Never where.',
       ),
     ],
   },

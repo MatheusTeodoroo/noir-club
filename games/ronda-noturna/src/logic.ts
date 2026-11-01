@@ -153,7 +153,10 @@ export interface PublicView {
   round: number;
   maxRounds: number;
   goal: number;
+  /** Stars hidden at the start (public). How many the gang holds is public only at a reveal. */
   totalStars: number;
+  /** The gang's count is revealed at the end of every `revealEvery`-th round. */
+  revealEvery: number;
   board: { seed: number; size: number };
   teams: Record<Team, string[]>;
   thieves: string[];
@@ -885,7 +888,8 @@ export default defineGame<State, Config>({
       round: state.round,
       maxRounds: maxRounds(ctx),
       goal: goal(ctx),
-      totalStars: ctx.config.totalStars,
+      totalStars: Math.min(ctx.config.totalStars, state.adj.length - 2),
+      revealEvery: ctx.config.revealEvery,
       board: state.board,
       teams: state.teams,
       thieves: state.thieves,

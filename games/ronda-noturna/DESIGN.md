@@ -16,7 +16,8 @@ and four isolated rooms (thieves, red, blue, green). Estimated 60–120 minutes 
 | Thieves' positions | thieves | Dealer (always); thieves' phones during their turn or while holding "segure" | arrest (that thief) / end of match |
 | Thieves' paths each round | thieves | Dealer; thieves' phones inside "segure" (secret log) | end (positions) |
 | Where each thief starts / ends each move (the stop only) | corrupt cops | corrupt phones inside "segure" (secret log) — nowhere else | end (positions) |
-| Stars held | thieves | Dealer; thieves' phones inside "segure" | every `revealEvery` rounds (count only); end |
+| Stars held | thieves | Dealer; thieves' phones inside "segure" | every `revealEvery` rounds (count only, kept on the TV's star panel until the next reveal); end |
+| Stars hidden at the start, thieves' goal | everyone | TV star panel, all match | always |
 | Who is corrupt | corrupt cops (both), thieves | briefing (phone inside "segure", or Dealer visit); phones inside "segure"; thieves' Dealer board | end of match |
 | Investigation result | the investigating cop | their phone inside "segure" | never |
 | Votes | each voter | their phone | end (only each team's decision) |
