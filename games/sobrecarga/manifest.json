@@ -1,0 +1,55 @@
+{
+  "id": "sobrecarga",
+  "version": "0.1.0",
+  "name": { "pt-BR": "Sobrecarga", "en": "Overload" },
+  "description": {
+    "pt-BR": "Três pilhas de fichas e um limite: 13. Escolha em segredo o valor e a cor da sua ficha — quem fizer a pilha desabar leva as fichas como penalidade.",
+    "en": "Three chip stacks and one limit: 13. Secretly pick your chip's value and colour — whoever topples a stack takes its chips as a penalty."
+  },
+  "minPlayers": 2,
+  "maxPlayers": 16,
+  "usesDealer": false,
+  "estimatedMinutes": 25,
+  "accent": "#1e7a50",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": { "pt-BR": "Tutorial (como jogar antes da 1ª rodada)", "en": "Tutorial (how to play before round 1)" },
+      "default": true
+    },
+    {
+      "key": "rounds",
+      "type": "number",
+      "label": { "pt-BR": "Rodadas (uma mão nova a cada 7)", "en": "Rounds (a new hand every 7)" },
+      "min": 7,
+      "max": 35,
+      "step": 7,
+      "default": 14
+    },
+    {
+      "key": "submitSeconds",
+      "type": "number",
+      "label": { "pt-BR": "Tempo para enviar carta e cor (s)", "en": "Time to send card and colour (s)" },
+      "min": 30,
+      "max": 180,
+      "step": 15,
+      "default": 60
+    },
+    {
+      "key": "turnSeconds",
+      "type": "number",
+      "label": { "pt-BR": "Tempo de cada vez de empilhar (s)", "en": "Time for each stacking turn (s)" },
+      "min": 10,
+      "max": 30,
+      "step": 5,
+      "default": 15
+    },
+    {
+      "key": "showSpent",
+      "type": "boolean",
+      "label": { "pt-BR": "TV mostra cartas e cores já usadas", "en": "TV shows cards and colours already used" },
+      "default": true
+    }
+  ]
+}
