@@ -1,0 +1,40 @@
+{
+  "id": "roleta-russa",
+  "version": "0.1.0",
+  "name": {
+    "pt-BR": "Roleta Russa",
+    "en": "Russian Roulette"
+  },
+  "description": {
+    "pt-BR": "Um revólver no centro da mesa, uma câmara para cada cadeira e balas escondidas. Gaste seus créditos investigando, girando e trocando câmaras — quando o tambor disparar, não esteja na mira.",
+    "en": "A revolver in the middle of the table, one chamber per seat and hidden bullets. Spend your credits investigating, spinning and swapping chambers — when the cylinder fires, don't be in its sights."
+  },
+  "minPlayers": 3,
+  "maxPlayers": 10,
+  "usesDealer": false,
+  "estimatedMinutes": 20,
+  "accent": "#8f1d2c",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
+      "key": "bullets",
+      "type": "number",
+      "label": {
+        "pt-BR": "Balas no tambor (no máximo jogadores − 1)",
+        "en": "Bullets in the cylinder (at most players − 1)"
+      },
+      "min": 1,
+      "max": 9,
+      "step": 1,
+      "default": 2
+    }
+  ]
+}
