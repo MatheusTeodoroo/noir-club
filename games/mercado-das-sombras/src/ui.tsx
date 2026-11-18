@@ -419,7 +419,7 @@ function Logo() {
   );
 }
 
-function Ranking({ view, platform, lang, t }: { view: MarketView; platform: DisplayProps['platform']; lang: Lang; t: T }) {
+function Ranking({ view, platform, lang, t, kit }: { kit: DisplayProps['kit']; view: MarketView; platform: DisplayProps['platform']; lang: Lang; t: T }) {
   const n = view.ranking.length;
   const fs = n > 12 ? 0.95 : 1.15;
   const gap = n > 12 ? 0.3 : 0.45;
@@ -439,7 +439,7 @@ function Ranking({ view, platform, lang, t }: { view: MarketView; platform: Disp
               {t(L.rankPos)}
             </div>
             <div className="mdsg-rname">
-              <span>{p?.avatar}</span>
+              <kit.Avatar emoji={p?.avatar ?? '?'} size="1.5em" inline />
               <span>{p?.name ?? r.id}</span>
             </div>
             <div className="mdsg-rval">
@@ -764,7 +764,7 @@ function Display({ view, kit, t, platform, lang }: DisplayProps<PublicView>) {
         )}
       </div>
       <Crawl view={view} lang={lang} t={t} />
-      <Ranking view={view} platform={platform} lang={lang} t={t} />
+      <Ranking view={view} platform={platform} lang={lang} t={t} kit={kit} />
       {rulesOverlay}
     </div>
   );

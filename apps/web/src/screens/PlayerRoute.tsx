@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { normalizeRoomCode } from '@mp/protocol';
 import { deviceIdentity, storageKey } from '../identity.ts';
-import { Avatar, Button, Panel, Stage } from '@mp/ui';
+import { AVATAR_IDS, Avatar, Button, Panel, Stage, avatarId, randomAvatarId } from '@mp/ui';
 import { useT } from '../i18n.ts';
 import { LangSwitch } from '../room/siteLinks.tsx';
-import { AVATARS } from '../room/common.tsx';
 import { Session } from '../room/session.ts';
 import { PlayerScreen } from './PlayerScreen.tsx';
 
@@ -59,7 +58,7 @@ function JoinForm({ onJoin }: { onJoin(p: Profile): void }) {
   const { t } = useT();
   const saved = loadProfile();
   const [name, setName] = useState(saved?.name ?? '');
-  const [avatar, setAvatar] = useState(saved?.avatar ?? AVATARS[Math.floor(Math.random() * AVATARS.length)]!);
+  const [avatar, setAvatar] = useState(saved?.avatar && avatarId(saved.avatar) ? saved.avatar : randomAvatarId());
   const valid = name.trim().length > 0;
 
   return (
@@ -89,8 +88,8 @@ function JoinForm({ onJoin }: { onJoin(p: Profile): void }) {
           <div className="mp-field">
             <span>{t('join.avatar')}</span>
             <div className="avatar-grid">
-              {AVATARS.map((a) => (
-                <button key={a} type="button" className="avatar-pick" onClick={() => setAvatar(a)} aria-label={a}>
+              {AVATAR_IDS.map((a) => (
+                <button key={a} type="button" className="avatar-pick" onClick={() => setAvatar(a)} aria-label={a} title={a}>
                   <Avatar emoji={a} size={48} active={a === avatar} />
                 </button>
               ))}

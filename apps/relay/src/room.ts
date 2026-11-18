@@ -181,10 +181,10 @@ export class RoomObject extends DurableObject<Env> {
           };
     } else {
       const name = (url.searchParams.get('name') ?? '').trim().slice(0, 20);
-      const avatar = (url.searchParams.get('avatar') ?? '').slice(0, 8);
+      const avatar = (url.searchParams.get('avatar') ?? '').slice(0, 24);
       if (!stored) {
         if (!name) return reject('bad_name', 'Escolha um apelido');
-        stored = { id, secret, role: 'player', name, avatar: avatar || '🎩', isAdmin: false, joinedAt: now };
+        stored = { id, secret, role: 'player', name, avatar: avatar || 'banqueiro', isAdmin: false, joinedAt: now };
       } else if (stored.role === 'player') {
         if (name) stored.name = name;
         if (avatar) stored.avatar = avatar;

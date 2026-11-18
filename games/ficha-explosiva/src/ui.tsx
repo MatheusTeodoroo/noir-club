@@ -527,14 +527,14 @@ function SlideDemo({ demo, kit, t }: { demo: Demo; kit: DisplayProps['kit']; t: 
       <div className="feg-demo">
         <div className="feg-demo-row" style={{ fontSize: '1.2em' }}>
           <div className="feg-demo">
-            <Avatar emoji="🎩" size="4em" active />
+            <Avatar emoji="banqueiro" size="4em" active />
             <Card id="chefao" t={t} flip delay={900} />
           </div>
           <span className="feg-arrow" aria-hidden>
             ⇄
           </span>
           <div className="feg-demo">
-            <Avatar emoji="🦊" size="4em" active badge="✓" />
+            <Avatar emoji="croupier" size="4em" active badge="✓" />
             <Card id="soldadoOuro" t={t} flip delay={1100} />
           </div>
         </div>

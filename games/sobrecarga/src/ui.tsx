@@ -632,7 +632,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
                     style={{ animationDelay: view.phase === 'reveal' ? `${2600 + i * 150}ms` : undefined }}
                   >
                     <b>{i + 1}</b>
-                    <span>{byId[id]?.avatar}</span>
+                    <span><kit.Avatar emoji={byId[id]?.avatar ?? "?"} size="1.3em" inline /></span>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '6.5em' }}>
                       {name(id)}
                     </span>
@@ -655,7 +655,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
                 <div className="sg-stand">
                   {view.standing.slice(0, 10).map((id, i) => (
                     <div key={id} className="sg-in1" style={{ animationDelay: `${i * 150}ms` }}>
-                      <b>{i + 1}</b> {byId[id]?.avatar} {name(id)}
+                      <b>{i + 1}</b> <kit.Avatar emoji={byId[id]?.avatar ?? "?"} size="1.2em" inline /> {name(id)}
                       <em>{fmtPen(view.penalties[id] ?? 0)}</em>
                     </div>
                   ))}
@@ -679,7 +679,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
               <div className="sg-stand">
                 {view.standing.slice(0, 6).map((id, i) => (
                   <div key={id}>
-                    <b>{i + 1}</b> {byId[id]?.avatar} {name(id)}
+                    <b>{i + 1}</b> <kit.Avatar emoji={byId[id]?.avatar ?? "?"} size="1.2em" inline /> {name(id)}
                     <em>{fmtPen(view.penalties[id] ?? 0)}</em>
                   </div>
                 ))}

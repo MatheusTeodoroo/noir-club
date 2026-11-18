@@ -41,7 +41,7 @@ export function PlayerScreen({ session, code }: { session: Session; code: string
       <Stage particles={pub?.phase !== 'playing'}>
         <div className="phone">
           <header className="phone-header">
-            <Avatar emoji={self?.avatar ?? state.you?.avatar ?? '🎩'} size={44} active={!!me?.platform.isAdmin} />
+            <Avatar emoji={self?.avatar ?? state.you?.avatar ?? 'banqueiro'} size={44} active={!!me?.platform.isAdmin} />
             <div className="grow">
               <div style={{ fontWeight: 600 }}>{self?.name ?? state.you?.name}</div>
               <div style={{ color: 'var(--text-mute)', fontSize: '0.8rem' }}>

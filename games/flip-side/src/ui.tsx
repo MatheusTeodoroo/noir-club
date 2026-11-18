@@ -373,7 +373,7 @@ function SlideDemo({ demo, kit, t }: { demo: (typeof SLIDES)[number]['demo']; ki
     return (
       <div className="fsg-demo">
         <div className="fsg-row" style={{ gap: '2em', alignItems: 'center' }}>
-          <Avatar emoji="🎩" size="4em" active />
+          <Avatar emoji="banqueiro" size="4em" active />
           <div className="fsg-table" style={{ fontSize: '.9em' }}>
             <Zone face="front" side={null} level={0} t={t} />
             <div className="fsg-center">
@@ -385,7 +385,7 @@ function SlideDemo({ demo, kit, t }: { demo: (typeof SLIDES)[number]['demo']; ki
             <div />
             <Zone face="back" side="front" level={2} t={t} />
           </div>
-          <Avatar emoji="🦊" size="4em" />
+          <Avatar emoji="croupier" size="4em" />
         </div>
         <p className="fsg-sub" style={{ fontSize: '1.3em' }}>
           🎩 {t(L.back)} · 🦊 {t(L.front)}
@@ -617,7 +617,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
     return (
       <div key={id} className="fsg-seat" style={{ gridColumn: i === 0 ? 1 : 3, gridRow: 1 }}>
         <div className="fsg-who">
-          <Avatar emoji={p?.avatar ?? '🎴'} size="4.5em" active={turn || won} offline={p ? !p.connected : false} />
+          <Avatar emoji={p?.avatar ?? '?'} size="4.5em" active={turn || won} offline={p ? !p.connected : false} variant={won ? 'gold' : undefined} />
           <div>
             <span className="fsg-name">{p?.name ?? '—'}</span>
             <div className="fsg-stack">

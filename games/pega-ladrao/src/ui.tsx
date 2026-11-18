@@ -455,12 +455,12 @@ function SlideDemo({ demo, kit, t }: { demo: (typeof SLIDES)[number]['demo']; ki
     );
   }
   if (demo === 'day') {
-    const votes: [Who, string][] = [
-      [DEMO[0]!, '🦊🃏'],
-      [DEMO[1]!, '🎩🦊'],
-      [DEMO[2]!, ''],
-      [DEMO[3]!, '🦚'],
-      [DEMO[4]!, ''],
+    const votes: [Who, string[]][] = [
+      [DEMO[0]!, ['🦊', '🃏']],
+      [DEMO[1]!, ['🎩', '🦊']],
+      [DEMO[2]!, []],
+      [DEMO[3]!, ['🦚']],
+      [DEMO[4]!, []],
     ];
     return (
       <div className="plg-demo">
@@ -469,9 +469,9 @@ function SlideDemo({ demo, kit, t }: { demo: (typeof SLIDES)[number]['demo']; ki
           <div className="plg-votes">
             {votes.map(([w, by], i) => (
               <div key={w.id} className="plg-vote" aria-pressed={i === 1}>
-                <span className="plg-vote-emoji">{w.avatar}</span>
+                <span className="plg-vote-emoji"><kit.Avatar emoji={w.avatar} size="1.3em" inline /></span>
                 <span>{w.name}</span>
-                <span className="plg-vote-by">{by}</span>
+                <span className="plg-vote-by">{by.map((a, k) => <kit.Avatar key={k} emoji={a} size="1.1em" inline />)}</span>
               </div>
             ))}
           </div>
@@ -888,8 +888,7 @@ function Player({ view, kit, t, send, platform, you }: PlayerProps<PlayerView>) 
             const p = whoOf(players, id);
             const by = Object.entries(view.votes)
               .filter(([, target]) => target === id)
-              .map(([voter]) => whoOf(players, voter).avatar)
-              .join('');
+              .map(([voter]) => whoOf(players, voter).avatar);
             return (
               <button
                 key={id}
@@ -903,12 +902,12 @@ function Player({ view, kit, t, send, platform, you }: PlayerProps<PlayerView>) 
                   send({ type: 'vote', target: id });
                 }}
               >
-                <span className="plg-vote-emoji">{p.avatar}</span>
+                <span className="plg-vote-emoji"><kit.Avatar emoji={p.avatar} size="1.3em" inline /></span>
                 <span>
                   {p.name}
                   {id === me ? ` (${t(L.you)})` : ''}
                 </span>
-                <span className="plg-vote-by">{by}</span>
+                <span className="plg-vote-by">{by.map((a, k) => <kit.Avatar key={k} emoji={a} size="1.1em" inline />)}</span>
               </button>
             );
           })}

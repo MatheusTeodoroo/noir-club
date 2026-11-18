@@ -908,7 +908,7 @@ function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
           const rid = r.roles[id] ?? 'innocent';
           return (
             <div key={id} className="ig-row ig-rise" style={{ animationDelay: `${delay + i * 120}ms` }}>
-              <Avatar emoji={who(id).avatar} size="2.4em" active={r.winners.includes(id)} offline={!v.alive.includes(id)} />
+              <Avatar emoji={who(id).avatar} size="2.4em" active={r.winners.includes(id)} offline={!v.alive.includes(id)} variant={!v.alive.includes(id) ? 'out' : r.winners.includes(id) ? 'gold' : undefined} />
               <div className={TEAM_CLASS[role(rid).team]}>
                 <b>{name(id)}</b>
                 <span className="ig-team">

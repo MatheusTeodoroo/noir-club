@@ -355,6 +355,7 @@ function SlideDemo({ demo, t, kit }: { demo: (typeof SLIDES)[number]['demo']; t:
     <div className="eg-row" style={{ ['--cw' as string]: 11, ['--fs' as string]: 1.3, width: '100%' }}>
       {cards.map((c, i) => (
         <TvCard
+          kit={kit}
           key={c.card.id}
           card={c.card}
           pos={i + 1}
@@ -666,6 +667,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
 }
 
 function TvCard({
+  kit,
   card,
   pos,
   who,
@@ -673,6 +675,7 @@ function TvCard({
   state,
   shown = true,
 }: {
+  kit: DisplayProps['kit'];
   card: PublicCard;
   pos?: number;
   who: Who;
@@ -685,7 +688,7 @@ function TvCard({
       <span className="eg-pos">{pos !== undefined ? pos : ''}</span>
       <span className="eg-clue">{card.clue ?? '—'}</span>
       <span className="eg-own">
-        {who.avatar} <span>{who.name}</span>
+        <kit.Avatar emoji={who.avatar} size="1.2em" inline /> <span>{who.name}</span>
       </span>
       {value !== undefined && shown && <span className="eg-val">{value}</span>}
     </div>
@@ -707,7 +710,7 @@ function SortBoard({ view, t, kit, platform }: Pick<DisplayProps<PublicView>, 'v
     <div className="eg-board">
       <div className="eg-row" ref={fitted.ref} style={fitted.style}>
         {list.map((c, i) => (
-          <TvCard key={c.id} card={c} pos={view.mode === 'coop' ? i + 1 : undefined} who={who(c.owner)} />
+          <TvCard kit={kit} key={c.id} card={c} pos={view.mode === 'coop' ? i + 1 : undefined} who={who(c.owner)} />
         ))}
       </div>
       <div className="row wrap" style={{ gap: '.8em', justifyContent: 'center' }}>
@@ -755,6 +758,7 @@ function RevealBoard({
         <div className="eg-row" ref={fitted.ref} style={fitted.style}>
           {coop.order.map((id, i) => (
             <TvCard
+              kit={kit}
               key={id}
               card={byId[id]!}
               pos={i + 1}
@@ -794,6 +798,7 @@ function RevealBoard({
         <div className="eg-row" ref={fitted.ref} style={fitted.style}>
           {result.correct.map((id, i) => (
             <TvCard
+              kit={kit}
               key={id}
               card={byId[id]!}
               pos={i + 1}
@@ -1128,7 +1133,7 @@ function SortPanel({ view, t, send, kit, platform }: PanelProps & Pick<PlayerPro
               <span className="eg-t">
                 <b>{c.clue ?? '—'}</b>
                 <span>
-                  {owner.avatar} {owner.name}
+                  <kit.Avatar emoji={owner.avatar} size="1.2em" inline /> {owner.name}
                   {mine ? ` · ${t(L.yours)}` : ''}
                 </span>
               </span>

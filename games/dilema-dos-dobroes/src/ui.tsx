@@ -390,7 +390,7 @@ function SlideDemo({ demo, kit, t, sec }: { demo: SlideDemo; kit: Kit; t: T; sec
         <div className="dddg-ring" />
         <b>{sec}s</b>
       </div>
-      <Avatar emoji="🎩" size="4em" crimson />
+      <Avatar emoji="banqueiro" size="4em" crimson />
     </div>
   );
 }
@@ -550,6 +550,7 @@ function TeamBoard({ view, kit, t, platform, team }: { view: PublicView; kit: Ki
                 emoji={p.avatar}
                 size={members.length > 4 ? '3.8em' : '4.6em'}
                 offline={!p.connected}
+                variant={p.connected ? team : undefined}
                 active={done}
                 crimson={here}
                 badge={done ? '✓' : undefined}
@@ -661,7 +662,7 @@ function Final({ view, kit, t, platform }: { view: PublicView; kit: Kit; t: T; p
       return (
         <div key={p.playerId} className="dddg-rank dddg-late" data-team={p.team} style={{ animationDelay: `${2.5 + i * 0.15}s` }}>
           <span className="dddg-place">{f.winner ? p.place : '—'}</span>
-          <Avatar emoji={pl?.avatar ?? '🎩'} size="2em" active={f.winner !== null && p.place === 1} />
+          <Avatar emoji={pl?.avatar ?? '?'} size="2em" active={f.winner !== null && p.place === 1} variant={f.winner !== null && p.place === 1 ? 'gold' : p.team} />
           <span className="dddg-name">{pl?.name ?? p.playerId}</span>
           <span className="dddg-bal">
             {f.balances[p.playerId]} <Coin />

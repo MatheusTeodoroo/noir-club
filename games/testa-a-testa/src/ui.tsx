@@ -321,7 +321,7 @@ function SlideDemo({ demo, kit, t }: { demo: (typeof SLIDES)[number]['demo']; ki
       <div className="tatg-demo" style={{ fontSize: '.9em' }}>
         <div className="tatg-row" style={{ gap: '3em', alignItems: 'center' }}>
           <div className="tatg-who">
-            <Avatar emoji="🎩" size="4.5em" active />
+            <Avatar emoji="banqueiro" size="4.5em" active />
             <div className="tatg-stack">
               15<small>{t(L.chips)}</small>
             </div>
@@ -332,7 +332,7 @@ function SlideDemo({ demo, kit, t }: { demo: (typeof SLIDES)[number]['demo']; ki
             <span className="mp-eyebrow">{t(L.pot)}</span>
           </div>
           <div className="tatg-who">
-            <Avatar emoji="🦊" size="4.5em" />
+            <Avatar emoji="croupier" size="4.5em" />
             <div className="tatg-stack">
               17<small>{t(L.chips)}</small>
             </div>
@@ -577,7 +577,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
           const seat = (
             <div key={id} className="tatg-seat" data-side={i === 0 ? 'l' : 'r'} style={{ gridColumn: i === 0 ? 1 : 3 }}>
               <div className="tatg-who">
-                <Avatar emoji={p?.avatar ?? '🎴'} size="5.5em" active={turn || won} offline={p ? !p.connected : false} />
+                <Avatar emoji={p?.avatar ?? '?'} size="5.5em" active={turn || won} offline={p ? !p.connected : false} variant={won ? 'gold' : undefined} />
                 <span className="tatg-name">{p?.name ?? '—'}</span>
                 <div className="tatg-stack">
                   {reveal ? <Swap from={reveal.before[id] ?? 0} to={view.chips[id] ?? 0} /> : (view.chips[id] ?? 0)}

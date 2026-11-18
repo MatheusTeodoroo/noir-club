@@ -320,7 +320,7 @@ function SlideDemo({ demo, kit, t }: { demo: Demo; kit: Kit; t: T }) {
       <div className="sg-demo">
         <div className="sg-demorow">
           <div className="sg-phone">
-            <Avatar emoji="🎩" size="2.4em" />
+            <Avatar emoji="banqueiro" size="2.4em" />
             <small>Ana</small>
             <b>47</b>
           </div>
@@ -328,7 +328,7 @@ function SlideDemo({ demo, kit, t }: { demo: Demo; kit: Kit; t: T }) {
             ⇄
           </span>
           <div className="sg-phone">
-            <Avatar emoji="🦊" size="2.4em" />
+            <Avatar emoji="croupier" size="2.4em" />
             <small>Beto</small>
             <b>82</b>
           </div>
@@ -766,7 +766,7 @@ function Board({ view, kit, t, platform }: DisplayProps<PublicView>) {
               return (
                 <div key={p.id} className={`sg-line sg-step ${win ? 'sg-win' : ''}`} style={delay()}>
                   <span className="sg-line">
-                    <Avatar emoji={p.avatar} size="1.5em" active={win} crimson={!alive} />
+                    <Avatar emoji={p.avatar} size="1.5em" active={win} crimson={!alive} variant={!alive ? 'out' : win ? 'gold' : undefined} />
                     {p.name}
                   </span>
                   {zero ? (

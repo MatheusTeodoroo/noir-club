@@ -10,6 +10,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
+import { avatarId, type AvatarVariant } from '@mp/game-sdk';
 
 // ---------------------------------------------------------------------------
 // Contexts: room clock and rendering quality tier
@@ -90,29 +91,44 @@ export function Button({ variant = 'gold', block, small, className = '', ...rest
   return <button type="button" className={cls} {...rest} />;
 }
 
+export { AVATAR_IDS, avatarId, randomAvatarId, type AvatarVariant } from '@mp/game-sdk';
+
 export function Avatar({
   emoji,
   size = 56,
   active,
   crimson,
   offline,
+  variant,
+  inline,
   badge,
   title,
 }: {
+  /** A portrait id (`banqueiro`...) or, for old profiles, an emoji. */
   emoji: string;
   /** Pixels, or any CSS length (e.g. "6em" to scale with a TV screen). */
   size?: number | string;
   active?: boolean;
   crimson?: boolean;
   offline?: boolean;
+  /** Which version of the portrait to draw. Default: from `crimson` / `offline`, else `base`. */
+  variant?: AvatarVariant;
+  /** Flows inside a line of text (size it in em, e.g. "1.1em"). */
+  inline?: boolean;
   badge?: ReactNode;
   title?: string;
 }) {
+  const unknown = emoji === '?' || emoji === '❔';
+  const id = unknown ? 'banqueiro' : avatarId(emoji);
+  const v: AvatarVariant = variant ?? (unknown ? 'shadow' : offline ? 'out' : crimson ? 'crimson' : 'base');
+  const [broken, setBroken] = useState(false);
   const cls = [
     'mp-avatar',
     active && 'mp-avatar--active',
     crimson && 'mp-avatar--crimson',
-    offline && 'mp-avatar--offline',
+    (offline || v === 'out') && 'mp-avatar--offline',
+    id && !broken && 'mp-avatar--portrait',
+    inline && 'mp-avatar--inline',
   ]
     .filter(Boolean)
     .join(' ');
@@ -122,9 +138,19 @@ export function Avatar({
       style={{ '--size': typeof size === 'number' ? `${size}px` : size } as CSSProperties}
       title={title}
     >
-      <span className="mp-avatar-emoji" aria-hidden>
-        {emoji}
-      </span>
+      {id && !broken ? (
+        <img
+          className="mp-avatar-img"
+          src={`/avatars/${id}-${v}.webp`}
+          alt=""
+          draggable={false}
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        <span className="mp-avatar-emoji" aria-hidden>
+          {emoji}
+        </span>
+      )}
       {badge !== undefined && <span className="mp-avatar-badge">{badge}</span>}
     </div>
   );

@@ -607,7 +607,7 @@ function RaceScreen({ view, kit, t, platform }: DisplayProps<PublicView>) {
       {final || paused ? (
         <FinalRanking race={race} t={t} names={nameOfCls} avatar={(c) => avatar(pidOf(c))} kit={kit} final={final} />
       ) : (
-        <Board race={race} t={t} names={nameOfCls} avatar={(c) => avatar(pidOf(c))} />
+        <Board race={race} t={t} names={nameOfCls} avatar={(c) => avatar(pidOf(c))} kit={kit} />
       )}
 
       <div className="mrg-feed">
@@ -625,7 +625,7 @@ function RaceScreen({ view, kit, t, platform }: DisplayProps<PublicView>) {
   );
 }
 
-function Board({ race, t, names, avatar }: { race: RaceView; t: T; names: (c: number) => string; avatar: (c: number) => string }) {
+function Board({ race, t, names, avatar, kit }: { kit: UIKit; race: RaceView; t: T; names: (c: number) => string; avatar: (c: number) => string }) {
   // Several runners on one column: offset them a little so all stay visible (rows differ anyway).
   return (
     <div className="mrg-board" style={{ ['--cols' as string]: race.cols }}>
@@ -655,7 +655,7 @@ function Board({ race, t, names, avatar }: { race: RaceView; t: T; names: (c: nu
             </div>
             <div className="mrg-track">
               <div className="mrg-tok" style={{ left: `calc(${r.pos - 1} * 100% / var(--cols))` }}>
-                <span>{avatar(r.cls)}</span>
+                <kit.Avatar emoji={avatar(r.cls)} size="1.4em" inline />
               </div>
             </div>
           </div>

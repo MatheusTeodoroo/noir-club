@@ -49,7 +49,7 @@ state. Export your `State`, view and `Action` types: the UI and tests import the
 |---|---|
 | `ctx.now` | room-clock time in ms (the only clock) |
 | `ctx.rng` | seeded RNG: `next()`, `int(min, max)`, `pick(list)`, `shuffle(list)` (the only randomness) |
-| `ctx.players` | participants: `{ id, name, avatar, connected, remote, isHost }`, fixed for the match; `isHost` marks who drives shared screens (tutorial, rules on the TV) |
+| `ctx.players` | participants: `{ id, name, avatar (portrait id: draw it with `kit.Avatar`, never as text), connected, remote, isHost }`, fixed for the match; `isHost` marks who drives shared screens (tutorial, rules on the TV) |
 | `ctx.config` | Host settings from the manifest, typed by your `Config` |
 | `ctx.atDealer` | id of the player verified at the Dealer, or null |
 | `ctx.setTimer(key, ms)` / `ctx.clearTimer(key)` | one timer per key; setting a key again replaces it |

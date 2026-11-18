@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
+  avatarSrc,
   defineGameUI,
   type DealerProps,
   type DisplayProps,
@@ -9,6 +10,14 @@ import {
 import type { BoardView, DealerView, LogEntry, PlayerView, PublicView, Result, RoleCard, Turn } from './logic.ts';
 import { adjacency, generateBoard, LINE_COLORS, type Board } from './board.ts';
 import { TEAM_COLORS, TEAMS, type Side, type Team } from './shared.ts';
+
+/** Portrait version that matches a pawn: the squad's colour for cops, faded when jailed. */
+function pawnVariant(kind: 'cop' | 'thief' | 'jailed', color?: string): 'base' | 'red' | 'blue' | 'green' | 'out' {
+  if (kind === 'jailed') return 'out';
+  if (kind === 'thief') return 'base';
+  const team = (Object.keys(TEAM_COLORS) as Team[]).find((k) => TEAM_COLORS[k] === color);
+  return team ?? 'base';
+}
 import { CREDITS, HINTS, RULES, SLIDES } from './texts.ts';
 
 // Only `react` and `@mp/game-sdk` may be imported from packages. Platform components come in
@@ -512,11 +521,14 @@ function CityMap({ board, pawns = {}, stars = [], choices = [], chosen = [], foc
                   strokeWidth={0.06}
                 />
               )}
-              {emoji && (
-                <text y={0.11} textAnchor="middle" fontSize={0.32}>
-                  {emoji}
-                </text>
-              )}
+              {emoji &&
+                (avatarSrc(emoji) ? (
+                  <image href={avatarSrc(emoji, pawnVariant(p.kind, p.color))!} x={-0.22} y={-0.22} width={0.44} height={0.44} clipPath="circle(50%)" />
+                ) : (
+                  <text y={0.11} textAnchor="middle" fontSize={0.32}>
+                    {emoji}
+                  </text>
+                ))}
             </g>
           );
         });
@@ -598,7 +610,7 @@ function logLine(e: LogEntry, t: T, name: (id: string) => string): string {
 function useNames(platform: DisplayProps['platform']) {
   return (id: string) => {
     const p = platform.players.find((x) => x.id === id);
-    return p ? `${p.avatar} ${p.name}` : id;
+    return p ? p.name : id;
   };
 }
 
@@ -956,9 +968,13 @@ function DemoPawn({ emoji, color, thief }: { emoji: string; color?: string; thie
       ) : (
         <circle r={0.27} fill="#0b0b0d" stroke={color} strokeWidth={0.08} />
       )}
-      <text y={0.11} textAnchor="middle" fontSize={0.32}>
-        {emoji}
-      </text>
+      {avatarSrc(emoji) ? (
+        <image href={avatarSrc(emoji, thief ? 'base' : (['red', 'blue', 'green'] as const).find((k) => TEAM_COLORS[k] === color) ?? 'base')!} x={-0.22} y={-0.22} width={0.44} height={0.44} clipPath="circle(50%)" />
+      ) : (
+        <text y={0.11} textAnchor="middle" fontSize={0.32}>
+          {emoji}
+        </text>
+      )}
     </svg>
   );
 }

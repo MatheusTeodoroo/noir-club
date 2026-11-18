@@ -23,6 +23,10 @@ Rive for animated visuals.
   `VITE_INCLUDE_EXAMPLES=1`, like the e2e's on port 5174, loads them)
 - `rive/<name>` — Rive projects, compiled to `apps/web/public/rive/<name>.riv`
 
+Player avatars are the video-kit characters (`apps/web/public/avatars/<id>-<variant>.webp`, rebuilt by
+`node scripts/build-avatars.mjs`). `player.avatar` is a portrait id: draw it with `kit.Avatar` (use `variant` for
+winner/team/eliminated/unknown, `inline` inside text), never print it as text; in SVG use `avatarSrc`.
+
 Secrets must only leave the engine through `publicView` / `playerView` /
 `dealerView`. Game UI only imports `react` and `@mp/game-sdk`; platform
 components arrive through the `kit` prop.

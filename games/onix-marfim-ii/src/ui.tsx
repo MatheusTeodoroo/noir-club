@@ -404,12 +404,12 @@ function SlideDemo({ demo, kit, t }: { demo: (typeof SLIDES)[number]['demo']; ki
       <div className="omig-demo">
         <div className="omig-duel">
           <div className="omig-slot">
-            <Avatar emoji="🎩" size="4.5em" />
+            <Avatar emoji="banqueiro" size="4.5em" />
             <StoneDisc stone="onyx" size="1.5em" className="omig-drop" delay={400} />
           </div>
           <span className="omig-vs">vs</span>
           <div className="omig-slot">
-            <Avatar emoji="🦊" size="4.5em" active />
+            <Avatar emoji="croupier" size="4.5em" active />
             <StoneDisc stone="ivory" size="1.5em" className="omig-drop omig-win" delay={1300} />
           </div>
         </div>
@@ -684,7 +684,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
           return (
             <div key={id} className="omig-seat" style={{ gridColumn: i === 0 ? 1 : 3, gridRow: 1 }}>
               <Avatar
-                emoji={p?.avatar ?? '🎴'}
+                emoji={p?.avatar ?? '?'}
                 size="4.8em"
                 active={view.turn === id || won}
                 offline={p ? !p.connected : false}

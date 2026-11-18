@@ -1,4 +1,6 @@
+export * from './avatars.ts';
 import type { ClientId, Lang, PlayerPlatformView, PublicPlatformView } from '@mp/protocol';
+import type { AvatarVariant } from './avatars.ts';
 
 /**
  * Contract every game implements. A game ships two separately loaded modules:
@@ -134,7 +136,12 @@ export interface KitButtonProps {
 }
 
 export interface KitAvatarProps {
+  /** A player's `avatar` (a portrait id such as "banqueiro", or an old emoji). Pass `player.avatar` straight through. */
   emoji: string;
+  /** Which version of the portrait: gold = winner, crimson = in the crosshairs, red/blue/green = teams, out = eliminated, shadow = unknown ("?"). Default: crimson/offline flags, else base. */
+  variant?: AvatarVariant;
+  /** Flows inside a line of text, like an emoji (size in em, e.g. "1.1em"). Use it wherever you print `player.avatar` as text. */
+  inline?: boolean;
   /** Pixels, or a CSS length such as "6em" (scales with the TV stage). */
   size?: number | string;
   /** Gold glow (e.g. "has voted", winner). */

@@ -336,12 +336,12 @@ function SlideDemo({ demo, kit, t }: { demo: (typeof SLIDES)[number]['demo']; ki
       <div className="omg-demo">
         <div className="omg-duel">
           <div className="omg-slot">
-            <Avatar emoji="🎩" size="4.5em" />
+            <Avatar emoji="banqueiro" size="4.5em" />
             <StoneDisc stone="onyx" size="1.5em" className="omg-drop" delay={400} />
           </div>
           <span className="omg-vs">vs</span>
           <div className="omg-slot">
-            <Avatar emoji="🦊" size="4.5em" active />
+            <Avatar emoji="croupier" size="4.5em" active />
             <StoneDisc stone="ivory" size="1.5em" className="omg-drop omg-win" delay={1300} />
           </div>
         </div>
@@ -652,7 +652,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
           return (
             <div key={id} className="omg-seat" style={{ gridColumn: i === 0 ? 1 : 3, gridRow: 1 }}>
               <Avatar
-                emoji={p?.avatar ?? '🎴'}
+                emoji={p?.avatar ?? '?'}
                 size="5.5em"
                 active={view.turn === id || won}
                 offline={p ? !p.connected : false}

@@ -39,7 +39,7 @@ export const PLAYER_NAMES = [
   'Lara',
   'Miguel',
 ];
-const AVATARS = ['🎩', '🃏', '🎲', '🍷', '💎', '👑', '🌙', '🦊', '🦉', '🐺', '🎭', '🗝️'];
+const AVATARS = ['banqueiro', 'croupier', 'apostador', 'herdeira', 'professor', 'detetive', 'cantora', 'magico', 'novato', 'diplomata', 'barao', 'espia'];
 
 export function createTestRoom<S = any>(logic: GameLogic<S, any>, opts: TestRoomOptions = {}) {
   const count = opts.players ?? logic.manifest.minPlayers;

@@ -7,8 +7,6 @@ import { playSound } from '../audio.ts';
 import { useT } from '../i18n.ts';
 import type { Session, SessionState } from './session.ts';
 
-export const AVATARS = ['🎩', '🃏', '🎲', '🍷', '💎', '👑', '🌙', '🦊', '🦉', '🐺', '🎭', '🗝️', '⚜️', '🕯️', '🌹', '♠️'];
-
 export const kit: UIKit = { Button, TextInput, Avatar, Countdown, Panel, RiveView, useRoomNow, playSound };
 
 /**

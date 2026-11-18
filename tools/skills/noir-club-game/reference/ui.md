@@ -27,7 +27,7 @@ Worked examples: the starter `src/ui.tsx` (no Dealer) and `<skill>/examples/demo
 | `Player` | `view` (this player's PlayerView), `you` (platform status: `you`, `isAdmin`, `remote`, `dealer` status), `send(action)`, `platform`, `kit`, `t`, `lang` |
 | `Dealer` | `view` (DealerView), `playerName`, `platform`, `kit`, `t`, `lang` |
 
-`platform` (PublicPlatformView) gives `players` (`id`, `name`, `avatar` emoji, `connected`,
+`platform` (PublicPlatformView) gives `players` (`id`, `name`, `avatar` = a portrait id such as `banqueiro` (never print it as text), `connected`,
 `spectator`, `remote`, `isAdmin`, room `score`), `gameConfig`, `paused` (null or who/until),
 `dealer` (`current`, `verified`, `queue`) and `lang`. Filter `players` by `!p.spectator` for
 the people in the match.
@@ -39,7 +39,7 @@ Prop types are in `.noir/sdk/game-sdk/index.ts` (`KitButtonProps`, …).
 | Member | Use |
 |---|---|
 | `kit.Button` | `variant` gold (primary) / crimson (decisive) / ghost (secondary), `block`, `small`, `disabled`, `onClick` |
-| `kit.Avatar` | player sigil: `emoji`, `size` (px on phones, `"6em"`-style on TV), `active` (gold glow: acted, winner), `crimson` (accused, at the Dealer), `offline`, `badge` (✓, ♛, …) |
+| `kit.Avatar` | player portrait (the 16 characters of the video kit; old emojis map to them): `emoji={player.avatar}`, `variant` (`gold` winner/highlight, `crimson` in the crosshairs, `red`/`blue`/`green` teams, `out` eliminated, `shadow` unknown — `"?"` gives it), `inline` (inside a line of text, size in `em`; use it instead of printing `player.avatar`), `size` (px on phones, `"6em"`-style on TV), `active` (gold glow: acted, winner), `crimson` (accused, at the Dealer), `offline`, `badge` (✓, ♛, …) |
 | `kit.TextInput` | phone text entry with a submit button: `onSubmit(text)` (trimmed), `placeholder`, `maxLength`, `oneWord` (strips spaces while typing), `submitLabel`, `disabled`; Enter submits, the field clears after, autocorrect/capitalisation are off |
 | `kit.Countdown` | ring timer: `deadline` and `total` (both from your view: `ctx.timerDeadline` / `ctx.timerTotal`), `size` (`"7em"` on TV, px on phones), `paused={!!platform.paused}` |
 | `kit.Panel` | gold-hairline card with ornamented corners |

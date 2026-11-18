@@ -656,7 +656,7 @@ function FinalGrid({ view, kit, t, seats }: { view: PublicView; kit: Kit; t: T; 
         <span />
         {final.history.map((r) => (
           <span key={r.round}>
-            {r.round} {seats.find((p) => p.id === r.king)?.avatar ?? ''}
+            {r.round} {seats.find((p) => p.id === r.king) && <kit.Avatar emoji={seats.find((p) => p.id === r.king)!.avatar} size="1.2em" inline />}
           </span>
         ))}
         <span>{t(L.total)}</span>
@@ -664,7 +664,7 @@ function FinalGrid({ view, kit, t, seats }: { view: PublicView; kit: Kit; t: T; 
       {rows.map((p, i) => (
         <div className="cdmg-grid-row cdmg-final-row" key={p.id} style={{ animationDelay: `${2500 + i * 120}ms` }}>
           <span>
-            <Avatar emoji={p.avatar} size="1.6em" active={(final.scores[p.id] ?? 0) === best && best > 0} />
+            <Avatar emoji={p.avatar} size="1.6em" active={(final.scores[p.id] ?? 0) === best && best > 0} variant={(final.scores[p.id] ?? 0) === best && best > 0 ? 'gold' : undefined} />
             {p.name}
           </span>
           {final.history.map((r: RoundRecord) => {
@@ -791,7 +791,7 @@ function Display({ view, kit, t, platform }: DisplayProps<PublicView>) {
       <div className="cdmg-board">
         <div className="cdmg-king" key={view.crown.king}>
           <span className="cdmg-crownmark">♛</span>
-          {king && <Avatar emoji={king.avatar} size="10em" active />}
+          {king && <Avatar emoji={king.avatar} size="10em" active variant="gold" />}
           <strong>{king?.name}</strong>
           {view.tally && (
             <div className="cdmg-seats" style={{ marginTop: '1em' }}>

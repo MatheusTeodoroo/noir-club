@@ -154,7 +154,7 @@ export type PrivateFrame = PlayerFrame | DealerFrame;
 // ---------------------------------------------------------------------------
 
 export const PlatformAction = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('profile'), name: z.string().min(1).max(20), avatar: z.string().max(8) }),
+  z.object({ type: z.literal('profile'), name: z.string().min(1).max(20), avatar: z.string().max(24) }),
   z.object({ type: z.literal('setRemote'), remote: z.boolean() }),
   z.object({ type: z.literal('selectGame'), game: z.object({ id: z.string(), version: z.string() }).nullable() }),
   z.object({ type: z.literal('setConfig'), config: z.record(z.string(), z.unknown()) }),

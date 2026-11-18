@@ -408,6 +408,33 @@ select {
   filter: grayscale(1) brightness(0.5);
 }
 
+/* Portraits: the kit's character cropped to head and shoulders; the "out" version is already faded. */
+.mp-avatar--portrait {
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #2a1a26, #0c0810 75%);
+}
+.mp-avatar--portrait.mp-avatar--offline {
+  filter: brightness(0.8);
+}
+/* In a line of text, like an emoji: thin ring, no glow, sits on the baseline. */
+.mp-avatar--inline {
+  display: inline-grid;
+  vertical-align: -0.25em;
+  box-shadow: 0 0 0 1px var(--gold-lo);
+  transform: none;
+}
+.mp-avatar--inline.mp-avatar--active {
+  box-shadow: 0 0 0 1px var(--gold);
+}
+.mp-avatar-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+}
+
 /* Sized from --size on a child, so em-based sizes resolve against the inherited font size. */
 .mp-avatar-emoji {
   font-size: calc(var(--size) * 0.5);

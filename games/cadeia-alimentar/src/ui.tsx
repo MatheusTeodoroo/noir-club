@@ -352,9 +352,9 @@ function SlideDemo({ demo, kit, t }: { demo: Demo; kit: Kit; t: T }) {
     return (
       <div className="cag-demo">
         <div className="cag-demo-row">
-          <Avatar emoji="🎩" size="6em" active />
+          <Avatar emoji="banqueiro" size="6em" active />
           <span className="cag-demo-arrow">→</span>
-          <Avatar emoji="🦊" size="6em" />
+          <Avatar emoji="croupier" size="6em" />
           <span className="cag-demo-arrow">=</span>
           <span className="cag-flip cag-gold" style={{ display: 'inline-flex' }}>
             <AnimalIcon animal="otter" size="6em" />
