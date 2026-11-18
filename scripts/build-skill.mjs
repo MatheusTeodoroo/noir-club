@@ -19,6 +19,8 @@ for (const pkg of ['protocol', 'game-sdk', 'engine', 'ui']) {
   cpSync(join(root, 'packages', pkg, 'src'), join(sdk, pkg), { recursive: true });
 }
 cpSync(join(root, 'apps/web/src/app.css'), join(sdk, 'platform.css'));
+// Player portraits, served by the playground at /avatars (the same URLs as on the site).
+cpSync(join(root, 'apps/web/public/avatars'), join(out, 'kit/.noir/playground/public/avatars'), { recursive: true });
 
 // Worked examples: the Dealer demo, and Agent Decker as the model for rules and tutorial.
 const examples = [

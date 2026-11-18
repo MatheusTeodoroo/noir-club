@@ -28,7 +28,7 @@ export interface LogEntry {
   text: string;
 }
 
-const AVATARS = ['🎩', '🃏', '🎲', '🍷', '💎', '👑', '🌙', '🦊', '🦉', '🐺', '🎭', '🗝️', '⚜️', '🕯️', '🌹', '♠️'];
+const AVATARS = ['banqueiro', 'croupier', 'apostador', 'herdeira', 'professor', 'detetive', 'cantora', 'magico', 'novato', 'diplomata', 'barao', 'espia', 'matriarca', 'veterano', 'pianista', 'duquesa'];
 
 export interface HostSettings {
   players: number;
