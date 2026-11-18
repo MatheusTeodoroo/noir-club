@@ -1,0 +1,115 @@
+{
+  "id": "mercado-das-sombras",
+  "version": "0.1.0",
+  "name": {
+    "pt-BR": "Mercado das Sombras",
+    "en": "Shadow Market"
+  },
+  "description": {
+    "pt-BR": "Sete ações, regras de preço escondidas. Descubra o padrão antes dos outros e fique milionário.",
+    "en": "Seven stocks, hidden price rules. Crack the pattern before everyone else and get rich."
+  },
+  "minPlayers": 3,
+  "maxPlayers": 16,
+  "usesDealer": false,
+  "estimatedMinutes": 120,
+  "accent": "#3b4fd8",
+  "config": [
+    {
+      "key": "tutorial",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tutorial (como jogar antes da 1ª rodada)",
+        "en": "Tutorial (how to play before round 1)"
+      },
+      "default": true
+    },
+    {
+      "key": "roundSeconds",
+      "type": "select",
+      "label": {
+        "pt-BR": "Duração de cada rodada (24 rodadas)",
+        "en": "Length of each round (24 rounds)"
+      },
+      "options": [
+        {
+          "value": "60",
+          "label": {
+            "pt-BR": "1 minuto (~30 min de jogo)",
+            "en": "1 minute (~30 min game)"
+          }
+        },
+        {
+          "value": "90",
+          "label": {
+            "pt-BR": "1 min 30 s (~40 min)",
+            "en": "1 min 30 s (~40 min)"
+          }
+        },
+        {
+          "value": "120",
+          "label": {
+            "pt-BR": "2 minutos (~55 min)",
+            "en": "2 minutes (~55 min)"
+          }
+        },
+        {
+          "value": "180",
+          "label": {
+            "pt-BR": "3 minutos (~1 h 15)",
+            "en": "3 minutes (~1 h 15)"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "pt-BR": "5 minutos (~2 h, como no original)",
+            "en": "5 minutes (~2 h, as in the original)"
+          }
+        }
+      ],
+      "default": "300"
+    },
+    {
+      "key": "noise",
+      "type": "select",
+      "label": {
+        "pt-BR": "Ruído nas cotações",
+        "en": "Price noise"
+      },
+      "options": [
+        {
+          "value": "off",
+          "label": {
+            "pt-BR": "Desligado (regras puras)",
+            "en": "Off (pure rules)"
+          }
+        },
+        {
+          "value": "light",
+          "label": {
+            "pt-BR": "Leve (±2% por rodada)",
+            "en": "Light (±2% per round)"
+          }
+        },
+        {
+          "value": "strong",
+          "label": {
+            "pt-BR": "Forte (±5% por rodada)",
+            "en": "Strong (±5% per round)"
+          }
+        }
+      ],
+      "default": "off"
+    },
+    {
+      "key": "dealerHints",
+      "type": "boolean",
+      "label": {
+        "pt-BR": "Tela do Dealer mostra só as dicas das regras",
+        "en": "Dealer screen shows only the rule hints"
+      },
+      "default": false
+    }
+  ]
+}
