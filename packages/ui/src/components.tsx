@@ -146,7 +146,9 @@ export function Avatar({
           draggable={false}
           onError={() => setBroken(true)}
         />
-      ) : (
+      ) : id === emoji ? null : (
+        // An emoji (old profiles, "?") falls back to text; a portrait id whose image failed to load
+        // stays an empty circle instead of printing "banqueiro" across the seat.
         <span className="mp-avatar-emoji" aria-hidden>
           {emoji}
         </span>

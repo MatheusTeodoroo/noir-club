@@ -82,6 +82,7 @@ The lobby form is empty; the whole configuration happens in the game's setup pha
 read the guide meanwhile.
 | key | type | default | range/options |
 |---|---|---|---|
+| classless | boolean | false | "No classes": plain Impostors and Innocents only, no Neutrals, one team kill per night (kill mode, ability mode, Orator and class picks are hidden and ignored) |
 | impostors | number | by scale table | 1 – (fewer than innocents) |
 | neutrals | number | by scale table | 0–5 |
 | picks[class] | auto/force/ban | auto | every non-common class |
@@ -127,6 +128,7 @@ Nothing differs.
 - Twin is dealt only with 2+ Impostors; Bounty Hunter needs at least one Impostor (always true).
 
 ## Defaults chosen
+- v0.5: the game plays no sounds (visual cues stay). "No classes" mode keeps the host's other choices for when they switch back.
 - v0.3.2: Early Morning opens with a staged reveal on the TV: a heartbeat lead-in (tick cues), a drumroll, then each death one by one (reveal cue + fx), or "Everyone woke up". The dawn timer is stretched to fit the reveal plus 6 s.
 - v0.3: the TV shows no checkmarks at night. Any living player may ask to skip the debate once; each request cuts the remaining time by 1/(players who have not asked yet), so with 4 players one request removes 25% and all four end it. The Host may reveal the class of every dead or expelled player (a Thief reads as "Thief").
 - v0.2 classes (decided with the user): Nomad wins alongside whoever wins when alive at the end (Innocents must eliminate them); Thief steals class and side in secret (as an Impostor they kill alone every night and know no partners); Parasite wins at once at 5 stolen votes, half the host's votes rounded down, and the stolen votes count for the Parasite in the tally; Shapeshifter swaps the votes the two receive and casts both ballots (the imitated ballot is void).

@@ -129,6 +129,10 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
         'After the tutorial, the **Host** builds the match on their phone while everyone reads the rules. The TV shows only the counts.',
       ),
       tx(
+        '**Modo de jogo**: **Com classes** (o jogo completo) ou **Sem classes** — só Impostores e Inocentes, sem poderes e sem Neutros; os Impostores matam 1 por noite, juntos, e o resto é discussão e voto.',
+        '**Game mode**: **With classes** (the full game) or **No classes** — only Impostors and Innocents, no powers and no Neutrals; the Impostors kill 1 per night, together, and the rest is debate and vote.',
+      ),
+      tx(
         '**Impostores** (pelo menos 1, sempre menos que os Inocentes) e **Neutros** (0 a 8); o resto é Inocente. Cada classe pode ficar em **Auto**, **Forçar** ou **Banir**. Classes não se repetem: vagas que sobram viram Inocente ou Impostor comum.',
         '**Impostors** (at least 1, always fewer than the Innocents) and **Neutrals** (0 to 8); everyone else is Innocent. Each class can be **Auto**, **Force** or **Ban**. Classes never repeat: leftover seats become a plain Innocent or Impostor.',
       ),

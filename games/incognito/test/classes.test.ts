@@ -1,3 +1,5 @@
+import { createTestRoom } from '@mp/engine/testing';
+import game, { type State } from '../src/logic.ts';
 import { describe, expect, it } from 'vitest';
 import { FIXED, dawnRevealMs, type RoleId } from '../src/shared.ts';
 import { skipDay, alive, finishVerdict, match, night, pub, pv, toNight, toVote, vote } from './helpers.ts';
@@ -253,5 +255,42 @@ describe('Incógnito — dawn reveal', () => {
     expect(pub(room).phase).toBe('dawn');
     expect(pub(room).dawn?.deaths).toEqual(['p4', 'p5', 'p6']);
     expect(pub(room).total).toBe(dawnRevealMs(3) + 6000);
+  });
+});
+
+describe('Incógnito — classless mode', () => {
+  it('deals only plain Impostors and Innocents, ignoring neutrals and class picks', () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const room = createTestRoom<State>(game, { players: 9, seed, config: { tutorial: false } });
+      room.act('p1', {
+        type: 'setup',
+        patch: { classless: true, impostors: 2, neutrals: 3, killMode: 'each', picks: { sheriff: 'force', thief: 'force' } },
+      });
+      expect(pv(room, 'p1').setup?.errors).toEqual([]);
+      expect(pub(room).setup).toMatchObject({ impostors: 2, neutrals: 0, innocents: 7 });
+      room.act('p1', { type: 'start' });
+      const dealt = Object.values(room.state().roles);
+      expect(dealt.filter((r) => r === 'impostor')).toHaveLength(2);
+      expect(dealt.filter((r) => r === 'innocent')).toHaveLength(7);
+      expect(pub(room).comp).toEqual({ impostors: 2, neutrals: 0, innocents: 7 });
+    }
+  });
+
+  it('the Impostors kill once per night, together, even if "each one" was picked before', () => {
+    const room = createTestRoom<State>(game, { players: 8, seed: 3, config: { tutorial: false } });
+    room.act('p1', { type: 'setup', patch: { classless: true, impostors: 2, killMode: 'each' } });
+    room.act('p1', { type: 'start' });
+    for (const id of room.ids) room.act(id, { type: 'ack' });
+    const s = room.state();
+    const imps = s.seats.filter((id) => s.roles[id] === 'impostor');
+    const targets = s.seats.filter((id) => s.roles[id] === 'innocent');
+    expect(pv(room, imps[0]!).night?.kill?.mode).toBe('team');
+    expect(pv(room, imps[0]!).night?.ability).toBeNull();
+    night(room, [
+      [imps[0]!, { type: 'kill', target: targets[0] }],
+      [imps[1]!, { type: 'kill', target: targets[0] }],
+    ]);
+    expect(pub(room).alive).toHaveLength(7);
+    expect(pub(room).rules).toMatchObject({ classless: true, killMode: 'team' });
   });
 });

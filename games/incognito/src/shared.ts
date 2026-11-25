@@ -493,6 +493,8 @@ export const TEAM_PLURAL: Record<Team, I18nText> = {
 export type RolePick = 'auto' | 'force' | 'ban';
 
 export interface Setup {
+  /** Classic mode with no classes: plain Impostors and Innocents, one team kill per night. */
+  classless: boolean;
   impostors: number;
   neutrals: number;
   picks: Partial<Record<RoleId, RolePick>>;
@@ -524,12 +526,18 @@ export function suggested(players: number): { impostors: number; neutrals: numbe
 
 export type SetupError = 'tooManyImpostors' | 'noInnocents' | 'forcedImpostors' | 'forcedNeutrals' | 'forcedInnocents' | 'notEnoughNeutrals' | 'twinNeedsTwo';
 
+/** Neutrals actually dealt: none in the classless mode. */
+export const neutralsOf = (s: Setup) => (s.classless ? 0 : s.neutrals);
+/** Impostor attack actually used: the classless mode always has one team kill. */
+export const killModeOf = (s: Setup): Setup['killMode'] => (s.classless ? 'team' : s.killMode);
+
 /** Validates a setup for `players` seats; empty list = ready to start. */
 export function setupErrors(s: Setup, players: number): SetupError[] {
   const errors: SetupError[] = [];
-  const innocents = players - s.impostors - s.neutrals;
+  const innocents = players - s.impostors - neutralsOf(s);
   if (innocents < 1) errors.push('noInnocents');
   else if (s.impostors >= innocents) errors.push('tooManyImpostors');
+  if (s.classless) return errors;
   const forced = (team: Team) => PICKABLE.filter((id) => role(id).team === team && s.picks[id] === 'force').length;
   const usable = (team: Team) => PICKABLE.filter((id) => role(id).team === team && s.picks[id] !== 'ban').length;
   if (forced('impostor') > s.impostors) errors.push('forcedImpostors');

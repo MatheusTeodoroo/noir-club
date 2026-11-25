@@ -202,6 +202,14 @@ const L = {
   sNeutrals: { 'pt-BR': 'Neutros', en: 'Neutrals' },
   sInnocents: { 'pt-BR': 'Inocentes', en: 'Innocents' },
   sSuggested: { 'pt-BR': 'Usar sugestão ({i}/{n})', en: 'Use suggestion ({i}/{n})' },
+  sMode: { 'pt-BR': 'Modo de jogo', en: 'Game mode' },
+  sWithClasses: { 'pt-BR': 'Com classes', en: 'With classes' },
+  sClassless: { 'pt-BR': 'Sem classes', en: 'No classes' },
+  sClasslessNote: {
+    'pt-BR': 'Só Impostores e Inocentes, sem poderes. Os Impostores matam 1 por noite, juntos.',
+    en: 'Only Impostors and Innocents, no powers. The Impostors kill 1 per night, together.',
+  },
+  classlessLine: { 'pt-BR': 'Sem classes: só Impostores e Inocentes', en: 'No classes: only Impostors and Innocents' },
   sKill: { 'pt-BR': 'Ataque dos Impostores', en: 'Impostor attack' },
   sTeam: { 'pt-BR': '1 do time', en: '1 for the team' },
   sEach: { 'pt-BR': 'Cada um', en: 'Each one' },
@@ -702,6 +710,9 @@ function RoleCard({ id, t, className = '' }: { id: RoleId; t: T; className?: str
 }
 
 function rulesLines(t: T, r: PublicView['rules']) {
+  if (r.classless) {
+    return [t(L.classlessLine), t(L.killTeam), t(r.spectator === 'blind' ? L.specBlind : L.specOmni), t(r.revealDead ? L.revealOn : L.revealOff)];
+  }
   return [
     r.killMode === 'team' ? t(L.killTeam) : `${t(L.killEach)} — ${t(r.abilityMode === 'or' ? L.abilityOr : L.abilityAnd)}`,
     t(r.spectator === 'blind' ? L.specBlind : L.specOmni),
@@ -1168,25 +1179,44 @@ function SetupPanel({ c }: { c: Ctx }) {
   const data = c.view.setup!;
   const s = data.setup;
   const patch = (p: Partial<Setup>) => send({ type: 'setup', patch: p });
-  const innocents = data.players - s.impostors - s.neutrals;
+  const neutrals = s.classless ? 0 : s.neutrals;
+  const innocents = data.players - s.impostors - neutrals;
   const teams: Team[] = ['impostor', 'neutral', 'innocent'];
   const timeLabels: Record<keyof Setup['times'], I18nText> = { dawn: L.tDawn, day: L.tDay, vote: L.tVote, night: L.tNight };
   return (
     <div className="ig-ph">
       <div className="ig-sec">
+        <h4>{t(L.sMode)}</h4>
+        <Seg
+          value={s.classless ? 'classless' : 'classes'}
+          options={[
+            ['classes', t(L.sWithClasses)],
+            ['classless', t(L.sClassless)],
+          ]}
+          onChange={(v) => patch({ classless: v === 'classless' })}
+        />
+        {s.classless && <p className="ig-note">{t(L.sClasslessNote)}</p>}
+      </div>
+      <div className="ig-sec">
         <Stepper label={t(L.sImpostors)} value={s.impostors} min={1} max={Math.max(1, data.players - 2)} onChange={(n) => patch({ impostors: n })} />
-        <Stepper label={t(L.sNeutrals)} value={s.neutrals} min={0} max={MAX_NEUTRALS} onChange={(n) => patch({ neutrals: n })} />
+        {!s.classless && (
+          <Stepper label={t(L.sNeutrals)} value={s.neutrals} min={0} max={MAX_NEUTRALS} onChange={(n) => patch({ neutrals: n })} />
+        )}
         <p className="ig-note">
           {t(L.sInnocents)}: {innocents}
         </p>
-        <kit.Button variant="ghost" small onClick={() => patch(data.suggested)}>
-          {fmt(t(L.sSuggested), { i: data.suggested.impostors, n: data.suggested.neutrals })}
+        <kit.Button
+          variant="ghost"
+          small
+          onClick={() => patch(s.classless ? { impostors: data.suggested.impostors } : data.suggested)}
+        >
+          {fmt(t(L.sSuggested), { i: data.suggested.impostors, n: s.classless ? 0 : data.suggested.neutrals })}
         </kit.Button>
       </div>
       <div className="ig-sec">
-        <h4>{t(L.sKill)}</h4>
-        <Seg value={s.killMode} options={[['team', t(L.sTeam)], ['each', t(L.sEach)]]} onChange={(v) => patch({ killMode: v })} />
-        {s.killMode === 'each' && (
+        {!s.classless && <h4>{t(L.sKill)}</h4>}
+        {!s.classless && <Seg value={s.killMode} options={[['team', t(L.sTeam)], ['each', t(L.sEach)]]} onChange={(v) => patch({ killMode: v })} />}
+        {!s.classless && s.killMode === 'each' && (
           <>
             <h4>{t(L.sAbility)}</h4>
             <Seg value={s.abilityMode} options={[['or', t(L.sOr)], ['and', t(L.sAnd)]]} onChange={(v) => patch({ abilityMode: v })} />
@@ -1194,8 +1224,12 @@ function SetupPanel({ c }: { c: Ctx }) {
         )}
         <h4>{t(L.sSpectator)}</h4>
         <Seg value={s.spectator} options={[['blind', t(L.sBlind)], ['omniscient', t(L.sOmni)]]} onChange={(v) => patch({ spectator: v })} />
-        <h4>{t(L.sOrator)}</h4>
-        <Seg value={s.oratorVotes} options={[[2, '2'], [3, '3']]} onChange={(v) => patch({ oratorVotes: v })} />
+        {!s.classless && (
+          <>
+            <h4>{t(L.sOrator)}</h4>
+            <Seg value={s.oratorVotes} options={[[2, '2'], [3, '3']]} onChange={(v) => patch({ oratorVotes: v })} />
+          </>
+        )}
         <h4>{t(L.sReveal)}</h4>
         <Seg
           value={s.revealDead ? 'yes' : 'no'}
@@ -1220,6 +1254,7 @@ function SetupPanel({ c }: { c: Ctx }) {
           />
         ))}
       </div>
+      {!s.classless && (
       <div className="ig-sec">
         <h4>{t(L.sClasses)}</h4>
         {teams.map((team) => (
@@ -1244,6 +1279,7 @@ function SetupPanel({ c }: { c: Ctx }) {
           </div>
         ))}
       </div>
+      )}
       {data.errors.map((e) => (
         <p key={e} className="ig-err">
           {t(ERRORS[e])}

@@ -7,6 +7,8 @@ import {
   FIXED,
   dawnRevealMs,
   MAX_NEUTRALS,
+  killModeOf,
+  neutralsOf,
   PICKABLE,
   POTIONS,
   ROLE_IDS,
@@ -58,7 +60,7 @@ export const manifest = manifestJson as GameManifest;
 
 // ---------------------------------------------------------------- Views
 
-type Rules = Pick<Setup, 'killMode' | 'abilityMode' | 'spectator' | 'oratorVotes' | 'revealDead'>;
+type Rules = Pick<Setup, 'classless' | 'killMode' | 'abilityMode' | 'spectator' | 'oratorVotes' | 'revealDead'>;
 
 export interface PublicView {
   phase: Phase;
@@ -215,6 +217,7 @@ const isConnected = (ctx: Ctx, id: string) => ctx.players.some((p) => p.id === i
 function defaultSetup(players: number): Setup {
   return {
     ...suggested(players),
+    classless: false,
     picks: {},
     killMode: 'team',
     abilityMode: 'or',
@@ -247,6 +250,7 @@ function patchSetup(cur: Setup, patch: unknown): Setup | null {
       else out.picks[k as RoleId] = v as RolePick;
     }
   }
+  if (typeof p.classless === 'boolean') out.classless = p.classless;
   if (p.killMode === 'team' || p.killMode === 'each') out.killMode = p.killMode;
   if (p.abilityMode === 'or' || p.abilityMode === 'and') out.abilityMode = p.abilityMode;
   if (p.spectator === 'blind' || p.spectator === 'omniscient') out.spectator = p.spectator;
@@ -303,10 +307,12 @@ function freshState(setup: Setup): State {
 
 function deal(s: State, ctx: Ctx) {
   const seats = connectedIds(ctx);
-  const { impostors, neutrals, picks } = s.setup;
+  const { impostors, picks } = s.setup;
+  const neutrals = neutralsOf(s.setup);
   const innocents = seats.length - impostors - neutrals;
   const choose = (team: Team, count: number, common: RoleId | null) => {
-    let pool = PICKABLE.filter((id) => role(id).team === team && picks[id] !== 'ban');
+    // Classless: only the plain Innocent and Impostor are dealt.
+    let pool = s.setup.classless ? [] : PICKABLE.filter((id) => role(id).team === team && picks[id] !== 'ban');
     if (team === 'impostor' && impostors < 2) pool = pool.filter((id) => id !== 'twin');
     const forced = ctx.rng.shuffle(pool.filter((id) => picks[id] === 'force'));
     const auto = ctx.rng.shuffle(pool.filter((id) => picks[id] !== 'force'));
@@ -367,8 +373,6 @@ function finish(s: State, ctx: Ctx, win: Win) {
     thieves: Object.keys(s.perks.stolen),
   };
   setPhase(s, ctx, 'end', null);
-  ctx.emit('sound', 'drumroll');
-  ctx.emit('sound', 'reveal', 2300);
   ctx.emit('fx', 'end', 2300);
 }
 
@@ -390,7 +394,6 @@ function startNight(s: State, ctx: Ctx) {
   s.outcome = null;
   s.perks.shift = null;
   setPhase(s, ctx, 'night', sec(s.setup.times.night));
-  ctx.emit('sound', 'phase');
 }
 
 function endNight(s: State, ctx: Ctx) {
@@ -398,18 +401,13 @@ function endNight(s: State, ctx: Ctx) {
   if (settle(s, ctx)) return;
   s.news = [];
   setPhase(s, ctx, 'report', FIXED.report);
-  ctx.emit('sound', 'tick');
 }
 
 /** Early morning opens with the staged death reveal; the timer always leaves time after it. */
 function startDawn(s: State, ctx: Ctx) {
   const deaths = s.dawn?.deaths.length ?? 0;
   setPhase(s, ctx, 'dawn', Math.max(sec(s.setup.times.dawn), dawnRevealMs(deaths) + 6000));
-  for (let at = 0; at < DAWN_REVEAL.lead - 400; at += DAWN_REVEAL.heartbeat) ctx.emit('sound', 'tick', at);
-  ctx.emit('sound', 'drumroll', DAWN_REVEAL.lead - 2300);
-  if (deaths === 0) ctx.emit('sound', 'round', DAWN_REVEAL.lead);
   for (let i = 0; i < deaths; i++) {
-    ctx.emit('sound', 'reveal', DAWN_REVEAL.lead + i * DAWN_REVEAL.step);
     ctx.emit('fx', 'death', DAWN_REVEAL.lead + i * DAWN_REVEAL.step);
   }
 }
@@ -419,7 +417,6 @@ function startVote(s: State, ctx: Ctx) {
   s.voteUsed = {};
   s.live = [];
   setPhase(s, ctx, 'vote', sec(s.setup.times.vote));
-  ctx.emit('sound', 'phase');
 }
 
 function weight(s: State, id: string) {
@@ -485,8 +482,6 @@ function endVote(s: State, ctx: Ctx) {
   if (s.win && settle(s, ctx)) return;
   s.appealed = false;
   setPhase(s, ctx, 'verdict', FIXED.verdict);
-  ctx.emit('sound', 'drumroll');
-  ctx.emit('sound', 'reveal', 2300);
 }
 
 function endVerdict(s: State, ctx: Ctx) {
@@ -508,7 +503,6 @@ function endVerdict(s: State, ctx: Ctx) {
   }
   if (settle(s, ctx)) return;
   setPhase(s, ctx, 'dusk', FIXED.dusk);
-  ctx.emit('sound', s.outcome.k === 'expelled' ? 'reveal' : 'tick');
 }
 
 function onPhaseTimer(s: State, ctx: Ctx) {
@@ -523,7 +517,6 @@ function onPhaseTimer(s: State, ctx: Ctx) {
       s.daySkips = {};
       s.dayTotal = sec(s.setup.times.day);
       setPhase(s, ctx, 'day', s.dayTotal);
-      ctx.emit('sound', 'phase');
       return;
     case 'day':
       return startVote(s, ctx);
@@ -576,12 +569,12 @@ function nightDone(s: State, id: string) {
   const kill = id in s.night.kill;
   const extra = s.perks.extraKill[id] === s.nightNo ? id in s.night.kill2 : true;
   if (!hasNightAbility(s, id)) return kill && extra;
-  if (s.setup.killMode === 'each' && s.setup.abilityMode === 'or') return (kill || ability) && extra;
+  if (killModeOf(s.setup) === 'each' && s.setup.abilityMode === 'or') return (kill || ability) && extra;
   return kill && ability && extra;
 }
 
 function exclusiveKill(s: State, id: string) {
-  return s.setup.killMode === 'each' && s.setup.abilityMode === 'or' && hasNightAbility(s, id);
+  return killModeOf(s.setup) === 'each' && s.setup.abilityMode === 'or' && hasNightAbility(s, id);
 }
 
 function validAbility(s: State, id: string, a: Record<string, unknown>): Omit<Submission, 'seq'> | null {
@@ -633,7 +626,6 @@ function maybeEndVote(s: State, ctx: Ctx) {
 
 function afterLiveDeath(s: State, ctx: Ctx) {
   purgeVotes(s);
-  ctx.emit('sound', 'reveal');
   ctx.emit('fx', 'shot');
   if (settle(s, ctx)) return;
   maybeEndVote(s, ctx);
@@ -719,7 +711,6 @@ export default defineGame<State, Config>({
         if (setupErrors(s.setup, connectedIds(ctx).length).length) return;
         deal(s, ctx);
         setPhase(s, ctx, 'reveal', FIXED.reveal);
-        ctx.emit('sound', 'round');
         return;
       }
       case 'again': {
@@ -794,7 +785,6 @@ export default defineGame<State, Config>({
         dawn.spokesDone[pid] = true;
         if (a.index !== null) {
           s.news.push({ by: 'spokesperson', signer: a.signed === true ? pid : null, event: offer[a.index]! });
-          ctx.emit('sound', 'reveal');
         }
         return;
       }
@@ -824,7 +814,6 @@ export default defineGame<State, Config>({
         const [event] = stored!.splice(a.index, 1);
         spend(s, pid);
         s.news.push({ by: 'historian', signer: null, event: event! });
-        ctx.emit('sound', 'reveal');
         return;
       }
       case 'autopsy': {
@@ -870,7 +859,6 @@ export default defineGame<State, Config>({
           s.revealed[pid] = { ...s.revealed[pid], role: 'exorcist' };
           s.revealed[target] = { ...s.revealed[target], team: 'impostor' };
           s.live.push({ k: 'exorcise', exorcist: pid, target });
-          ctx.emit('sound', 'reveal');
           ctx.emit('fx', 'exorcise');
         } else {
           killPlayer(s, pid, 'day', ctx);
@@ -951,13 +939,14 @@ export default defineGame<State, Config>({
           ? {
               players,
               impostors: s.setup.impostors,
-              neutrals: s.setup.neutrals,
-              innocents: players - s.setup.impostors - s.setup.neutrals,
+              neutrals: neutralsOf(s.setup),
+              innocents: players - s.setup.impostors - neutralsOf(s.setup),
               ready: setupErrors(s.setup, players).length === 0,
             }
           : null,
       rules: {
-        killMode: s.setup.killMode,
+        classless: s.setup.classless,
+        killMode: killModeOf(s.setup),
         abilityMode: s.setup.abilityMode,
         spectator: s.setup.spectator,
         oratorVotes: s.setup.oratorVotes,
@@ -1014,7 +1003,7 @@ export default defineGame<State, Config>({
         kill:
           isImp && !entangled
             ? {
-                mode: s.setup.killMode,
+                mode: killModeOf(s.setup),
                 candidates: killCandidates(s, pid),
                 mine: s.night.kill[pid]?.target,
                 mates: Object.fromEntries(mateIds.filter((id) => id in s.night.kill).map((id) => [id, s.night.kill[id]!.target])),

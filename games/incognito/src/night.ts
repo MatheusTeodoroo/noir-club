@@ -1,4 +1,4 @@
-import { POTIONS, role, type ActionKind, type EventKind, type NightEvent, type Potion, type RoleId } from './shared.ts';
+import { POTIONS, killModeOf, role, type ActionKind, type EventKind, type NightEvent, type Potion, type RoleId } from './shared.ts';
 import {
   declareNeutralWin,
   killPlayer,
@@ -99,7 +99,7 @@ export function resolveNight(s: State, ctx: Ctx) {
   const preBlocked = new Set([...start].filter((id) => s.perks.entangled[id] === n));
   const imps = [...start].filter((id) => teamOf(s, id) === 'impostor');
   // Thieves who became Impostors kill on their own: they do not know the team.
-  const solo = (id: string) => s.setup.killMode === 'each' || !!s.perks.stolen[id];
+  const solo = (id: string) => killModeOf(s.setup) === 'each' || !!s.perks.stolen[id];
   const voters = imps.filter((id) => !solo(id) && input.kill[id] && !preBlocked.has(id));
   if (voters.length) {
     const counts: Record<string, number> = {};

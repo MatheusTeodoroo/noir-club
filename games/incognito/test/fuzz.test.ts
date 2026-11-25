@@ -104,6 +104,7 @@ describe('Incógnito — fuzz', () => {
           abilityMode: r() < 0.5 ? 'or' : 'and',
           spectator: r() < 0.5 ? 'blind' : 'omniscient',
           revealDead: r() < 0.5,
+          classless: r() < 0.25,
         },
       });
       room.act('p1', { type: 'setup', patch: { picks } });
