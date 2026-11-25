@@ -15,7 +15,7 @@ Sete ações, regras de preço escondidas. Descubra o padrão antes dos outros e
 | Caixa e carteira de cada jogador | o próprio | playerView | nunca (só o patrimônio total, no ranking) |
 | Compras/vendas da rodada | ninguém | — | no fechamento, somadas por empresa |
 | Pedido de Segredo | quem pediu | playerView | nunca (só a empresa oculta aparece) |
-| Empresa sob Segredo (rodadas r+1, r+2) | ninguém, nem quem ativou | `???` em todos os devices | quando a rodada r+3 entra na tela (histórico preenchido) |
+| Empresa sob Segredo (rodadas r+1, r+2) | ninguém, nem quem ativou | `???` em todos os devices | o preço volta quando a rodada r+3 entra na tela; os fechamentos r e r+1 nunca voltam ao gráfico |
 | Patrimônios enquanto há Segredo | ninguém | ranking mostra a ordem, valores `???` | quando nenhum Segredo está ativo |
 | Caixa de quem negociou às cegas | ninguém | o próprio vê `???` | fim do Segredo |
 
@@ -87,6 +87,6 @@ algum preço passar de $4 mi.
 
 ## Defaults chosen
 Limiares escalados pelo nº de jogadores; regras cruzadas no mesmo fechamento só olham empresas já
-avaliadas (sem ciclos); pontos de histórico ocultos voltam a aparecer quando o Segredo acaba;
+avaliadas (sem ciclos); os pontos do gráfico ocultos por um Segredo ficam como buraco para sempre (como no original);
 nomes das empresas sorteados de 3 opções por setor; revelação palavra a palavra: a primeira é sempre uma pista (nunca conectivo, número ou nome de
 empresa); conectivos e pistas se misturam; números, valores e nomes por último.

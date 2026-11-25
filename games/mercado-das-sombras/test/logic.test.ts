@@ -196,11 +196,25 @@ describe('secrets and hidden information', () => {
     nextRound(room); // round 3
     check(true);
     expect(pub(room).companies[3]!.history.slice(1)).toEqual([null, null]);
-    step(room); // closing of round 3 shows round 4: visible again, gaps filled
+    step(room); // closing of round 3 shows round 4: visible again, but the hidden closes stay gaps
     check(false);
-    expect(pub(room).companies[3]!.history.every((p) => p !== null)).toBe(true);
+    expect(pub(room).companies[3]!.history).toEqual([10_000, null, null, room.state().companies[3]!.history[3]]);
+    expect(pub(room).companies[3]!.price).toBe(room.state().companies[3]!.history[3]);
+    nextRound(room);
+    expect(pub(room).companies[3]!.history.slice(1, 3)).toEqual([null, null]);
     expect(pub(room).ranking.every((r) => r.worth !== null)).toBe(true);
     expect(pv(room, 'p1').secretUsed).toBe(true);
+  });
+
+  it('the hidden closes stay gaps in the chart even after the last round', () => {
+    const room = playing({ players: 3 });
+    room.act('p1', { type: 'secret', company: 0 });
+    for (let r = 1; r < ROUNDS; r++) nextRound(room);
+    step(room);
+    expect(pub(room).phase).toBe('final');
+    const h = pub(room).companies[0]!.history;
+    expect(h.slice(1, 3)).toEqual([null, null]);
+    expect(h.at(-1)).not.toBeNull();
   });
 
   it('simultaneous Secrets on one company take effect once and are all spent', () => {

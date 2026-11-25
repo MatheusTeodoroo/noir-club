@@ -83,7 +83,7 @@ export interface CompanyView {
   price: number | null;
   /** Change at the last close, or null if unknown. */
   change: number | null;
-  /** Price after each close so far (null = hidden by a Secret). */
+  /** Price after each close so far (null = hidden by a Secret; those gaps stay for good). */
   history: (number | null)[];
   /** Last round's volumes and total held (null under a Secret or before the first close). */
   buys: number | null;
@@ -165,12 +165,15 @@ function hiddenAt(state: State, c: number, d: number): boolean {
   return state.secrets.some((s) => s.company === c && d >= s.round + 1 && d <= s.round + 2);
 }
 
-/** Is the close of round k (history[k]) masked for company c while round d is on screen? */
+/**
+ * Is the close of round k (history[k]) masked for company c while round d is on screen? A Secret in
+ * round r hides closes r and r+1 from the moment it takes effect and for good: those points never
+ * come back to the chart (only the price on screen returns, once the Secret ends).
+ */
 function maskedClose(state: State, c: number, k: number, d: number): boolean {
-  if (state.phase === 'final') return false;
-  return state.secrets.some(
-    (s) => s.company === c && d >= s.round + 1 && d <= s.round + 2 && (k === s.round || k === s.round + 1),
-  );
+  const last = state.companies[c]!.history.length - 1;
+  if (state.phase === 'final' && k === last) return false;
+  return state.secrets.some((s) => s.company === c && d >= s.round + 1 && (k === s.round || k === s.round + 1));
 }
 
 function worthOf(state: State, id: string): number {

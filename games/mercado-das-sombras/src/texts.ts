@@ -153,8 +153,8 @@ export const RULES: { title: I18nText; body: I18nText[] }[] = [
         'Once per match, during trading, you may activate a **Secret** on a company (you can change or cancel it until the close). It lasts the **next 2 rounds**: activated in round 2, it covers rounds 3 and 4.',
       ),
       tx(
-        'Nesse tempo a **cotação**, as **negociações** e o **total em carteira** dessa empresa viram **???** na TV e em todos os celulares — inclusive no seu. Ninguém sabe quem ativou.',
-        'During that time the company’s **price**, **trades** and **total held** turn into **???** on the TV and every phone — yours included. Nobody knows who did it.',
+        'Nesse tempo a **cotação**, as **negociações** e o **total em carteira** dessa empresa viram **???** na TV e em todos os celulares — inclusive no seu. Quando o Segredo acaba, a cotação volta, mas as cotações dessas rodadas **nunca aparecem no gráfico** (ficam como um buraco). Ninguém sabe quem ativou.',
+        'During that time the company’s **price**, **trades** and **total held** turn into **???** on the TV and every phone — yours included. When the Secret ends the price comes back, but those rounds’ prices **never show on the chart** (they stay a gap). Nobody knows who did it.',
       ),
       tx(
         'Se vários jogadores ativarem na mesma empresa na mesma rodada, o efeito vale uma vez só e **todos** os Segredos são gastos. Enquanto houver Segredo, o ranking continua aparecendo, mas os **patrimônios** ficam ocultos.',
